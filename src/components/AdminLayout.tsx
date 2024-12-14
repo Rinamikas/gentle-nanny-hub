@@ -11,7 +11,7 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showLoading, setShowLoading] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
   const navigate = useNavigate();
 
   const menuItems = [
@@ -21,14 +21,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   ];
 
   useEffect(() => {
-    const checkAuth = async () => {
-      setShowLoading(true);
-      // Задержка в 2.5 секунды
-      await new Promise(resolve => setTimeout(resolve, 2500));
+    console.log("Checking auth and starting redirect timer...");
+    const timer = setTimeout(() => {
+      console.log("Timer completed, redirecting to /auth");
       navigate("/auth");
-    };
+    }, 2500);
 
-    checkAuth();
+    // Очищаем таймер при размонтировании компонента
+    return () => {
+      console.log("Cleaning up timer");
+      clearTimeout(timer);
+    };
   }, [navigate]);
 
   if (showLoading) {
