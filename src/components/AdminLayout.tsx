@@ -17,19 +17,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F1F0FB]">
+    <div className="min-h-screen bg-white">
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-screen transition-transform bg-white border-r border-[#E5DEFF]",
+          "fixed top-0 left-0 z-40 h-screen transition-transform bg-[#8B5CF6] border-r border-[#7C3AED]",
           isSidebarOpen ? "w-64" : "w-16",
           "animate-slide-in-right"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-[#E5DEFF]">
+        <div className="flex items-center justify-between p-4 border-b border-[#7C3AED]">
           <h1
             className={cn(
-              "font-semibold text-[#FEC6A1] transition-opacity",
+              "font-semibold text-white transition-opacity",
               isSidebarOpen ? "opacity-100" : "opacity-0"
             )}
           >
@@ -39,7 +39,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hover:bg-[#FEF7CD] text-[#FEC6A1]"
+            className="hover:bg-[#7C3AED] text-white"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -50,7 +50,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               key={item.path}
               variant="ghost"
               className={cn(
-                "w-full justify-start mb-1 hover:bg-[#FEF7CD] text-[#FEC6A1]",
+                "w-full justify-start mb-1 hover:bg-[#7C3AED] text-white",
                 isSidebarOpen ? "px-4" : "px-2"
               )}
             >
@@ -71,7 +71,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       {/* Main content */}
       <main
         className={cn(
-          "transition-all duration-300 p-8",
+          "transition-all duration-300 p-8 bg-gray-50",
           isSidebarOpen ? "ml-64" : "ml-16"
         )}
       >

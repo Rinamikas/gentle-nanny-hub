@@ -21,10 +21,10 @@ const Index = () => {
   return (
     <AdminLayout>
       <div className="animate-fade-in">
-        <h1 className="text-3xl font-semibold text-[#FEC6A1] mb-6">
+        <h1 className="text-3xl font-semibold text-[#8B5CF6] mb-6">
           Панель управления
         </h1>
-        <p className="text-[#E5DEFF]">
+        <p className="text-gray-600">
           Добро пожаловать в систему управления нянями
         </p>
       </div>
