@@ -24,10 +24,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     console.log("Checking auth and starting redirect timer...");
     const timer = setTimeout(() => {
       console.log("Timer completed, redirecting to /auth");
+      setShowLoading(false); // Убираем экран загрузки перед редиректом
       navigate("/auth");
     }, 2500);
 
-    // Очищаем таймер при размонтировании компонента
     return () => {
       console.log("Cleaning up timer");
       clearTimeout(timer);
@@ -62,7 +62,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={cn(
               "text-white hover:text-white hover:bg-[#7C3AED]",
-              !isSidebarOpen && "absolute left-1/2 -translate-x-1/2"
+              !isSidebarOpen && "ml-0"
             )}
           >
             <Menu className="h-5 w-5" />
