@@ -34,14 +34,22 @@ const InputOTPSlot = React.forwardRef<
   const inputOTPContext = React.useContext(OTPInputContext)
   
   if (!inputOTPContext) {
-    throw new Error("InputOTPSlot must be used within an OTPInput component")
+    console.error("InputOTPSlot must be used within an OTPInput component")
+    return null
   }
 
-  const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index] || {
-    char: "",
-    hasFakeCaret: false,
-    isActive: false,
+  if (!inputOTPContext.slots || !Array.isArray(inputOTPContext.slots)) {
+    console.error("OTP slots are not properly initialized")
+    return null
   }
+
+  const slot = inputOTPContext.slots[index]
+  if (!slot) {
+    console.error(`No slot found at index ${index}`)
+    return null
+  }
+
+  const { char, hasFakeCaret, isActive } = slot
 
   return (
     <div
