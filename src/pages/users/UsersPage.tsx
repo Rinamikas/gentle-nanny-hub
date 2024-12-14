@@ -21,12 +21,8 @@ const UsersPage = () => {
       console.log("Fetching users...");
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          user_roles (
-            role
-          )
-        `);
+        .select("*, user_roles!inner(role)")
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching users:", error);
