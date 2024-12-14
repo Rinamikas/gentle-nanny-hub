@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Menu, User, Users, Home } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -9,10 +10,11 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: User, label: "Профиль пользователя", path: "/profile" },
-    { icon: Users, label: "Няни", path: "/nannies" },
+    { icon: Users, label: "Пользователи", path: "/users" },
     { icon: Home, label: "Семьи и дети", path: "/families" },
   ];
 
@@ -22,8 +24,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       <aside
         className={cn(
           "fixed top-0 left-0 z-40 h-screen transition-transform bg-[#8B5CF6] border-r border-[#7C3AED]",
-          isSidebarOpen ? "w-64" : "w-16",
-          "animate-slide-in-right"
+          isSidebarOpen ? "w-64" : "w-16"
         )}
       >
         <div className="flex items-center justify-between p-4 border-b border-[#7C3AED]">
@@ -39,7 +40,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hover:bg-[#7C3AED] text-white"
+            className="text-white hover:text-white hover:bg-[#7C3AED]"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -49,8 +50,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             <Button
               key={item.path}
               variant="ghost"
+              onClick={() => navigate(item.path)}
               className={cn(
-                "w-full justify-start mb-1 hover:bg-[#7C3AED] text-white",
+                "w-full justify-start mb-1 text-white hover:text-white hover:bg-[#7C3AED]",
                 isSidebarOpen ? "px-4" : "px-2"
               )}
             >
