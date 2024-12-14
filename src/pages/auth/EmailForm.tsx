@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EmailFormProps {
   onEmailSubmit: (email: string) => void;
@@ -15,17 +16,28 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate sending verification code
-    // This should be replaced with actual API call
-    setTimeout(() => {
-      console.log("Sending verification code to:", email);
-      onEmailSubmit(email);
+    try {
+      const response = await supabase.functions.invoke('verify-email', {
+        body: { email }
+      });
+
+      if (response.error) throw response.error;
+
       toast({
         title: "Код подтверждения отправлен",
         description: "Пожалуйста, проверьте вашу почту",
       });
+      
+      onEmailSubmit(email);
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось отправить код подтверждения",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (

@@ -6,6 +6,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VerificationFormProps {
   email: string;
@@ -16,28 +17,32 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleComplete = async (value: string) => {
+  const handleVerification = async (value: string) => {
     setIsLoading(true);
     
-    // Simulate verification
-    // This should be replaced with actual API call
-    setTimeout(() => {
-      console.log("Verifying code:", value, "for email:", email);
-      if (value === "123456") {
-        toast({
-          title: "Успешная авторизация",
-          description: "Добро пожаловать в систему",
-        });
-        onVerificationSuccess();
-      } else {
-        toast({
-          title: "Ошибка",
-          description: "Неверный код подтверждения",
-          variant: "destructive",
-        });
-      }
+    try {
+      const response = await supabase.functions.invoke('verify-email', {
+        body: { email, code: value }
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Успешная авторизация",
+        description: "Добро пожаловать в систему",
+      });
+      
+      onVerificationSuccess();
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Неверный код подтверждения",
+        variant: "destructive",
+      });
+      setCode("");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -50,7 +55,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           value={code}
           onChange={setCode}
           maxLength={6}
-          onComplete={handleComplete}
+          onComplete={handleVerification}
           render={({ slots }) => (
             <InputOTPGroup>
               {slots.map((slot, index) => (
@@ -61,7 +66,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         />
       </div>
       <Button
-        onClick={() => handleComplete(code)}
+        onClick={() => handleVerification(code)}
         className="w-full"
         disabled={code.length !== 6 || isLoading}
       >
