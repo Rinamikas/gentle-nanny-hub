@@ -15,19 +15,39 @@ const UsersPage = () => {
     email: "",
   });
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       console.log("Fetching users...");
+      
+      // Проверяем текущую сессию
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw new Error("Ошибка аутентификации");
+      }
+
+      if (!session) {
+        console.error("No active session");
+        throw new Error("Пользователь не аутентифицирован");
+      }
+
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("*, user_roles(role)")
+        .select(`
+          *,
+          user_roles (
+            role
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching users:", error);
         throw error;
       }
+
       console.log("Fetched users:", profiles);
       return profiles;
     },
@@ -96,6 +116,10 @@ const UsersPage = () => {
     return <div>Загрузка...</div>;
   }
 
+  if (error) {
+    return <div>Ошибка: {(error as Error).message}</div>;
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Управление пользователями</h1>
@@ -136,9 +160,9 @@ const UsersPage = () => {
                 </h3>
                 <p className="text-sm text-gray-600">{user.email}</p>
                 <div className="flex gap-2 mt-1">
-                  {user.user_roles?.map((role: { role: string }) => (
+                  {user.user_roles?.map((role: { role: string }, index: number) => (
                     <span
-                      key={role.role}
+                      key={`${user.id}-${role.role}-${index}`}
                       className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs"
                     >
                       {role.role}
