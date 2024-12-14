@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, User, Users, Home } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import LoadingScreen from "./LoadingScreen";
 
 interface AdminLayoutProps {
@@ -11,8 +11,9 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showLoading, setShowLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = [
     { icon: User, label: "Профиль пользователя", path: "/profile" },
@@ -21,18 +22,25 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   ];
 
   useEffect(() => {
-    console.log("Checking auth and starting redirect timer...");
+    // Проверяем, не находимся ли мы уже на странице auth
+    if (location.pathname === "/auth") {
+      return;
+    }
+
+    console.log("Starting auth check...");
+    setShowLoading(true);
+
     const timer = setTimeout(() => {
-      console.log("Timer completed, redirecting to /auth");
-      setShowLoading(false); // Убираем экран загрузки перед редиректом
+      console.log("Auth check timeout completed, redirecting to /auth");
+      setShowLoading(false);
       navigate("/auth");
     }, 2500);
 
     return () => {
-      console.log("Cleaning up timer");
+      console.log("Cleaning up auth check timer");
       clearTimeout(timer);
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
   if (showLoading) {
     return <LoadingScreen />;
@@ -62,7 +70,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={cn(
               "text-white hover:text-white hover:bg-[#7C3AED]",
-              !isSidebarOpen && "ml-0"
+              !isSidebarOpen && "w-full flex justify-center"
             )}
           >
             <Menu className="h-5 w-5" />
