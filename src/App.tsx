@@ -5,13 +5,20 @@ import UsersPage from "./pages/users/UsersPage";
 function App() {
   return (
     <Router>
-      <AdminLayout>
-        <Routes>
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="/profile" element={<div>Profile Page</div>} />
-          <Route path="/families" element={<div>Families Page</div>} />
-        </Routes>
-      </AdminLayout>
+      <Routes>
+        <Route
+          path="/*"
+          element={
+            <AdminLayout>
+              <Routes>
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/profile" element={<div>Profile Page</div>} />
+                <Route path="/families" element={<div>Families Page</div>} />
+              </Routes>
+            </AdminLayout>
+          }
+        />
+      </Routes>
     </Router>
   );
 }
