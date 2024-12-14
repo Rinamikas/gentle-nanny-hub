@@ -6,6 +6,18 @@ import { Pencil, Trash2, X, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
+interface UserRole {
+  role: string;
+}
+
+interface User {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  user_roles: UserRole[] | null;
+}
+
 const UsersPage = () => {
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<string | null>(null);
@@ -20,7 +32,6 @@ const UsersPage = () => {
     queryFn: async () => {
       console.log("Fetching users...");
       
-      // Проверяем текущую сессию
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -33,23 +44,25 @@ const UsersPage = () => {
         throw new Error("Пользователь не аутентифицирован");
       }
 
-      const { data: profiles, error } = await supabase
+      console.log("Session found:", session);
+
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          user_roles (
-            role
-          )
-        `)
+        .select("*, user_roles(role)")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching users:", error);
-        throw error;
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        throw profilesError;
       }
 
-      console.log("Fetched users:", profiles);
-      return profiles;
+      if (!profiles) {
+        console.log("No profiles found");
+        return [];
+      }
+
+      console.log("Fetched profiles:", profiles);
+      return profiles as User[];
     },
   });
 
@@ -160,7 +173,7 @@ const UsersPage = () => {
                 </h3>
                 <p className="text-sm text-gray-600">{user.email}</p>
                 <div className="flex gap-2 mt-1">
-                  {user.user_roles?.map((role: { role: string }, index: number) => (
+                  {user.user_roles?.map((role, index) => (
                     <span
                       key={`${user.id}-${role.role}-${index}`}
                       className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs"
