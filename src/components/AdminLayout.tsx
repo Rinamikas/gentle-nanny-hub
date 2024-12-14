@@ -27,7 +27,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           isSidebarOpen ? "w-64" : "w-16"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-[#7C3AED]">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-[#7C3AED]">
           <h1
             className={cn(
               "font-semibold text-white transition-opacity",
@@ -59,8 +59,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               <item.icon className="h-5 w-5 mr-2" />
               <span
                 className={cn(
-                  "transition-opacity",
-                  isSidebarOpen ? "opacity-100" : "opacity-0"
+                  "transition-opacity whitespace-nowrap",
+                  isSidebarOpen ? "opacity-100" : "opacity-0 w-0"
                 )}
               >
                 {item.label}
