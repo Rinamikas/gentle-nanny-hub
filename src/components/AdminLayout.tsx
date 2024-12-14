@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, User, Users, Home } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import LoadingScreen from "./LoadingScreen";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
   const navigate = useNavigate();
 
   const menuItems = [
@@ -17,6 +19,21 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: Users, label: "Пользователи", path: "/users" },
     { icon: Home, label: "Семьи и дети", path: "/families" },
   ];
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      setShowLoading(true);
+      // Задержка в 2.5 секунды
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      navigate("/auth");
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  if (showLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -40,7 +57,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="text-white hover:text-white hover:bg-[#7C3AED]"
+            className={cn(
+              "text-white hover:text-white hover:bg-[#7C3AED]",
+              !isSidebarOpen && "absolute left-1/2 -translate-x-1/2"
+            )}
           >
             <Menu className="h-5 w-5" />
           </Button>
