@@ -37,12 +37,12 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       // Обновляем статус кода
-      const { data: updateData, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: "verified" })
         .eq("id", codes[0].id);
 
-      console.log("Результат обновления статуса:", { updateData, updateError });
+      console.log("Результат обновления статуса:", { updateError });
       if (updateError) throw updateError;
 
       // Создаем сессию для пользователя
@@ -83,16 +83,16 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     <div className="space-y-4">
       <div className="space-y-2">
         <InputOTP
+          maxLength={6}
           value={otp}
           onChange={(value) => {
             console.log("OTP value changed:", value);
             setOtp(value);
           }}
-          maxLength={6}
           render={({ slots }) => (
             <InputOTPGroup>
               {slots.map((slot, index) => (
-                <InputOTPSlot key={index} index={index} {...slot} />
+                <InputOTPSlot key={index} {...slot} />
               ))}
             </InputOTPGroup>
           )}

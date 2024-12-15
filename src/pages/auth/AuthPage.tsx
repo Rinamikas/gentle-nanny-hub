@@ -8,9 +8,9 @@ const AuthPage = () => {
   const [showVerification, setShowVerification] = useState(false);
   const navigate = useNavigate();
 
-  const handleEmailSubmit = async (email: string) => {
-    console.log("Email submitted, showing verification form for:", email);
-    setEmail(email);
+  const handleEmailSubmit = async (submittedEmail: string) => {
+    console.log("Email submitted, showing verification form for:", submittedEmail);
+    setEmail(submittedEmail);
     setShowVerification(true);
   };
 
