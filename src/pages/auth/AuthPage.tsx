@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import EmailForm from "./EmailForm";
+import { EmailForm } from "./EmailForm";
 import VerificationForm from "./VerificationForm";
 
 const AuthPage = () => {

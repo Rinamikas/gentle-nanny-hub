@@ -4,7 +4,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 
-export const EmailForm = () => {
+interface EmailFormProps {
+  onEmailSubmit: (email: string) => void;
+}
+
+export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -87,6 +91,8 @@ export const EmailForm = () => {
         title: "Код отправлен",
         description: "Проверьте вашу электронную почту",
       });
+
+      onEmailSubmit(email);
 
     } catch (error) {
       console.error("Ошибка в процессе отправки кода:", error);
