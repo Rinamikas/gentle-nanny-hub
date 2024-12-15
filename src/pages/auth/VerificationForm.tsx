@@ -22,7 +22,21 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // Сначала запускаем тест для проверки работы с БД
       await testVerificationFlow();
       
-      // Делаем простой запрос без сравнения даты
+      // Проверяем все коды для этого email
+      console.log("Проверяем все коды для:", email);
+      const { data: allCodes, error: allCodesError } = await supabase
+        .from("verification_codes")
+        .select("*")
+        .eq("email", email);
+
+      if (allCodesError) {
+        console.error("Ошибка при проверке всех кодов:", allCodesError);
+        throw allCodesError;
+      }
+      console.log("Все найденные коды:", allCodes);
+
+      // Теперь проверяем конкретный код
+      console.log("Проверяем конкретный код:", otp);
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
         .select("*")
@@ -34,7 +48,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (selectError) {
         console.error("Ошибка при проверке кода:", selectError);
-        throw new Error("Ошибка при проверке кода верификации");
+        throw selectError;
       }
 
       if (!codes || codes.length === 0) {
@@ -42,12 +56,16 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код");
       }
 
-      // Теперь проверяем срок действия отдельно
+      // Проверяем срок действия
       const code = codes[0];
       const now = new Date();
       const expiresAt = new Date(code.expires_at);
 
-      console.log("Проверка срока действия:", { now, expiresAt });
+      console.log("Проверка срока действия:", {
+        now: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        isExpired: now > expiresAt
+      });
 
       if (now > expiresAt) {
         console.error("Код просрочен");
