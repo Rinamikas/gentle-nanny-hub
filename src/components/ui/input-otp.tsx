@@ -32,18 +32,14 @@ const InputOTPSlot = React.forwardRef<
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
+  const { slots = [] } = inputOTPContext || {}
   
   if (!inputOTPContext) {
     console.error("InputOTPSlot must be used within an OTPInput component")
     return null
   }
 
-  if (!inputOTPContext.slots || !Array.isArray(inputOTPContext.slots)) {
-    console.error("OTP slots are not properly initialized")
-    return null
-  }
-
-  const slot = inputOTPContext.slots[index]
+  const slot = slots[index]
   if (!slot) {
     console.error(`No slot found at index ${index}`)
     return null
