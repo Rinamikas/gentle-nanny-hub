@@ -19,26 +19,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
-  const runTest = async () => {
-    setIsTesting(true);
-    try {
-      await testVerificationFlow();
-      toast({
-        title: "Тест завершен",
-        description: "Проверьте консоль для деталей",
-      });
-    } catch (error) {
-      console.error("Ошибка при запуске теста:", error);
-      toast({
-        title: "Ошибка теста",
-        description: "Проверьте консоль для деталей",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   const handleVerification = async (value: string) => {
     if (value.length !== 6) return;
     
@@ -82,31 +62,44 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw updateError;
       }
 
-      // Проверяем существование пользователя
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      console.log("Проверка существующего профиля:", { profiles, profileError });
-
-      // Если профиль существует, создаем магическую ссылку
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Отправляем магическую ссылку и ждем создания сессии
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email: email,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            email: email,
+          }
+        }
       });
+
+      console.log("Результат отправки магической ссылки:", { signInData, signInError });
 
       if (signInError) {
         console.error("Ошибка входа:", signInError);
         throw signInError;
       }
 
+      // Подписываемся на изменение состояния авторизации
+      const authListener = supabase.auth.onAuthStateChange((event, session) => {
+        console.log("Изменение состояния авторизации:", event, session);
+        
+        if (event === 'SIGNED_IN' && session) {
+          console.log("Пользователь успешно вошел в систему");
+          toast({
+            title: "Успешная авторизация",
+            description: "Вы успешно вошли в систему",
+          });
+          onVerificationSuccess();
+          authListener.data.subscription.unsubscribe();
+        }
+      });
+
       toast({
-        title: "Успешная авторизация",
+        title: "Код подтвержден",
         description: "На ваш email отправлена ссылка для входа",
       });
       
-      onVerificationSuccess();
     } catch (error: any) {
       console.error('Ошибка при проверке кода:', error);
       toast({
@@ -117,6 +110,26 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       setCode("");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const runTest = async () => {
+    setIsTesting(true);
+    try {
+      await testVerificationFlow();
+      toast({
+        title: "Тест завершен",
+        description: "Проверьте консоль для деталей",
+      });
+    } catch (error) {
+      console.error("Ошибка при запуске теста:", error);
+      toast({
+        title: "Ошибка теста",
+        description: "Проверьте консоль для деталей",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
     }
   };
 
