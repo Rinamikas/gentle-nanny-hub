@@ -63,12 +63,12 @@ describe('Authentication Flow', () => {
     vi.spyOn(supabase.auth, 'signInWithOtp').mockResolvedValue({
       data: { user: mockUser, session: mockSession },
       error: null
-    });
+    } as any);
 
     vi.spyOn(supabase.auth, 'getSession').mockResolvedValue({
       data: { session: mockSession },
       error: null
-    });
+    } as any);
 
     // Simulate verification process
     const { data: { session }, error } = await supabase.auth.getSession();
