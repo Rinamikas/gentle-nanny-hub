@@ -30,23 +30,23 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("status", "pending")
         .gt("expires_at", now)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
       console.log("Результат проверки кода:", { codes, selectError });
 
       if (selectError) {
-        if (selectError.code === 'PGRST116') {
-          throw new Error("Неверный или просроченный код");
-        }
         throw selectError;
+      }
+
+      if (!codes || codes.length === 0) {
+        throw new Error("Неверный или просроченный код");
       }
 
       // Обновляем статус кода на verified
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: "verified" })
-        .eq("id", codes.id);
+        .eq("id", codes[0].id);
 
       console.log("Результат обновления статуса:", { updateError });
       if (updateError) throw updateError;
