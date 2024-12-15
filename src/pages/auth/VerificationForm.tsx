@@ -22,18 +22,19 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // Сначала запускаем тест для проверки работы с БД
       await testVerificationFlow();
       
-      // Проверяем все коды для этого email
-      console.log("Проверяем все коды для:", email);
+      // Проверяем все активные коды для этого email
+      console.log("Проверяем все активные коды для:", email);
       const { data: allCodes, error: allCodesError } = await supabase
         .from("verification_codes")
         .select("*")
-        .eq("email", email);
+        .eq("email", email)
+        .eq("status", "pending");
 
       if (allCodesError) {
         console.error("Ошибка при проверке всех кодов:", allCodesError);
         throw allCodesError;
       }
-      console.log("Все найденные коды:", allCodes);
+      console.log("Все найденные активные коды:", allCodes);
 
       // Теперь проверяем конкретный код
       console.log("Проверяем конкретный код:", otp);
@@ -42,7 +43,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .select("*")
         .eq("email", email)
         .eq("code", otp)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
 
       console.log("Результат проверки кода:", { codes, selectError });
 
