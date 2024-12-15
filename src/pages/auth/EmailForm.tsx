@@ -1,28 +1,28 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 
-interface EmailFormProps {
-  onEmailSubmit: (email: string) => void;
-}
-
-const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
-  const [email, setEmail] = useState("");
+export const EmailForm = () => {
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    console.log("Начинаем процесс отправки кода для:", email);
-    
-    try {
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
+    console.log("Начало процесса отправки кода подтверждения");
 
-      // Проверяем существующие коды
-      console.log("Проверяем существующие коды для:", email);
+    try {
+      // Генерация 6-значного кода
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+      console.log("Проверка существующих кодов для:", email);
+      
+      // Проверка существующих кодов
       const { data: existingCodes, error: checkError } = await supabase
         .from('verification_codes')
         .select('*')
@@ -31,15 +31,14 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (checkError) {
         console.error("Ошибка при проверке существующих кодов:", checkError);
-        throw new Error("Не удалось проверить существующие коды");
+        throw new Error("Ошибка при проверке существующих кодов");
       }
 
-      console.log("Результат проверки кодов:", existingCodes);
+      console.log("Найдено существующих кодов:", existingCodes?.length);
 
       // Если есть существующие коды, удаляем их
       if (existingCodes && existingCodes.length > 0) {
-        console.log("Найдено существующих кодов:", existingCodes.length);
-        console.log("Удаляем старые коды для:", email);
+        console.log("Удаление старых кодов для:", email);
         
         const { error: deleteError } = await supabase
           .from('verification_codes')
@@ -49,12 +48,12 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
         if (deleteError) {
           console.error("Ошибка при удалении старых кодов:", deleteError);
-          // Продолжаем выполнение, даже если удаление не удалось
+          throw new Error("Ошибка при удалении старых кодов");
         }
       }
 
-      // Сохраняем новый код в базе данных
-      console.log("Сохраняем новый код верификации");
+      // Сохранение нового кода
+      console.log("Сохранение нового кода для:", email);
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -66,33 +65,35 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (insertError) {
         console.error("Ошибка при сохранении кода:", insertError);
-        throw new Error("Не удалось сохранить код верификации");
+        throw new Error("Ошибка при сохранении кода");
       }
 
-      // Отправляем email через Edge Function
-      console.log("Отправляем код на email");
-      const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
-        body: { to: email, code: verificationCode }
+      console.log("Код успешно сохранен, отправка OTP");
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          data: {
+            verification_code: verificationCode
+          }
+        }
       });
 
-      if (sendError) {
-        console.error("Ошибка при отправке email:", sendError);
-        throw new Error("Не удалось отправить код на email");
+      if (signInError) {
+        console.error("Ошибка при отправке OTP:", signInError);
+        throw new Error("Ошибка при отправке кода подтверждения");
       }
 
-      console.log("Код успешно создан и отправлен");
       toast({
-        title: "Код подтверждения отправлен",
-        description: "Пожалуйста, проверьте вашу почту",
+        title: "Код отправлен",
+        description: "Проверьте вашу электронную почту",
       });
-      
-      onEmailSubmit(email);
-    } catch (error: any) {
-      console.error('Ошибка отправки кода:', error);
+
+    } catch (error) {
+      console.error("Ошибка в процессе отправки кода:", error);
       toast({
-        title: "Ошибка",
-        description: error.message || "Не удалось отправить код подтверждения",
         variant: "destructive",
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Произошла ошибка при отправке кода",
       });
     } finally {
       setIsLoading(false);
@@ -100,7 +101,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-sm">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Input
           type="email"
@@ -108,14 +109,11 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full"
         />
       </div>
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading}>
         {isLoading ? "Отправка..." : "Отправить код"}
       </Button>
     </form>
   );
 };
-
-export default EmailForm;
