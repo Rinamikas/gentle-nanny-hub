@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import LoadingScreen from "./LoadingScreen";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -11,7 +12,7 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showLoading, setShowLoading] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,17 +29,45 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     }
 
     console.log("Starting auth check...");
-    setShowLoading(true);
+    
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking auth:", error);
+          navigate("/auth");
+          return;
+        }
 
-    const timer = setTimeout(() => {
-      console.log("Auth check timeout completed, redirecting to /auth");
-      setShowLoading(false);
-      navigate("/auth");
-    }, 2500);
+        if (!session) {
+          console.log("No session found, redirecting to /auth");
+          navigate("/auth");
+        } else {
+          console.log("Session found:", session);
+          setShowLoading(false);
+        }
+      } catch (error) {
+        console.error("Error in auth check:", error);
+        navigate("/auth");
+      }
+    };
+
+    // Подписываемся на изменения состояния авторизации
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        console.log("Auth state changed: no session");
+        navigate("/auth");
+      }
+    });
+
+    checkAuth();
 
     return () => {
-      console.log("Cleaning up auth check timer");
-      clearTimeout(timer);
+      console.log("Cleaning up auth subscriptions");
+      subscription.unsubscribe();
     };
   }, [navigate, location]);
 
