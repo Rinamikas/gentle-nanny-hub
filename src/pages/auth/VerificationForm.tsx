@@ -91,12 +91,11 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           }}
           render={({ slots }) => (
             <InputOTPGroup>
-              {slots.map((slot, index) => (
-                <InputOTPSlot key={index} index={index} {...slot} />
+              {Array.from({ length: 6 }, (_, i) => (
+                <InputOTPSlot key={i} index={i} {...(slots[i] || { char: '', isActive: false, hasFakeCaret: false })} />
               ))}
             </InputOTPGroup>
           )}
-          containerClassName="gap-2 flex items-center"
         />
       </div>
       <Button
