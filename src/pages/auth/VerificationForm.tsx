@@ -18,7 +18,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Сначала проверяем, существует ли действительный код в базе данных
+      // Сначала проверяем код в базе данных
       const { data: codes, error: fetchError } = await supabase
         .from("verification_codes")
         .select("*")
@@ -39,7 +39,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или истек срок его действия");
       }
 
-      // Если код найден, пытаемся верифицировать через auth API
+      console.log("Код найден в БД, пытаемся верифицировать через auth API");
+
+      // Если код валиден, пытаемся верифицировать через auth API
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
@@ -48,10 +50,13 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (verifyError) {
         console.error("Ошибка при верификации OTP:", verifyError);
+        
+        // Проверяем специфические ошибки
         if (verifyError.message?.includes('expired')) {
           throw new Error("Срок действия кода истек. Пожалуйста, запросите новый код");
         }
-        throw verifyError;
+        
+        throw new Error("Ошибка при проверке кода. Пожалуйста, попробуйте снова");
       }
 
       // После успешной верификации обновляем статус кода
@@ -75,9 +80,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     } catch (error: any) {
       console.error("Ошибка при проверке кода:", error);
       toast({
+        variant: "destructive",
         title: "Ошибка",
         description: error.message || "Не удалось проверить код",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
