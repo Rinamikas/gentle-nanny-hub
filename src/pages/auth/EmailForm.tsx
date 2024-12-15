@@ -21,18 +21,32 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
 
-      // Удаляем старые коды для этого email
-      console.log("Удаляем старые коды для:", email);
-      const { error: deleteError } = await supabase
+      // Сначала проверяем существующие коды
+      console.log("Проверяем существующие коды для:", email);
+      const { data: existingCodes, error: checkError } = await supabase
         .from('verification_codes')
-        .delete()
+        .select('id')
         .eq('email', email);
 
-      if (deleteError) {
-        console.error("Ошибка при удалении старых кодов:", deleteError);
-        // Продолжаем выполнение, так как это некритичная ошибка
+      if (checkError) {
+        console.error("Ошибка при проверке существующих кодов:", checkError);
       } else {
-        console.log("Старые коды успешно удалены");
+        console.log("Найдено существующих кодов:", existingCodes?.length);
+        
+        // Если есть существующие коды, пытаемся их удалить
+        if (existingCodes && existingCodes.length > 0) {
+          console.log("Удаляем старые коды для:", email);
+          const { error: deleteError } = await supabase
+            .from('verification_codes')
+            .delete()
+            .eq('email', email);
+
+          if (deleteError) {
+            console.error("Ошибка при удалении старых кодов:", deleteError);
+          } else {
+            console.log("Старые коды успешно удалены");
+          }
+        }
       }
 
       // Сохраняем новый код в базе данных
@@ -45,18 +59,23 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           expires_at: expiresAt.toISOString(),
         });
 
-      console.log("Результат сохранения кода:", { insertError });
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Ошибка при сохранении кода:", insertError);
+        throw insertError;
+      }
 
       // Отправляем email через Edge Function
       console.log("Отправляем код на email");
-      const { error } = await supabase.functions.invoke('send-verification-email', {
+      const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
         body: { to: email, code: verificationCode }
       });
 
-      console.log("Результат отправки email:", { error });
-      if (error) throw error;
+      if (sendError) {
+        console.error("Ошибка при отправке email:", sendError);
+        throw sendError;
+      }
 
+      console.log("Код успешно создан и отправлен");
       toast({
         title: "Код подтверждения отправлен",
         description: "Пожалуйста, проверьте вашу почту",
