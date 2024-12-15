@@ -46,7 +46,8 @@ export async function testVerificationFlow() {
       .eq('email', testEmail)
       .eq('code', testCode)
       .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString());
+      .gt('expires_at', new Date().toISOString())
+      .limit(1);
 
     if (selectError) {
       console.error("Select error:", selectError);
@@ -59,8 +60,7 @@ export async function testVerificationFlow() {
     const { data: verifyData, error: verifyError } = await supabase
       .from('verification_codes')
       .update({ status: 'verified' })
-      .eq('email', testEmail)
-      .eq('code', testCode)
+      .eq('id', codes[0].id)
       .select();
 
     if (verifyError) {

@@ -69,33 +69,55 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       // Обновляем статус кода
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
         .eq('id', codes[0].id)
         .select();
+
+      console.log("Результат обновления статуса:", { updateData, updateError });
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса:", updateError);
         throw updateError;
       }
 
-      // Создаем сессию
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      // Пробуем сначала войти
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: email,
         password: value,
-        options: {
-          data: {
-            email: email
-          }
-        }
       });
 
-      console.log("Результат регистрации:", { signUpData, signUpError });
+      if (signInError) {
+        console.log("Пользователь не найден, создаем нового:", signInError);
+        // Если пользователя нет, создаем его
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email,
+          password: value,
+          options: {
+            data: {
+              email: email
+            }
+          }
+        });
 
-      if (signUpError) {
-        console.error("Ошибка регистрации:", signUpError);
-        throw signUpError;
+        console.log("Результат регистрации:", { signUpData, signUpError });
+
+        if (signUpError) {
+          console.error("Ошибка регистрации:", signUpError);
+          throw signUpError;
+        }
+
+        // Если регистрация успешна, пробуем сразу войти
+        const { error: autoSignInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: value,
+        });
+
+        if (autoSignInError) {
+          console.error("Ошибка автоматического входа:", autoSignInError);
+          throw autoSignInError;
+        }
       }
 
       toast({
