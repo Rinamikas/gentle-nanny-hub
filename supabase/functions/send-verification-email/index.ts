@@ -14,14 +14,20 @@ interface EmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY is not set");
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
     const { to, code }: EmailRequest = await req.json();
     
-    console.log("Sending verification email to:", to);
+    console.log("Attempting to send verification email to:", to);
     
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -30,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Nanny System <noreply@yourdomain.com>",
+        from: "Nanny System <noreply@resend.dev>",
         to: [to],
         subject: "Код подтверждения",
         html: `
@@ -43,21 +49,25 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
+    const responseData = await res.json();
+    console.log("Resend API response:", responseData);
+
     if (!res.ok) {
-      const error = await res.text();
-      console.error("Error sending email:", error);
-      throw new Error(error);
+      console.error("Error from Resend API:", responseData);
+      throw new Error(responseData.message || "Failed to send email");
     }
 
-    const data = await res.json();
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error in send-verification-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: "Check if RESEND_API_KEY is properly configured"
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
