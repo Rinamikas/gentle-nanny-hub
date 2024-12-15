@@ -82,47 +82,28 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw updateError;
       }
 
-      // Пробуем сначала войти
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Проверяем существование пользователя
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      console.log("Проверка существующего профиля:", { profiles, profileError });
+
+      // Если профиль существует, создаем магическую ссылку
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email: email,
-        password: value,
       });
 
       if (signInError) {
-        console.log("Пользователь не найден, создаем нового:", signInError);
-        // Если пользователя нет, создаем его
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: email,
-          password: value,
-          options: {
-            data: {
-              email: email
-            }
-          }
-        });
-
-        console.log("Результат регистрации:", { signUpData, signUpError });
-
-        if (signUpError) {
-          console.error("Ошибка регистрации:", signUpError);
-          throw signUpError;
-        }
-
-        // Если регистрация успешна, пробуем сразу войти
-        const { error: autoSignInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: value,
-        });
-
-        if (autoSignInError) {
-          console.error("Ошибка автоматического входа:", autoSignInError);
-          throw autoSignInError;
-        }
+        console.error("Ошибка входа:", signInError);
+        throw signInError;
       }
 
       toast({
         title: "Успешная авторизация",
-        description: "Добро пожаловать в систему",
+        description: "На ваш email отправлена ссылка для входа",
       });
       
       onVerificationSuccess();
