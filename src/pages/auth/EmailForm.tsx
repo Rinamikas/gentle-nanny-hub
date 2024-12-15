@@ -84,6 +84,10 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (sendError) {
         console.error("Ошибка при отправке кода:", sendError);
+        // Проверяем, является ли ошибка превышением лимита
+        if (sendError.message?.includes('429') || sendError.message?.includes('rate_limit')) {
+          throw new Error("Пожалуйста, подождите 50 секунд перед повторной отправкой кода");
+        }
         throw new Error("Ошибка при отправке кода");
       }
 
@@ -101,6 +105,10 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (signInError) {
         console.error("Ошибка при создании сессии:", signInError);
+        // Проверяем, является ли ошибка превышением лимита
+        if (signInError.message?.includes('429') || signInError.message?.includes('rate_limit')) {
+          throw new Error("Пожалуйста, подождите 50 секунд перед повторной отправкой кода");
+        }
         throw new Error("Ошибка при создании сессии");
       }
 
