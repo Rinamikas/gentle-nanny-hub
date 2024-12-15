@@ -20,6 +20,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
 
+      // Сохраняем код в базе данных
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -29,6 +30,13 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         });
 
       if (insertError) throw insertError;
+
+      // Отправляем email через Edge Function
+      const { error } = await supabase.functions.invoke('send-verification-email', {
+        body: { to: email, code: verificationCode }
+      });
+
+      if (error) throw error;
 
       toast({
         title: "Код подтверждения отправлен",
