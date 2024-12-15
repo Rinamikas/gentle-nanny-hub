@@ -21,8 +21,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     if (value.length !== 6) return;
     
     setIsLoading(true);
+    console.log("Начинаем проверку кода:", value, "для email:", email);
     
     try {
+      // Сначала проверяем код в базе данных
       const { data: codes, error: selectError } = await supabase
         .from('verification_codes')
         .select('*')
@@ -33,24 +35,48 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (selectError) throw selectError;
+      console.log("Результат проверки кода:", { codes, selectError });
+
+      if (selectError) {
+        console.error("Ошибка при проверке кода:", selectError);
+        throw selectError;
+      }
 
       if (!codes || codes.length === 0) {
+        console.error("Код не найден или просрочен");
         throw new Error('Неверный или просроченный код подтверждения');
       }
 
+      // Если код верный, создаем сессию
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: value, // Используем код как временный пароль
+      });
+
+      console.log("Результат входа:", { signInData, signInError });
+
+      if (signInError) {
+        // Если ошибка входа, пробуем создать пользователя
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email,
+          password: value,
+        });
+
+        console.log("Результат регистрации:", { signUpData, signUpError });
+
+        if (signUpError) throw signUpError;
+      }
+
+      // Обновляем статус кода только после успешной авторизации
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
         .eq('id', codes[0].id);
 
-      if (updateError) throw updateError;
-
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-      });
-
-      if (signInError) throw signInError;
+      if (updateError) {
+        console.error("Ошибка при обновлении статуса кода:", updateError);
+        throw updateError;
+      }
 
       toast({
         title: "Успешная авторизация",
@@ -59,7 +85,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       
       onVerificationSuccess();
     } catch (error: any) {
-      console.error('Error verifying code:', error);
+      console.error('Ошибка при проверке кода:', error);
       toast({
         title: "Ошибка",
         description: error.message || "Неверный код подтверждения",
