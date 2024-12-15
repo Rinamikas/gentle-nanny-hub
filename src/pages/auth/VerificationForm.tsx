@@ -34,6 +34,12 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         console.error("Ошибка при проверке всех кодов:", allCodesError);
         throw allCodesError;
       }
+      
+      if (!allCodes || allCodes.length === 0) {
+        console.log("Нет активных кодов для:", email);
+        throw new Error("Нет активных кодов верификации. Пожалуйста, запросите новый код.");
+      }
+      
       console.log("Все найденные активные коды:", allCodes);
 
       // Теперь проверяем конкретный код
@@ -44,8 +50,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("email", email)
         .eq("code", otp)
         .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: false });
 
       console.log("Результат проверки кода:", { codes, selectError });
 
