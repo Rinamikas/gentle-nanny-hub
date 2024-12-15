@@ -11,6 +11,7 @@ interface EmailFormProps {
 export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,23 +25,49 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      // Создаем сессию через OTP
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            verification_code: verificationCode
+      // Создаем сессию через OTP с повторными попытками
+      const maxRetries = 3;
+      let signInError = null;
+
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`Попытка ${retryCount + 1} создания OTP сессии для ${email}`);
+          const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              shouldCreateUser: true,
+              data: {
+                verification_code: verificationCode
+              }
+            }
+          });
+
+          if (!error) {
+            signInError = null;
+            break;
           }
+
+          signInError = error;
+          
+          if (error.message?.includes('429') || error.message?.includes('rate_limit')) {
+            throw new Error("Пожалуйста, подождите перед повторной отправкой кода");
+          }
+
+          // Если ошибка не связана с rate limit, пробуем еще раз
+          setRetryCount(prev => prev + 1);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        } catch (e) {
+          if (e.message?.includes('rate_limit')) {
+            throw e;
+          }
+          console.error(`Попытка ${retryCount + 1} не удалась:`, e);
+          signInError = e;
         }
-      });
+      }
 
       if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
-        if (signInError.message?.includes('429') || signInError.message?.includes('rate_limit')) {
-          throw new Error("Пожалуйста, подождите перед повторной отправкой кода");
-        }
-        throw signInError;
+        console.error("Все попытки создания OTP сессии не удались:", signInError);
+        throw new Error("Не удалось отправить код подтверждения. Пожалуйста, попробуйте позже");
       }
 
       console.log("Сохранение нового кода для:", email);
@@ -78,6 +105,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         description: "Проверьте вашу электронную почту",
       });
 
+      setRetryCount(0);
       onEmailSubmit(email);
 
     } catch (error) {
@@ -103,7 +131,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           required
         />
       </div>
-      <Button type="submit" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading || retryCount >= 3}>
         {isLoading ? "Отправка..." : "Отправить код"}
       </Button>
     </form>
