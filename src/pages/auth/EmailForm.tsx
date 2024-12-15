@@ -22,6 +22,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
 
       // Удаляем старые коды для этого email
+      console.log("Удаляем старые коды для:", email);
       const { error: deleteError } = await supabase
         .from('verification_codes')
         .delete()
@@ -29,10 +30,13 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (deleteError) {
         console.error("Ошибка при удалении старых кодов:", deleteError);
-        // Продолжаем выполнение, даже если удаление не удалось
+        // Продолжаем выполнение, так как это некритичная ошибка
+      } else {
+        console.log("Старые коды успешно удалены");
       }
 
       // Сохраняем новый код в базе данных
+      console.log("Сохраняем новый код верификации");
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -45,6 +49,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       if (insertError) throw insertError;
 
       // Отправляем email через Edge Function
+      console.log("Отправляем код на email");
       const { error } = await supabase.functions.invoke('send-verification-email', {
         body: { to: email, code: verificationCode }
       });
