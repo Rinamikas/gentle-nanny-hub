@@ -39,16 +39,16 @@ export async function testVerificationFlow() {
 
     // Проверяем RLS политики
     console.log("2. Checking RLS policies...");
-    const { data: policies, error: policiesError } = await supabase
+    const { data: hasAccess, error: accessError } = await supabase
       .rpc('check_verification_code_access', {
         p_email: testEmail
       });
 
-    if (policiesError) {
-      console.error("Error checking RLS policies:", policiesError);
-      throw policiesError;
+    if (accessError) {
+      console.error("Error checking RLS policies:", accessError);
+      throw accessError;
     }
-    console.log("RLS policies check result:", policies);
+    console.log("RLS policies check result:", hasAccess);
 
     console.log("=== Test Completed Successfully ===");
     return true;

@@ -189,6 +189,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      check_verification_code_access: {
+        Args: {
+          p_email: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       user_role: "nanny" | "owner" | "admin" | "parent"
