@@ -18,7 +18,28 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Верифицируем OTP
+      // Сначала проверяем, существует ли действительный код в базе данных
+      const { data: codes, error: fetchError } = await supabase
+        .from("verification_codes")
+        .select("*")
+        .eq("email", email)
+        .eq("code", otp)
+        .eq("status", "pending")
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (fetchError) {
+        console.error("Ошибка при проверке кода в БД:", fetchError);
+        throw new Error("Ошибка при проверке кода");
+      }
+
+      if (!codes || codes.length === 0) {
+        console.error("Код не найден или истек срок его действия");
+        throw new Error("Неверный код или истек срок его действия");
+      }
+
+      // Если код найден, пытаемся верифицировать через auth API
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
@@ -27,8 +48,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (verifyError) {
         console.error("Ошибка при верификации OTP:", verifyError);
-        if (verifyError.message?.includes('429') || verifyError.message?.includes('rate_limit')) {
-          throw new Error("Пожалуйста, подождите перед повторной попыткой верификации");
+        if (verifyError.message?.includes('expired')) {
+          throw new Error("Срок действия кода истек. Пожалуйста, запросите новый код");
         }
         throw verifyError;
       }
@@ -37,8 +58,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
-        .eq("email", email)
-        .eq("code", otp);
+        .eq("id", codes[0].id);
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса кода:", updateError);
