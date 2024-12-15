@@ -18,7 +18,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Проверяем код в базе данных
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
         .select("*")
@@ -36,7 +35,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный или просроченный код");
       }
 
-      // Обновляем статус кода
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: "verified" })
@@ -45,7 +43,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("Результат обновления статуса:", { updateError });
       if (updateError) throw updateError;
 
-      // Создаем сессию для пользователя
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
       });
@@ -53,7 +50,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("Успешная регистрация нового пользователя:", data);
       if (error) throw error;
 
-      // Ждем обновления сессии перед редиректом
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
       
@@ -91,8 +87,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           }}
           render={({ slots }) => (
             <InputOTPGroup>
-              {Array.from({ length: 6 }, (_, i) => (
-                <InputOTPSlot key={i} index={i} {...(slots[i] || { char: '', isActive: false, hasFakeCaret: false })} />
+              {slots.map((slot, index) => (
+                <InputOTPSlot key={index} {...slot} />
               ))}
             </InputOTPGroup>
           )}
