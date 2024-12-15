@@ -92,10 +92,11 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           render={({ slots }) => (
             <InputOTPGroup>
               {slots.map((slot, index) => (
-                <InputOTPSlot key={index} index={index} {...slot} />
+                <InputOTPSlot key={index} {...slot} />
               ))}
             </InputOTPGroup>
           )}
+          containerClassName="gap-2 flex items-center"
         />
       </div>
       <Button
