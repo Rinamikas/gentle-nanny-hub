@@ -88,7 +88,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           render={({ slots }) => (
             <InputOTPGroup>
               {slots.map((slot, index) => (
-                <InputOTPSlot key={index} {...slot} />
+                <InputOTPSlot key={index} index={index} {...slot} />
               ))}
             </InputOTPGroup>
           )}
