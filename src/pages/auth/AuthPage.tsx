@@ -9,11 +9,13 @@ const AuthPage = () => {
   const navigate = useNavigate();
 
   const handleEmailSubmit = (email: string) => {
+    console.log("Email submitted, showing verification form for:", email);
     setEmail(email);
     setShowVerification(true);
   };
 
   const handleVerificationSuccess = () => {
+    console.log("Verification successful, navigating to home");
     navigate("/");
   };
 
