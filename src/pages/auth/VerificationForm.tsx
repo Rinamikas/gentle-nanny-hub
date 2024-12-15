@@ -18,41 +18,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Сначала делаем простой запрос для проверки доступа
-      console.log("Выполняем тестовый запрос к таблице verification_codes");
-      const { data: testData, error: testError } = await supabase
-        .from("verification_codes")
-        .select("*")
-        .limit(1);
-
-      console.log("Результат тестового запроса:", { testData, testError });
-
-      // Проверяем наличие активных кодов с подробным логированием
-      console.log("Проверяем активные коды для email:", email);
-      const { data: activeCodes, error: activeCodesError } = await supabase
-        .from("verification_codes")
-        .select("*")
-        .eq("email", email)
-        .eq("status", 'pending');
-
-      console.log("Результат проверки активных кодов:", {
-        data: activeCodes,
-        error: activeCodesError,
-        sql: `SELECT * FROM verification_codes WHERE email = '${email}' AND status = 'pending'`
-      });
-
-      if (activeCodesError) {
-        console.error("Ошибка при проверке активных кодов:", activeCodesError);
-        throw new Error("Ошибка при проверке кодов верификации");
-      }
-
-      if (!activeCodes || activeCodes.length === 0) {
-        console.log("Нет активных кодов для:", email);
-        throw new Error("Нет активных кодов верификации. Пожалуйста, запросите новый код.");
-      }
-
-      // Проверяем конкретный код
-      console.log("Проверяем конкретный код:", otp);
+      // Проверяем код в базе данных
+      console.log("Проверяем код в базе данных");
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
         .select("*")
@@ -91,19 +58,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Код просрочен");
       }
 
-      // Создаем сессию через OTP
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true
-        }
-      });
-
-      if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
-        throw signInError;
-      }
-
       // Верифицируем OTP
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
@@ -113,19 +67,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (verifyError) {
         console.error("Ошибка при верификации OTP:", verifyError);
+        if (verifyError.message?.includes('429') || verifyError.message?.includes('rate_limit')) {
+          throw new Error("Пожалуйста, подождите перед повторной попыткой верификации");
+        }
         throw verifyError;
-      }
-
-      // Проверяем сессию
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error("Ошибка при проверке сессии:", sessionError);
-        throw sessionError;
-      }
-      
-      if (!session) {
-        throw new Error("Не удалось создать сессию");
       }
 
       // Обновляем статус кода на verified
