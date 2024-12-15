@@ -52,12 +52,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       if (updateError) throw updateError;
 
       // Создаем сессию через OTP
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
+      const { data: signInData, error: signInError } = await supabase.auth.verifyOtp({
         email,
-        code: otp,
-        options: {
-          shouldCreateUser: true
-        }
+        token: otp,
+        type: 'email'
       });
 
       console.log("Результат создания сессии через OTP:", { signInData, signInError });
