@@ -25,13 +25,16 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       console.log("Проверяем существующие коды для:", email);
       const { data: existingCodes, error: checkError } = await supabase
         .from('verification_codes')
-        .select('id')
-        .eq('email', email);
+        .select('*')
+        .eq('email', email)
+        .eq('status', 'pending');
 
       if (checkError) {
         console.error("Ошибка при проверке существующих кодов:", checkError);
         throw new Error("Не удалось проверить существующие коды");
       }
+
+      console.log("Результат проверки кодов:", existingCodes);
 
       // Если есть существующие коды, удаляем их
       if (existingCodes && existingCodes.length > 0) {
@@ -41,7 +44,8 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         const { error: deleteError } = await supabase
           .from('verification_codes')
           .delete()
-          .eq('email', email);
+          .eq('email', email)
+          .eq('status', 'pending');
 
         if (deleteError) {
           console.error("Ошибка при удалении старых кодов:", deleteError);
@@ -57,6 +61,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           email,
           code: verificationCode,
           expires_at: expiresAt.toISOString(),
+          status: 'pending'
         });
 
       if (insertError) {
