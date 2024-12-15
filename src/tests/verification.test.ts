@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-async function testVerificationFlow() {
+export async function testVerificationFlow() {
   const email = "test@example.com";
   const code = "123456";
   
@@ -66,6 +66,3 @@ async function testVerificationFlow() {
 
   console.log("=== Test Complete ===");
 }
-
-// Запускаем тест
-testVerificationFlow();

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/input-otp";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { testVerificationFlow } from "@/tests/verification.test";
 
 interface VerificationFormProps {
   email: string;
@@ -16,6 +17,27 @@ interface VerificationFormProps {
 const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProps) => {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const runTest = async () => {
+    setIsTesting(true);
+    try {
+      await testVerificationFlow();
+      toast({
+        title: "Тест завершен",
+        description: "Проверьте консоль для деталей",
+      });
+    } catch (error) {
+      console.error("Ошибка при запуске теста:", error);
+      toast({
+        title: "Ошибка теста",
+        description: "Проверьте консоль для деталей",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleVerification = async (value: string) => {
     if (value.length !== 6) return;
@@ -132,6 +154,17 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       >
         {isLoading ? "Проверка..." : "Подтвердить"}
       </Button>
+      
+      {process.env.NODE_ENV === 'development' && (
+        <Button
+          onClick={runTest}
+          variant="outline"
+          className="w-full mt-4"
+          disabled={isTesting}
+        >
+          {isTesting ? "Тестирование..." : "Запустить тест верификации"}
+        </Button>
+      )}
     </div>
   );
 };
