@@ -23,7 +23,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     setIsLoading(true);
     
     try {
-      // Проверяем код в базе данных
       const { data: codes, error: selectError } = await supabase
         .from('verification_codes')
         .select('*')
@@ -40,7 +39,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error('Неверный или просроченный код подтверждения');
       }
 
-      // Обновляем статус кода
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
@@ -48,7 +46,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (updateError) throw updateError;
 
-      // Создаем сессию для пользователя
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
       });
@@ -80,25 +77,22 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         <p className="text-sm text-muted-foreground text-center">
           Код подтверждения отправлен на {email}
         </p>
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center space-y-4">
           <InputOTP
-            value={code}
-            onChange={setCode}
             maxLength={6}
+            value={code}
+            onChange={(value) => {
+              console.log("OTP value changed:", value);
+              setCode(value);
+            }}
             onComplete={handleVerification}
-            render={({ slots }) => (
-              <InputOTPGroup className="gap-2">
-                {slots.map((slot, index) => (
-                  <InputOTPSlot 
-                    key={index} 
-                    {...slot} 
-                    index={index}
-                    className="w-10 h-12 text-lg"
-                  />
-                ))}
-              </InputOTPGroup>
-            )}
-          />
+          >
+            <InputOTPGroup>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <InputOTPSlot key={index} index={index} className="w-10 h-12 text-lg" />
+              ))}
+            </InputOTPGroup>
+          </InputOTP>
         </div>
       </div>
       <Button
