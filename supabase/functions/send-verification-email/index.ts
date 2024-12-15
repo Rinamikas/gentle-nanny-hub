@@ -14,7 +14,6 @@ interface EmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -29,10 +28,6 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("Attempting to send verification email to:", to);
     
-    // В тестовом режиме отправляем только на fnormal@gmail.com
-    const testMode = true; // Установите в false после подтверждения домена
-    const recipient = testMode ? "fnormal@gmail.com" : to;
-    
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -40,15 +35,14 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Nanny System <onboarding@resend.dev>", // Измените на ваш домен после подтверждения
-        to: [recipient],
+        from: "Nanny System <nanny@rnmka.ru>",
+        to: [to],
         subject: "Код подтверждения",
         html: `
           <div>
             <h1>Код подтверждения для входа</h1>
             <p>Ваш код подтверждения: <strong>${code}</strong></p>
             <p>Код действителен в течение 30 минут.</p>
-            ${testMode ? `<p>Тестовый режим: оригинальный email - ${to}</p>` : ''}
           </div>
         `,
       }),

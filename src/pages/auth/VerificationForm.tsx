@@ -80,19 +80,21 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         <p className="text-sm text-muted-foreground">
           Код подтверждения отправлен на {email}
         </p>
-        <InputOTP
-          value={code}
-          onChange={setCode}
-          maxLength={6}
-          onComplete={handleVerification}
-          render={({ slots }) => (
-            <InputOTPGroup>
-              {slots.map((slot, index) => (
-                <InputOTPSlot key={index} {...slot} index={index} />
-              ))}
-            </InputOTPGroup>
-          )}
-        />
+        <div className="flex justify-center">
+          <InputOTP
+            value={code}
+            onChange={setCode}
+            maxLength={6}
+            onComplete={handleVerification}
+            render={({ slots }) => (
+              <InputOTPGroup>
+                {slots.map((slot, index) => (
+                  <InputOTPSlot key={index} {...slot} index={index} />
+                ))}
+              </InputOTPGroup>
+            )}
+          />
+        </div>
       </div>
       <Button
         onClick={() => handleVerification(code)}
