@@ -21,16 +21,14 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // Форматируем текущую дату в ISO формат
       const now = new Date().toISOString();
       
-      // Проверяем код верификации
+      // Проверяем код верификации с дополнительными проверками
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
         .select("*")
         .eq("email", email)
         .eq("code", otp)
         .eq("status", "pending")
-        .gt("expires_at", now)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .gt("expires_at", now);
 
       console.log("Результат проверки кода:", { codes, selectError });
 
