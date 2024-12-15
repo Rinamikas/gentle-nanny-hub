@@ -15,12 +15,24 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log("Начинаем процесс отправки кода для:", email);
     
     try {
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
 
-      // Сохраняем код в базе данных
+      // Удаляем старые коды для этого email
+      const { error: deleteError } = await supabase
+        .from('verification_codes')
+        .delete()
+        .eq('email', email);
+
+      if (deleteError) {
+        console.error("Ошибка при удалении старых кодов:", deleteError);
+        throw deleteError;
+      }
+
+      // Сохраняем новый код в базе данных
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -29,6 +41,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           expires_at: expiresAt.toISOString(),
         });
 
+      console.log("Результат сохранения кода:", { insertError });
       if (insertError) throw insertError;
 
       // Отправляем email через Edge Function
@@ -36,6 +49,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         body: { to: email, code: verificationCode }
       });
 
+      console.log("Результат отправки email:", { error });
       if (error) throw error;
 
       toast({
@@ -45,7 +59,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       
       onEmailSubmit(email);
     } catch (error: any) {
-      console.error('Error sending verification code:', error);
+      console.error('Ошибка отправки кода:', error);
       toast({
         title: "Ошибка",
         description: error.message || "Не удалось отправить код подтверждения",

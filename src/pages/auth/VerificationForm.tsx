@@ -24,7 +24,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", value, "для email:", email);
     
     try {
-      // Сначала проверяем код в базе данных
+      // Проверяем код в базе данных
       const { data: codes, error: selectError } = await supabase
         .from('verification_codes')
         .select('*')
@@ -32,25 +32,33 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq('code', value)
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .single();
 
       console.log("Результат проверки кода:", { codes, selectError });
 
       if (selectError) {
+        if (selectError.code === 'PGRST116') {
+          throw new Error('Неверный или просроченный код подтверждения');
+        }
         console.error("Ошибка при проверке кода:", selectError);
         throw selectError;
       }
 
-      if (!codes || codes.length === 0) {
-        console.error("Код не найден или просрочен");
-        throw new Error('Неверный или просроченный код подтверждения');
+      // Если код верный, обновляем его статус
+      const { error: updateError } = await supabase
+        .from('verification_codes')
+        .update({ status: 'verified' })
+        .eq('id', codes.id);
+
+      if (updateError) {
+        console.error("Ошибка при обновлении статуса кода:", updateError);
+        throw updateError;
       }
 
-      // Если код верный, создаем сессию
+      // Создаем сессию для пользователя
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: email,
-        password: value, // Используем код как временный пароль
+        password: value,
       });
 
       console.log("Результат входа:", { signInData, signInError });
@@ -65,17 +73,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         console.log("Результат регистрации:", { signUpData, signUpError });
 
         if (signUpError) throw signUpError;
-      }
-
-      // Обновляем статус кода только после успешной авторизации
-      const { error: updateError } = await supabase
-        .from('verification_codes')
-        .update({ status: 'verified' })
-        .eq('id', codes[0].id);
-
-      if (updateError) {
-        console.error("Ошибка при обновлении статуса кода:", updateError);
-        throw updateError;
       }
 
       toast({
