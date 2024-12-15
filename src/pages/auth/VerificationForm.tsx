@@ -75,9 +75,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   };
 
   return (
-    <div className="space-y-4 w-full max-w-sm">
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-6 w-full max-w-sm mx-auto">
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground text-center">
           Код подтверждения отправлен на {email}
         </p>
         <div className="flex justify-center">
@@ -87,9 +87,14 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
             maxLength={6}
             onComplete={handleVerification}
             render={({ slots }) => (
-              <InputOTPGroup>
+              <InputOTPGroup className="gap-2">
                 {slots.map((slot, index) => (
-                  <InputOTPSlot key={index} {...slot} index={index} />
+                  <InputOTPSlot 
+                    key={index} 
+                    {...slot} 
+                    index={index}
+                    className="w-10 h-12 text-lg"
+                  />
                 ))}
               </InputOTPGroup>
             )}
