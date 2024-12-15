@@ -17,11 +17,18 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     setIsLoading(true);
     
     try {
-      const response = await supabase.functions.invoke('verify-email', {
-        body: { email }
-      });
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
 
-      if (response.error) throw response.error;
+      const { error: insertError } = await supabase
+        .from('verification_codes')
+        .insert({
+          email,
+          code: verificationCode,
+          expires_at: expiresAt.toISOString(),
+        });
+
+      if (insertError) throw insertError;
 
       toast({
         title: "Код подтверждения отправлен",
@@ -30,6 +37,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       
       onEmailSubmit(email);
     } catch (error: any) {
+      console.error('Error sending verification code:', error);
       toast({
         title: "Ошибка",
         description: error.message || "Не удалось отправить код подтверждения",

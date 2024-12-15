@@ -150,6 +150,36 @@ export type Database = {
           },
         ]
       }
+      verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          status: Database["public"]["Enums"]["verification_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          status?: Database["public"]["Enums"]["verification_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["verification_status"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -159,6 +189,7 @@ export type Database = {
     }
     Enums: {
       user_role: "nanny" | "owner" | "admin" | "parent"
+      verification_status: "pending" | "verified" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never

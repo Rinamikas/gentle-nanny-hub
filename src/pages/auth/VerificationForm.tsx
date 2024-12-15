@@ -18,14 +18,42 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   const [isLoading, setIsLoading] = useState(false);
 
   const handleVerification = async (value: string) => {
+    if (value.length !== 6) return;
+    
     setIsLoading(true);
     
     try {
-      const response = await supabase.functions.invoke('verify-email', {
-        body: { email, code: value }
+      // Проверяем код в базе данных
+      const { data: codes, error: selectError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', email)
+        .eq('code', value)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (selectError) throw selectError;
+
+      if (!codes || codes.length === 0) {
+        throw new Error('Неверный или просроченный код подтверждения');
+      }
+
+      // Обновляем статус кода
+      const { error: updateError } = await supabase
+        .from('verification_codes')
+        .update({ status: 'verified' })
+        .eq('id', codes[0].id);
+
+      if (updateError) throw updateError;
+
+      // Создаем сессию для пользователя
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
       });
 
-      if (response.error) throw response.error;
+      if (signInError) throw signInError;
 
       toast({
         title: "Успешная авторизация",
@@ -34,6 +62,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       
       onVerificationSuccess();
     } catch (error: any) {
+      console.error('Error verifying code:', error);
       toast({
         title: "Ошибка",
         description: error.message || "Неверный код подтверждения",
