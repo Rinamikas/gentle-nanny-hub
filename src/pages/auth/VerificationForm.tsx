@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { testVerificationFlow } from "@/tests/verification.test";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface VerificationFormProps {
   email: string;
@@ -15,159 +10,100 @@ interface VerificationFormProps {
 }
 
 const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProps) => {
-  const [code, setCode] = useState("");
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
 
-  const handleVerification = async (value: string) => {
-    if (value.length !== 6) return;
-    
+  const handleVerification = async () => {
     setIsLoading(true);
-    console.log("Начинаем проверку кода:", value, "для email:", email);
-    
+    console.log("Начинаем проверку кода:", otp, "для email:", email);
+
     try {
-      // Проверяем код
+      // Проверяем код в базе данных
       const { data: codes, error: selectError } = await supabase
-        .from('verification_codes')
-        .select('*')
-        .eq('email', email)
-        .eq('code', value)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
+        .from("verification_codes")
+        .select("*")
+        .eq("email", email)
+        .eq("code", otp)
+        .eq("status", "pending")
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
         .limit(1);
 
       console.log("Результат проверки кода:", { codes, selectError });
 
-      if (selectError) {
-        console.error("Ошибка при проверке кода:", selectError);
-        throw selectError;
-      }
-
+      if (selectError) throw selectError;
       if (!codes || codes.length === 0) {
-        throw new Error('Неверный или просроченный код подтверждения');
+        throw new Error("Неверный или просроченный код");
       }
 
       // Обновляем статус кода
       const { data: updateData, error: updateError } = await supabase
-        .from('verification_codes')
-        .update({ status: 'verified' })
-        .eq('id', codes[0].id)
-        .select();
+        .from("verification_codes")
+        .update({ status: "verified" })
+        .eq("id", codes[0].id);
 
       console.log("Результат обновления статуса:", { updateData, updateError });
-
-      if (updateError) {
-        console.error("Ошибка при обновлении статуса:", updateError);
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
       // Создаем сессию для пользователя
-      const { data: sessionData, error: sessionError } = await supabase.auth.signUp({
-        email: email,
-        password: value + email, // Используем комбинацию кода и email как пароль
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
       });
 
-      if (sessionError) {
-        // Если пользователь уже существует, пробуем войти
-        if (sessionError.message === "User already registered") {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: value + email,
-          });
+      console.log("Успешная регистрация нового пользователя:", data);
+      if (error) throw error;
 
-          if (signInError) {
-            console.error("Ошибка входа:", signInError);
-            throw signInError;
-          }
-
-          console.log("Успешный вход существующего пользователя:", signInData);
-        } else {
-          console.error("Ошибка создания сессии:", sessionError);
-          throw sessionError;
-        }
-      } else {
-        console.log("Успешная регистрация нового пользователя:", sessionData);
+      // Ждем обновления сессии перед редиректом
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      
+      if (!session) {
+        throw new Error("Не удалось создать сессию");
       }
 
       toast({
-        title: "Успешная авторизация",
-        description: "Вы успешно вошли в систему",
+        title: "Успешно!",
+        description: "Вы успешно авторизовались",
       });
-      
+
       onVerificationSuccess();
     } catch (error: any) {
-      console.error('Ошибка при проверке кода:', error);
+      console.error("Ошибка при проверке кода:", error);
       toast({
         title: "Ошибка",
-        description: error.message || "Неверный код подтверждения",
+        description: error.message || "Не удалось проверить код",
         variant: "destructive",
       });
-      setCode("");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const runTest = async () => {
-    setIsTesting(true);
-    try {
-      await testVerificationFlow();
-      toast({
-        title: "Тест завершен",
-        description: "Проверьте консоль для деталей",
-      });
-    } catch (error) {
-      console.error("Ошибка при запуске теста:", error);
-      toast({
-        title: "Ошибка теста",
-        description: "Проверьте консоль для деталей",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   return (
-    <div className="space-y-6 w-full max-w-sm mx-auto">
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground text-center">
-          Код подтверждения отправлен на {email}
-        </p>
-        <div className="flex flex-col items-center space-y-4">
-          <InputOTP
-            maxLength={6}
-            value={code}
-            onChange={(value) => {
-              console.log("OTP value changed:", value);
-              setCode(value);
-            }}
-            onComplete={handleVerification}
-          >
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <InputOTP
+          value={otp}
+          onChange={(value) => {
+            console.log("OTP value changed:", value);
+            setOtp(value);
+          }}
+          maxLength={6}
+          render={({ slots }) => (
             <InputOTPGroup>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <InputOTPSlot key={index} index={index} className="w-10 h-12 text-lg" />
+              {slots.map((slot, index) => (
+                <InputOTPSlot key={index} {...slot} />
               ))}
             </InputOTPGroup>
-          </InputOTP>
-        </div>
+          )}
+        />
       </div>
       <Button
-        onClick={() => handleVerification(code)}
+        onClick={handleVerification}
         className="w-full"
-        disabled={code.length !== 6 || isLoading}
+        disabled={isLoading || otp.length !== 6}
       >
         {isLoading ? "Проверка..." : "Подтвердить"}
-      </Button>
-      
-      <Button
-        onClick={runTest}
-        variant="outline"
-        className="w-full mt-4"
-        disabled={isTesting}
-      >
-        {isTesting ? "Тестирование..." : "Запустить тест верификации"}
       </Button>
     </div>
   );
