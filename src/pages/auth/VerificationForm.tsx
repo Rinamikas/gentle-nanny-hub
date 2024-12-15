@@ -24,21 +24,15 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", value, "для email:", email);
     
     try {
-      // Сначала получаем все коды для отладки
-      const { data: allCodes, error: debugError } = await supabase
-        .from('verification_codes')
-        .select('*')
-        .eq('email', email);
-
-      console.log("Все коды для этого email:", { allCodes, debugError });
-
-      // Теперь проверяем конкретный код
+      // Проверяем код
       const { data: codes, error: selectError } = await supabase
         .from('verification_codes')
         .select('*')
         .eq('email', email)
         .eq('code', value)
-        .gt('expires_at', new Date().toISOString());
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
 
       console.log("Результат проверки кода:", { codes, selectError });
 
@@ -48,38 +42,44 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       if (!codes || codes.length === 0) {
+        // Для отладки получаем все коды
+        const { data: allCodes } = await supabase
+          .from('verification_codes')
+          .select('*')
+          .eq('email', email);
+        
+        console.log("Все коды для отладки:", allCodes);
         throw new Error('Неверный или просроченный код подтверждения');
       }
 
-      // Если код верный, обновляем его статус
+      // Обновляем статус кода
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
         .eq('id', codes[0].id);
 
       if (updateError) {
-        console.error("Ошибка при обновлении статуса кода:", updateError);
+        console.error("Ошибка при обновлении статуса:", updateError);
         throw updateError;
       }
 
-      // Создаем сессию для пользователя
+      // Создаем сессию
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: email,
         password: value,
       });
 
-      console.log("Результат входа:", { signInData, signInError });
-
       if (signInError) {
-        // Если ошибка входа, пробуем создать пользователя
+        console.log("Ошибка входа, пробуем создать пользователя:", signInError);
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: email,
           password: value,
         });
 
-        console.log("Результат регистрации:", { signUpData, signUpError });
-
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          console.error("Ошибка регистрации:", signUpError);
+          throw signUpError;
+        }
       }
 
       toast({
