@@ -155,16 +155,14 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         {isLoading ? "Проверка..." : "Подтвердить"}
       </Button>
       
-      {process.env.NODE_ENV === 'development' && (
-        <Button
-          onClick={runTest}
-          variant="outline"
-          className="w-full mt-4"
-          disabled={isTesting}
-        >
-          {isTesting ? "Тестирование..." : "Запустить тест верификации"}
-        </Button>
-      )}
+      <Button
+        onClick={runTest}
+        variant="outline"
+        className="w-full mt-4"
+        disabled={isTesting}
+      >
+        {isTesting ? "Тестирование..." : "Запустить тест верификации"}
+      </Button>
     </div>
   );
 };
