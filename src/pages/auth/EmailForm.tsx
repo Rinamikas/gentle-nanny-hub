@@ -21,7 +21,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60000); // 30 минут
 
-      // Сначала проверяем существующие коды
+      // Проверяем существующие коды
       console.log("Проверяем существующие коды для:", email);
       const { data: existingCodes, error: checkError } = await supabase
         .from('verification_codes')
@@ -30,22 +30,22 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (checkError) {
         console.error("Ошибка при проверке существующих кодов:", checkError);
-      } else {
-        console.log("Найдено существующих кодов:", existingCodes?.length);
-        
-        // Если есть существующие коды, пытаемся их удалить
-        if (existingCodes && existingCodes.length > 0) {
-          console.log("Удаляем старые коды для:", email);
-          const { error: deleteError } = await supabase
-            .from('verification_codes')
-            .delete()
-            .eq('email', email);
+        throw new Error("Не удалось проверить существующие коды");
+      }
 
-          if (deleteError) {
-            console.error("Ошибка при удалении старых кодов:", deleteError);
-          } else {
-            console.log("Старые коды успешно удалены");
-          }
+      // Если есть существующие коды, удаляем их
+      if (existingCodes && existingCodes.length > 0) {
+        console.log("Найдено существующих кодов:", existingCodes.length);
+        console.log("Удаляем старые коды для:", email);
+        
+        const { error: deleteError } = await supabase
+          .from('verification_codes')
+          .delete()
+          .eq('email', email);
+
+        if (deleteError) {
+          console.error("Ошибка при удалении старых кодов:", deleteError);
+          // Продолжаем выполнение, даже если удаление не удалось
         }
       }
 
@@ -61,7 +61,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (insertError) {
         console.error("Ошибка при сохранении кода:", insertError);
-        throw insertError;
+        throw new Error("Не удалось сохранить код верификации");
       }
 
       // Отправляем email через Edge Function
@@ -72,7 +72,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (sendError) {
         console.error("Ошибка при отправке email:", sendError);
-        throw sendError;
+        throw new Error("Не удалось отправить код на email");
       }
 
       console.log("Код успешно создан и отправлен");
