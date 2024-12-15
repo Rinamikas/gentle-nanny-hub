@@ -36,6 +36,12 @@ export async function testVerificationFlow() {
       console.error("Error checking all codes:", allCodesError);
       throw allCodesError;
     }
+    
+    if (!allCodes || allCodes.length === 0) {
+      console.log("No active codes found for:", testEmail);
+      return false;
+    }
+    
     console.log("All pending codes for email:", allCodes);
 
     // Проверяем RLS политики

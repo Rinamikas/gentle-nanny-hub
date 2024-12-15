@@ -19,38 +19,31 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Сначала запускаем тест для проверки работы с БД
-      await testVerificationFlow();
-      
-      // Проверяем все активные коды для этого email
-      console.log("Проверяем все активные коды для:", email);
-      const { data: allCodes, error: allCodesError } = await supabase
+      // Сначала проверяем наличие активных кодов
+      const { data: activeCodes, error: activeCodesError } = await supabase
         .from("verification_codes")
         .select("*")
         .eq("email", email)
         .eq("status", "pending");
 
-      if (allCodesError) {
-        console.error("Ошибка при проверке всех кодов:", allCodesError);
-        throw allCodesError;
+      if (activeCodesError) {
+        console.error("Ошибка при проверке активных кодов:", activeCodesError);
+        throw new Error("Ошибка при проверке кодов верификации");
       }
-      
-      if (!allCodes || allCodes.length === 0) {
+
+      if (!activeCodes || activeCodes.length === 0) {
         console.log("Нет активных кодов для:", email);
         throw new Error("Нет активных кодов верификации. Пожалуйста, запросите новый код.");
       }
-      
-      console.log("Все найденные активные коды:", allCodes);
 
-      // Теперь проверяем конкретный код
+      // Проверяем конкретный код
       console.log("Проверяем конкретный код:", otp);
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
         .select("*")
         .eq("email", email)
         .eq("code", otp)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
+        .eq("status", "pending");
 
       console.log("Результат проверки кода:", { codes, selectError });
 
@@ -64,7 +57,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код");
       }
 
-      // Проверяем срок действия
       const code = codes[0];
       const now = new Date();
       const expiresAt = new Date(code.expires_at);
@@ -80,29 +72,26 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Код просрочен");
       }
 
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
+      // Создаем сессию через OTP
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: true
         }
       });
 
-      console.log("Результат создания сессии через OTP:", { signInData, signInError });
-      
       if (signInError) {
         console.error("Ошибка при создании сессии:", signInError);
         throw signInError;
       }
 
-      // После создания сессии верифицируем OTP
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+      // Верифицируем OTP
+      const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: 'email'
       });
 
-      console.log("Результат верификации OTP:", { verifyData, verifyError });
-      
       if (verifyError) {
         console.error("Ошибка при верификации OTP:", verifyError);
         throw verifyError;
@@ -110,7 +99,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // Проверяем сессию
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log("Финальная проверка сессии:", { session, sessionError });
       
       if (sessionError) {
         console.error("Ошибка при проверке сессии:", sessionError);
@@ -121,16 +109,14 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Не удалось создать сессию");
       }
 
-      // Удаляем использованный код верификации
-      const { error: deleteError } = await supabase
+      // Обновляем статус кода на verified
+      const { error: updateError } = await supabase
         .from("verification_codes")
-        .delete()
+        .update({ status: 'verified' })
         .eq("id", code.id);
 
-      console.log("Результат удаления кода:", { deleteError });
-      
-      if (deleteError) {
-        console.error("Ошибка при удалении кода:", deleteError);
+      if (updateError) {
+        console.error("Ошибка при обновлении статуса кода:", updateError);
         // Не выбрасываем ошибку, так как верификация уже прошла успешно
       }
 
