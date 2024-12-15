@@ -40,19 +40,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       if (!codes || codes.length === 0) {
+        console.error("Код не найден или просрочен");
         throw new Error("Неверный или просроченный код");
-      }
-
-      // Обновляем статус кода на verified
-      const { error: updateError } = await supabase
-        .from("verification_codes")
-        .update({ status: "verified" })
-        .eq("id", codes[0].id);
-
-      console.log("Результат обновления статуса:", { updateError });
-      if (updateError) {
-        console.error("Ошибка при обновлении статуса:", updateError);
-        throw updateError;
       }
 
       // Создаем сессию через OTP
@@ -95,6 +84,19 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       
       if (!session) {
         throw new Error("Не удалось создать сессию");
+      }
+
+      // Удаляем использованный код верификации
+      const { error: deleteError } = await supabase
+        .from("verification_codes")
+        .delete()
+        .eq("id", codes[0].id);
+
+      console.log("Результат удаления кода:", { deleteError });
+      
+      if (deleteError) {
+        console.error("Ошибка при удалении кода:", deleteError);
+        // Не выбрасываем ошибку, так как верификация уже прошла успешно
       }
 
       toast({
