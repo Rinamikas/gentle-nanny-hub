@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { testVerificationFlow } from "@/tests/verification.test";
 
 interface VerificationFormProps {
   email: string;
@@ -18,6 +19,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
+      // Сначала запускаем тест для проверки работы с БД
+      await testVerificationFlow();
+      
       // Делаем простой запрос без сравнения даты
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
@@ -50,7 +54,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Код просрочен");
       }
 
-      // Создаем сессию через OTP
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -111,6 +114,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       });
 
       onVerificationSuccess();
+
     } catch (error: any) {
       console.error("Ошибка при проверке кода:", error);
       toast({
