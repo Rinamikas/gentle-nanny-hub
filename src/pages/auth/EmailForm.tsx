@@ -27,8 +27,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         .from('verification_codes')
         .select('*')
         .eq('email', email)
-        .eq('status', 'pending')
-        .headers({ 'email': email });
+        .eq('status', 'pending');
 
       if (checkError) {
         console.error("Ошибка при проверке существующих кодов:", checkError);
@@ -46,8 +45,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           .from('verification_codes')
           .delete()
           .eq('email', email)
-          .eq('status', 'pending')
-          .headers({ 'email': email });
+          .eq('status', 'pending');
 
         if (deleteError) {
           console.error("Ошибка при удалении старых кодов:", deleteError);
@@ -64,8 +62,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           code: verificationCode,
           expires_at: expiresAt.toISOString(),
           status: 'pending'
-        })
-        .headers({ 'email': email });
+        });
 
       if (insertError) {
         console.error("Ошибка при сохранении кода:", insertError);
