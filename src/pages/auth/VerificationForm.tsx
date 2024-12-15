@@ -51,27 +51,18 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("Результат обновления статуса:", { updateError });
       if (updateError) throw updateError;
 
-      // Создаем сессию через signInWithPassword
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Создаем сессию через OTP
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password: otp,
+        token: otp,
+        options: {
+          shouldCreateUser: true
+        }
       });
 
-      console.log("Результат создания сессии через пароль:", { signInData, signInError });
-
-      if (signInError) {
-        console.log("Пробуем создать сессию через OTP...");
-        // Если не удалось войти через пароль, пробуем через OTP
-        const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: true
-          }
-        });
-
-        if (otpError) throw otpError;
-        console.log("Результат создания сессии через OTP:", { otpData });
-      }
+      console.log("Результат создания сессии через OTP:", { signInData, signInError });
+      
+      if (signInError) throw signInError;
 
       // Ждем немного, чтобы сессия успела установиться
       await new Promise(resolve => setTimeout(resolve, 1000));
