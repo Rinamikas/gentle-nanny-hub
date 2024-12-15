@@ -24,39 +24,25 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      console.log("Проверка существующих кодов для:", email);
-      
-      // Проверка существующих кодов
-      const { data: existingCodes, error: checkError } = await supabase
-        .from('verification_codes')
-        .select('*')
-        .eq('email', email)
-        .eq('status', 'pending');
-
-      if (checkError) {
-        console.error("Ошибка при проверке существующих кодов:", checkError);
-        throw new Error("Ошибка при проверке существующих кодов");
-      }
-
-      console.log("Найдено существующих кодов:", existingCodes?.length);
-
-      // Если есть существующие коды, удаляем их
-      if (existingCodes && existingCodes.length > 0) {
-        console.log("Удаление старых кодов для:", email);
-        
-        const { error: deleteError } = await supabase
-          .from('verification_codes')
-          .delete()
-          .eq('email', email)
-          .eq('status', 'pending');
-
-        if (deleteError) {
-          console.error("Ошибка при удалении старых кодов:", deleteError);
-          throw new Error("Ошибка при удалении старых кодов");
+      // Создаем сессию через OTP
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            verification_code: verificationCode
+          }
         }
+      });
+
+      if (signInError) {
+        console.error("Ошибка при создании сессии:", signInError);
+        if (signInError.message?.includes('429') || signInError.message?.includes('rate_limit')) {
+          throw new Error("Пожалуйста, подождите перед повторной отправкой кода");
+        }
+        throw signInError;
       }
 
-      // Сохранение нового кода
       console.log("Сохранение нового кода для:", email);
       const { error: insertError } = await supabase
         .from('verification_codes')
@@ -84,32 +70,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (sendError) {
         console.error("Ошибка при отправке кода:", sendError);
-        // Проверяем, является ли ошибка превышением лимита
-        if (sendError.message?.includes('429') || sendError.message?.includes('rate_limit')) {
-          throw new Error("Пожалуйста, подождите 50 секунд перед повторной отправкой кода");
-        }
         throw new Error("Ошибка при отправке кода");
-      }
-
-      // Создаем сессию через OTP без отправки email
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            verification_code: verificationCode
-          },
-          emailRedirectTo: window.location.origin
-        }
-      });
-
-      if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
-        // Проверяем, является ли ошибка превышением лимита
-        if (signInError.message?.includes('429') || signInError.message?.includes('rate_limit')) {
-          throw new Error("Пожалуйста, подождите 50 секунд перед повторной отправкой кода");
-        }
-        throw new Error("Ошибка при создании сессии");
       }
 
       toast({

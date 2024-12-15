@@ -18,46 +18,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Проверяем код в базе данных
-      console.log("Проверяем код в базе данных");
-      const { data: codes, error: selectError } = await supabase
-        .from("verification_codes")
-        .select("*")
-        .eq("email", email)
-        .eq("code", otp)
-        .eq("status", "pending");
-
-      console.log("Результат проверки кода:", { 
-        codes, 
-        selectError,
-        sql: `SELECT * FROM verification_codes WHERE email = '${email}' AND code = '${otp}' AND status = 'pending'`
-      });
-
-      if (selectError) {
-        console.error("Ошибка при проверке кода:", selectError);
-        throw selectError;
-      }
-
-      if (!codes || codes.length === 0) {
-        console.error("Код не найден");
-        throw new Error("Неверный код");
-      }
-
-      const code = codes[0];
-      const now = new Date();
-      const expiresAt = new Date(code.expires_at);
-
-      console.log("Проверка срока действия:", {
-        now: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        isExpired: now > expiresAt
-      });
-
-      if (now > expiresAt) {
-        console.error("Код просрочен");
-        throw new Error("Код просрочен");
-      }
-
       // Верифицируем OTP
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
@@ -73,11 +33,12 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw verifyError;
       }
 
-      // Обновляем статус кода на verified
+      // После успешной верификации обновляем статус кода
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
-        .eq("id", code.id);
+        .eq("email", email)
+        .eq("code", otp);
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса кода:", updateError);
