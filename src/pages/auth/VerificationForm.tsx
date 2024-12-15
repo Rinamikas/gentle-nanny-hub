@@ -29,8 +29,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp)
         .eq("status", "pending")
         .gt("expires_at", now)
-        .order("created_at", { ascending: false })
-        .single();
+        .order("created_at", { ascending: false });
 
       console.log("Результат проверки кода:", { codes, selectError });
 
@@ -39,7 +38,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при проверке кода верификации");
       }
 
-      if (!codes) {
+      if (!codes || codes.length === 0) {
         console.error("Код не найден или просрочен");
         throw new Error("Неверный или просроченный код");
       }
@@ -90,7 +89,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       const { error: deleteError } = await supabase
         .from("verification_codes")
         .delete()
-        .eq("id", codes.id);
+        .eq("id", codes[0].id);
 
       console.log("Результат удаления кода:", { deleteError });
       
