@@ -18,18 +18,13 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Форматируем текущую дату в ISO формат
-      const now = new Date().toISOString();
-      
-      // Проверяем код верификации с дополнительными проверками
+      // Делаем простой запрос без сравнения даты
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
         .select("*")
         .eq("email", email)
         .eq("code", otp)
-        .eq("status", "pending")
-        .gt("expires_at", now)
-        .order("created_at", { ascending: false });
+        .eq("status", "pending");
 
       console.log("Результат проверки кода:", { codes, selectError });
 
@@ -39,8 +34,20 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       if (!codes || codes.length === 0) {
-        console.error("Код не найден или просрочен");
-        throw new Error("Неверный или просроченный код");
+        console.error("Код не найден");
+        throw new Error("Неверный код");
+      }
+
+      // Теперь проверяем срок действия отдельно
+      const code = codes[0];
+      const now = new Date();
+      const expiresAt = new Date(code.expires_at);
+
+      console.log("Проверка срока действия:", { now, expiresAt });
+
+      if (now > expiresAt) {
+        console.error("Код просрочен");
+        throw new Error("Код просрочен");
       }
 
       // Создаем сессию через OTP
@@ -89,7 +96,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       const { error: deleteError } = await supabase
         .from("verification_codes")
         .delete()
-        .eq("id", codes[0].id);
+        .eq("id", code.id);
 
       console.log("Результат удаления кода:", { deleteError });
       
