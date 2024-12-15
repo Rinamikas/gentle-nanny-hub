@@ -46,8 +46,7 @@ export async function testVerificationFlow() {
       .eq('email', testEmail)
       .eq('code', testCode)
       .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false });
+      .gt('expires_at', new Date().toISOString());
 
     if (selectError) {
       console.error("Select error:", selectError);

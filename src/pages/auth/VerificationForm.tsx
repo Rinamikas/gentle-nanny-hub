@@ -5,7 +5,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { testVerificationFlow } from "@/tests/verification.test";
 
@@ -54,7 +54,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq('code', value)
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       console.log("Результат проверки кода:", { codes, selectError });
 
@@ -64,13 +65,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       if (!codes || codes.length === 0) {
-        // Для отладки получаем все коды
-        const { data: allCodes } = await supabase
-          .from('verification_codes')
-          .select('*')
-          .eq('email', email);
-        
-        console.log("Все коды для отладки:", allCodes);
         throw new Error('Неверный или просроченный код подтверждения');
       }
 
@@ -78,7 +72,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
-        .eq('id', codes[0].id);
+        .eq('id', codes[0].id)
+        .select();
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса:", updateError);
@@ -86,22 +81,21 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       // Создаем сессию
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: value,
+        options: {
+          data: {
+            email: email
+          }
+        }
       });
 
-      if (signInError) {
-        console.log("Ошибка входа, пробуем создать пользователя:", signInError);
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: email,
-          password: value,
-        });
+      console.log("Результат регистрации:", { signUpData, signUpError });
 
-        if (signUpError) {
-          console.error("Ошибка регистрации:", signUpError);
-          throw signUpError;
-        }
+      if (signUpError) {
+        console.error("Ошибка регистрации:", signUpError);
+        throw signUpError;
       }
 
       toast({
