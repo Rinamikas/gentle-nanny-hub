@@ -29,9 +29,15 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const maxRetries = 3;
       let signInError = null;
 
-      while (retryCount < maxRetries) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          console.log(`Попытка ${retryCount + 1} создания OTP сессии для ${email}`);
+          console.log(`Попытка ${attempt} создания OTP сессии для ${email}`);
+          
+          // Проверяем, не превышен ли лимит попыток
+          if (retryCount >= maxRetries) {
+            throw new Error("Превышено количество попыток. Пожалуйста, подождите несколько минут");
+          }
+
           const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
@@ -49,18 +55,28 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
           signInError = error;
           
+          // Проверяем специфические ошибки
           if (error.message?.includes('429') || error.message?.includes('rate_limit')) {
-            throw new Error("Пожалуйста, подождите перед повторной отправкой кода");
+            throw new Error("Слишком много попыток. Пожалуйста, подождите несколько минут");
           }
 
-          // Если ошибка не связана с rate limit, пробуем еще раз
+          if (error.message?.includes('Load failed')) {
+            console.log(`Ошибка загрузки на попытке ${attempt}, пробуем снова через ${attempt} секунд`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            continue;
+          }
+
           setRetryCount(prev => prev + 1);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-        } catch (e) {
-          if (e.message?.includes('rate_limit')) {
+          
+          // Увеличиваем задержку с каждой попыткой
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        } catch (e: any) {
+          console.error(`Попытка ${attempt} не удалась:`, e);
+          
+          if (e.message?.includes('rate_limit') || e.message?.includes('попыток')) {
             throw e;
           }
-          console.error(`Попытка ${retryCount + 1} не удалась:`, e);
+          
           signInError = e;
         }
       }
@@ -87,7 +103,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       console.log("Код успешно сохранен, отправка через edge function");
       
-      // Отправляем код через нашу edge function
+      // Отправляем код через edge function
       const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
         body: { 
           to: email,
@@ -108,7 +124,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       setRetryCount(0);
       onEmailSubmit(email);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Ошибка в процессе отправки кода:", error);
       toast({
         variant: "destructive",
