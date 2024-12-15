@@ -27,13 +27,13 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       // Создаем сессию через OTP с повторными попытками
       const maxRetries = 3;
-      let signInError = null;
+      let currentAttempt = 1;
+      let success = false;
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      while (currentAttempt <= maxRetries && !success) {
         try {
-          console.log(`Попытка ${attempt} создания OTP сессии для ${email}`);
+          console.log(`Попытка ${currentAttempt} создания OTP сессии для ${email}`);
           
-          // Проверяем, не превышен ли лимит попыток
           if (retryCount >= maxRetries) {
             throw new Error("Превышено количество попыток. Пожалуйста, подождите несколько минут");
           }
@@ -49,41 +49,42 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           });
 
           if (!error) {
-            signInError = null;
-            break;
-          }
+            success = true;
+            console.log(`Успешно создана OTP сессия на попытке ${currentAttempt}`);
+          } else {
+            if (error.message?.includes('429') || error.message?.includes('rate_limit')) {
+              throw new Error("Слишком много попыток. Пожалуйста, подождите несколько минут");
+            }
 
-          signInError = error;
-          
-          // Проверяем специфические ошибки
-          if (error.message?.includes('429') || error.message?.includes('rate_limit')) {
-            throw new Error("Слишком много попыток. Пожалуйста, подождите несколько минут");
-          }
+            // Для ошибки Load failed делаем специальную обработку
+            if (error.message?.includes('Load failed') || error.status === 500) {
+              const delay = Math.min(1000 * Math.pow(2, currentAttempt - 1), 8000); // Экспоненциальная задержка
+              console.log(`Ошибка загрузки на попытке ${currentAttempt}, ждем ${delay}мс перед следующей попыткой`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              currentAttempt++;
+              continue;
+            }
 
-          if (error.message?.includes('Load failed')) {
-            console.log(`Ошибка загрузки на попытке ${attempt}, пробуем снова через ${attempt} секунд`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            continue;
+            throw error;
           }
-
-          setRetryCount(prev => prev + 1);
-          
-          // Увеличиваем задержку с каждой попыткой
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         } catch (e: any) {
-          console.error(`Попытка ${attempt} не удалась:`, e);
+          console.error(`Ошибка на попытке ${currentAttempt}:`, e);
           
           if (e.message?.includes('rate_limit') || e.message?.includes('попыток')) {
             throw e;
           }
           
-          signInError = e;
+          if (currentAttempt === maxRetries) {
+            throw new Error("Не удалось создать сессию после нескольких попыток. Пожалуйста, попробуйте позже");
+          }
+
+          currentAttempt++;
+          setRetryCount(prev => prev + 1);
         }
       }
 
-      if (signInError) {
-        console.error("Все попытки создания OTP сессии не удались:", signInError);
-        throw new Error("Не удалось отправить код подтверждения. Пожалуйста, попробуйте позже");
+      if (!success) {
+        throw new Error("Не удалось создать сессию. Пожалуйста, попробуйте позже");
       }
 
       console.log("Сохранение нового кода для:", email);
@@ -103,7 +104,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       console.log("Код успешно сохранен, отправка через edge function");
       
-      // Отправляем код через edge function
       const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
         body: { 
           to: email,
