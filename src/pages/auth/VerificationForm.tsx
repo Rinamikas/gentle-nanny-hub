@@ -41,18 +41,16 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       console.log("Код найден в БД, пытаемся верифицировать через auth API");
 
-      // Если код валиден, пытаемся верифицировать через auth API
-      const { error: verifyError } = await supabase.auth.verifyOtp({
+      // Если код валиден, создаем новую сессию через signInWithOtp
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         token: otp,
-        type: 'email'
       });
 
-      if (verifyError) {
-        console.error("Ошибка при верификации OTP:", verifyError);
+      if (signInError) {
+        console.error("Ошибка при верификации через signInWithOtp:", signInError);
         
-        // Проверяем специфические ошибки
-        if (verifyError.message?.includes('expired')) {
+        if (signInError.message?.includes('expired')) {
           throw new Error("Срок действия кода истек. Пожалуйста, запросите новый код");
         }
         
@@ -70,6 +68,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         // Не выбрасываем ошибку, так как верификация уже прошла успешно
       }
 
+      console.log("Верификация успешна, обновляем UI");
+      
       toast({
         title: "Успешно!",
         description: "Вы успешно авторизовались",
