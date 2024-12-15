@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { testVerificationFlow } from "@/tests/verification.test";
 
 interface VerificationFormProps {
   email: string;
@@ -19,12 +18,28 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Сначала проверяем наличие активных кодов
+      // Сначала делаем простой запрос для проверки доступа
+      console.log("Выполняем тестовый запрос к таблице verification_codes");
+      const { data: testData, error: testError } = await supabase
+        .from("verification_codes")
+        .select("*")
+        .limit(1);
+
+      console.log("Результат тестового запроса:", { testData, testError });
+
+      // Проверяем наличие активных кодов с подробным логированием
+      console.log("Проверяем активные коды для email:", email);
       const { data: activeCodes, error: activeCodesError } = await supabase
         .from("verification_codes")
         .select("*")
         .eq("email", email)
-        .eq("status", "pending");
+        .eq("status", 'pending');
+
+      console.log("Результат проверки активных кодов:", {
+        data: activeCodes,
+        error: activeCodesError,
+        sql: `SELECT * FROM verification_codes WHERE email = '${email}' AND status = 'pending'`
+      });
 
       if (activeCodesError) {
         console.error("Ошибка при проверке активных кодов:", activeCodesError);
@@ -45,7 +60,11 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp)
         .eq("status", "pending");
 
-      console.log("Результат проверки кода:", { codes, selectError });
+      console.log("Результат проверки кода:", { 
+        codes, 
+        selectError,
+        sql: `SELECT * FROM verification_codes WHERE email = '${email}' AND code = '${otp}' AND status = 'pending'`
+      });
 
       if (selectError) {
         console.error("Ошибка при проверке кода:", selectError);
