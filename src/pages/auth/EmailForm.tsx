@@ -33,17 +33,15 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       }
 
       // Сохраняем новый код в базе данных
-      const { data: insertData, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('verification_codes')
-        .insert([{
+        .insert({
           email,
           code: verificationCode,
           expires_at: expiresAt.toISOString(),
-          status: 'pending'
-        }])
-        .select();
+        });
 
-      console.log("Результат сохранения кода:", { insertData, insertError });
+      console.log("Результат сохранения кода:", { insertError });
       if (insertError) throw insertError;
 
       // Отправляем email через Edge Function
