@@ -24,7 +24,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // Проверяем код верификации
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
-        .select()
+        .select("*")
         .eq("email", email)
         .eq("code", otp)
         .eq("status", "pending")
@@ -35,7 +35,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("Результат проверки кода:", { codes, selectError });
 
       if (selectError) {
-        throw selectError;
+        console.error("Ошибка при проверке кода:", selectError);
+        throw new Error("Ошибка при проверке кода верификации");
       }
 
       if (!codes || codes.length === 0) {
@@ -49,7 +50,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("id", codes[0].id);
 
       console.log("Результат обновления статуса:", { updateError });
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Ошибка при обновлении статуса:", updateError);
+        throw updateError;
+      }
 
       // Создаем сессию через OTP
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
@@ -61,7 +65,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       console.log("Результат создания сессии через OTP:", { signInData, signInError });
       
-      if (signInError) throw signInError;
+      if (signInError) {
+        console.error("Ошибка при создании сессии:", signInError);
+        throw signInError;
+      }
 
       // После создания сессии верифицируем OTP
       const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
@@ -72,13 +79,20 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       console.log("Результат верификации OTP:", { verifyData, verifyError });
       
-      if (verifyError) throw verifyError;
+      if (verifyError) {
+        console.error("Ошибка при верификации OTP:", verifyError);
+        throw verifyError;
+      }
 
       // Проверяем сессию
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log("Финальная проверка сессии:", { session, sessionError });
       
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error("Ошибка при проверке сессии:", sessionError);
+        throw sessionError;
+      }
+      
       if (!session) {
         throw new Error("Не удалось создать сессию");
       }
