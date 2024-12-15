@@ -72,19 +72,36 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         throw new Error("Ошибка при сохранении кода");
       }
 
-      console.log("Код успешно сохранен, отправка OTP");
+      console.log("Код успешно сохранен, отправка через edge function");
+      
+      // Отправляем код через нашу edge function
+      const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
+        body: { 
+          to: email,
+          code: verificationCode
+        }
+      });
+
+      if (sendError) {
+        console.error("Ошибка при отправке кода:", sendError);
+        throw new Error("Ошибка при отправке кода");
+      }
+
+      // Создаем сессию через OTP без отправки email
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
+          shouldCreateUser: true,
           data: {
             verification_code: verificationCode
-          }
+          },
+          emailRedirectTo: window.location.origin
         }
       });
 
       if (signInError) {
-        console.error("Ошибка при отправке OTP:", signInError);
-        throw new Error("Ошибка при отправке кода подтверждения");
+        console.error("Ошибка при создании сессии:", signInError);
+        throw new Error("Ошибка при создании сессии");
       }
 
       toast({
