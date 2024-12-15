@@ -43,23 +43,32 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("Результат обновления статуса:", { updateError });
       if (updateError) throw updateError;
 
-      // Сначала создаем сессию через OTP
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Создаем сессию через signInWithPassword вместо OTP
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
+        password: otp // Используем OTP как временный пароль
       });
 
-      console.log("Результат создания OTP сессии:", { signInError });
-      if (signInError) throw signInError;
+      console.log("Результат создания сессии:", { signInData, signInError });
+      
+      if (signInError) {
+        // Если не получилось войти через пароль, пробуем через OTP
+        const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: true
+          }
+        });
 
-      // Ждем немного, чтобы сессия успела создаться
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log("Результат создания OTP сессии:", { otpData, otpError });
+        if (otpError) throw otpError;
+      }
 
-      // Проверяем, что сессия действительно создалась
+      // Проверяем сессию после всех попыток входа
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log("Финальная проверка сессии:", { session, sessionError });
       
-      console.log("Проверка созданной сессии:", { session, sessionError });
       if (sessionError) throw sessionError;
-      
       if (!session) {
         throw new Error("Не удалось создать сессию");
       }
