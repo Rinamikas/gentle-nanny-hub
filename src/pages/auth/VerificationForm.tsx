@@ -24,31 +24,38 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", value, "для email:", email);
     
     try {
-      // Проверяем код в базе данных
+      // Сначала получаем все коды для отладки
+      const { data: allCodes, error: debugError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', email);
+
+      console.log("Все коды для этого email:", { allCodes, debugError });
+
+      // Теперь проверяем конкретный код
       const { data: codes, error: selectError } = await supabase
         .from('verification_codes')
         .select('*')
         .eq('email', email)
         .eq('code', value)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .single();
+        .gt('expires_at', new Date().toISOString());
 
       console.log("Результат проверки кода:", { codes, selectError });
 
       if (selectError) {
-        if (selectError.code === 'PGRST116') {
-          throw new Error('Неверный или просроченный код подтверждения');
-        }
         console.error("Ошибка при проверке кода:", selectError);
         throw selectError;
+      }
+
+      if (!codes || codes.length === 0) {
+        throw new Error('Неверный или просроченный код подтверждения');
       }
 
       // Если код верный, обновляем его статус
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
-        .eq('id', codes.id);
+        .eq('id', codes[0].id);
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса кода:", updateError);
