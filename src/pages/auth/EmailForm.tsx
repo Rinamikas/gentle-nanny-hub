@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface EmailFormProps {
@@ -29,7 +29,7 @@ const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (deleteError) {
         console.error("Ошибка при удалении старых кодов:", deleteError);
-        throw deleteError;
+        // Продолжаем выполнение, даже если удаление не удалось
       }
 
       // Сохраняем новый код в базе данных
