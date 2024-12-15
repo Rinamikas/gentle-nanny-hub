@@ -62,44 +62,40 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw updateError;
       }
 
-      // Отправляем магическую ссылку и ждем создания сессии
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
+      // Создаем сессию для пользователя
+      const { data: sessionData, error: sessionError } = await supabase.auth.signUp({
         email: email,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            email: email,
-          }
-        }
+        password: value + email, // Используем комбинацию кода и email как пароль
       });
 
-      console.log("Результат отправки магической ссылки:", { signInData, signInError });
+      if (sessionError) {
+        // Если пользователь уже существует, пробуем войти
+        if (sessionError.message === "User already registered") {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: value + email,
+          });
 
-      if (signInError) {
-        console.error("Ошибка входа:", signInError);
-        throw signInError;
+          if (signInError) {
+            console.error("Ошибка входа:", signInError);
+            throw signInError;
+          }
+
+          console.log("Успешный вход существующего пользователя:", signInData);
+        } else {
+          console.error("Ошибка создания сессии:", sessionError);
+          throw sessionError;
+        }
+      } else {
+        console.log("Успешная регистрация нового пользователя:", sessionData);
       }
 
-      // Подписываемся на изменение состояния авторизации
-      const authListener = supabase.auth.onAuthStateChange((event, session) => {
-        console.log("Изменение состояния авторизации:", event, session);
-        
-        if (event === 'SIGNED_IN' && session) {
-          console.log("Пользователь успешно вошел в систему");
-          toast({
-            title: "Успешная авторизация",
-            description: "Вы успешно вошли в систему",
-          });
-          onVerificationSuccess();
-          authListener.data.subscription.unsubscribe();
-        }
-      });
-
       toast({
-        title: "Код подтвержден",
-        description: "На ваш email отправлена ссылка для входа",
+        title: "Успешная авторизация",
+        description: "Вы успешно вошли в систему",
       });
       
+      onVerificationSuccess();
     } catch (error: any) {
       console.error('Ошибка при проверке кода:', error);
       toast({
