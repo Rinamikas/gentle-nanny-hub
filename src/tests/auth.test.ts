@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder, PostgrestBuilder } from '@supabase/postgrest-js';
+import { PostgrestBuilder } from '@supabase/postgrest-js';
 import { Session, User } from '@supabase/supabase-js';
 import { Database } from '@/integrations/supabase/types';
 
@@ -28,7 +28,7 @@ describe('Authentication Flow', () => {
       gt: () => mockBuilder,
       order: () => mockBuilder,
       limit: () => Promise.resolve({ data: [mockCode], error: null })
-    } as unknown as PostgrestBuilder<any, any, VerificationCode[]>;
+    } as unknown as PostgrestBuilder<VerificationCode[]>;
 
     // Mock Supabase client methods
     vi.spyOn(supabase, 'from').mockImplementation(() => ({
@@ -59,7 +59,7 @@ describe('Authentication Flow', () => {
       user: mockUser
     };
 
-    // Mock auth methods
+    // Mock auth methods with proper return types
     vi.spyOn(supabase.auth, 'signInWithOtp').mockResolvedValue({
       data: { session: mockSession, user: mockUser },
       error: null
@@ -89,7 +89,7 @@ describe('Authentication Flow', () => {
       gt: () => mockBuilder,
       order: () => mockBuilder,
       limit: () => Promise.resolve({ data: [], error: null })
-    } as unknown as PostgrestBuilder<any, any, VerificationCode[]>;
+    } as unknown as PostgrestBuilder<VerificationCode[]>;
 
     // Mock Supabase client methods for failure case
     vi.spyOn(supabase, 'from').mockImplementation(() => ({
