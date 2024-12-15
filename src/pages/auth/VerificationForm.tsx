@@ -18,53 +18,52 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
+      // Форматируем текущую дату в ISO формат
+      const now = new Date().toISOString();
+      
+      // Проверяем код верификации
       const { data: codes, error: selectError } = await supabase
         .from("verification_codes")
-        .select("*")
+        .select()
         .eq("email", email)
         .eq("code", otp)
         .eq("status", "pending")
-        .gt("expires_at", new Date().toISOString())
+        .gt("expires_at", now)
         .order("created_at", { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
       console.log("Результат проверки кода:", { codes, selectError });
 
-      if (selectError) throw selectError;
-      if (!codes || codes.length === 0) {
-        throw new Error("Неверный или просроченный код");
+      if (selectError) {
+        if (selectError.code === 'PGRST116') {
+          throw new Error("Неверный или просроченный код");
+        }
+        throw selectError;
       }
 
+      // Обновляем статус кода на verified
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: "verified" })
-        .eq("id", codes[0].id);
+        .eq("id", codes.id);
 
       console.log("Результат обновления статуса:", { updateError });
       if (updateError) throw updateError;
 
-      // Создаем сессию через signInWithPassword вместо OTP
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Пробуем создать сессию через OTP
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password: otp // Используем OTP как временный пароль
+        options: {
+          shouldCreateUser: true
+        }
       });
 
       console.log("Результат создания сессии:", { signInData, signInError });
       
-      if (signInError) {
-        // Если не получилось войти через пароль, пробуем через OTP
-        const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: true
-          }
-        });
+      if (signInError) throw signInError;
 
-        console.log("Результат создания OTP сессии:", { otpData, otpError });
-        if (otpError) throw otpError;
-      }
-
-      // Проверяем сессию после всех попыток входа
+      // Проверяем сессию
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log("Финальная проверка сессии:", { session, sessionError });
       
