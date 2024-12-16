@@ -11,6 +11,7 @@ import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
 import DocumentsSection from "./sections/DocumentsSection";
 import TrainingSection from "./sections/TrainingSection";
 import { formSchema, FormValues } from "../types/form";
+import { DocumentType, NannyDocument } from "../types/documents";
 import { useEffect } from "react";
 
 export default function NannyForm() {
@@ -44,7 +45,7 @@ export default function NannyForm() {
       training_stage: undefined,
     },
   });
-  
+
   const { data: nanny, isLoading } = useQuery({
     queryKey: ["nanny", id],
     queryFn: async () => {
@@ -173,11 +174,11 @@ export default function NannyForm() {
       console.log("Nanny profile updated successfully");
 
       // Обновляем документы
-      const documents = [
-        { type: "criminal_record", file_url: values.criminal_record },
-        { type: "image_usage_consent", file_url: values.image_usage_consent },
-        { type: "medical_book", file_url: values.medical_book },
-        { type: "personal_data_consent", file_url: values.personal_data_consent },
+      const documents: NannyDocument[] = [
+        { type: "criminal_record" as DocumentType, file_url: values.criminal_record },
+        { type: "image_usage_consent" as DocumentType, file_url: values.image_usage_consent },
+        { type: "medical_book" as DocumentType, file_url: values.medical_book },
+        { type: "personal_data_consent" as DocumentType, file_url: values.personal_data_consent },
       ].filter(doc => doc.file_url);
 
       for (const doc of documents) {
