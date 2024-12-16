@@ -2,14 +2,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import PhotoUpload from "../PhotoUpload";
-
-type FormValues = {
-  first_name: string;
-  last_name: string;
-  phone: string;
-  email: string;
-  photo_url?: string;
-};
+import { FormValues } from "../../types/form";
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<FormValues>;

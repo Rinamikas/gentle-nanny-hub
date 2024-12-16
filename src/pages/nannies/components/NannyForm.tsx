@@ -1,6 +1,5 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,19 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
-
-const formSchema = z.object({
-  first_name: z.string().min(2, "Имя должно содержать минимум 2 символа"),
-  last_name: z.string().min(2, "Фамилия должна содержать минимум 2 символа"),
-  phone: z.string().min(10, "Введите корректный номер телефона"),
-  email: z.string().email("Введите корректный email"),
-  experience_years: z.number().min(0, "Опыт работы не может быть отрицательным"),
-  education: z.string().min(10, "Опишите ваше образование подробнее"),
-  hourly_rate: z.number().min(0, "Ставка не может быть отрицательной"),
-  photo_url: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { formSchema, FormValues } from "../types/form";
 
 export default function NannyForm() {
   const { toast } = useToast();
