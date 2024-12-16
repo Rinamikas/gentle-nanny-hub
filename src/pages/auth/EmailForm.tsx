@@ -39,26 +39,22 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         // Проверяем наличие rate limit в теле ответа
         let rateLimitError;
         try {
-          if (err.body) {
-            const errorBody = JSON.parse(err.body);
-            if (errorBody.code === 'over_email_send_rate_limit') {
-              rateLimitError = errorBody;
-            }
+          if (err.error?.body) {
+            rateLimitError = JSON.parse(err.error.body);
+          } else if (typeof err.body === 'string') {
+            rateLimitError = JSON.parse(err.body);
           }
         } catch (e) {
           console.error('Ошибка при парсинге тела ошибки:', e);
         }
         
-        // Если это ошибка rate limit, извлекаем время ожидания и пробрасываем ошибку
-        if (rateLimitError || err.message?.includes('rate_limit') || err.status === 429) {
+        // Если это ошибка rate limit, извлекаем время ожидания
+        if (rateLimitError?.code === 'over_email_send_rate_limit' || err.status === 429) {
           let waitTime = '60';
           
           // Пытаемся извлечь точное время ожидания из сообщения
           if (rateLimitError?.message) {
             const match = rateLimitError.message.match(/\d+/);
-            if (match) waitTime = match[0];
-          } else if (err.message) {
-            const match = err.message.match(/\d+/);
             if (match) waitTime = match[0];
           }
           
