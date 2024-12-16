@@ -43,7 +43,33 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      console.log("1. Сохранение кода верификации в базу");
+      console.log("1. Проверяем существующие коды для email");
+      const { data: existingCodes, error: checkError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', email)
+        .eq('status', 'pending');
+
+      if (checkError) {
+        console.error("Ошибка при проверке существующих кодов:", checkError);
+        throw new Error("Не удалось проверить существующие коды");
+      }
+
+      if (existingCodes && existingCodes.length > 0) {
+        console.log("2. Найдены существующие коды, обновляем их статус");
+        const { error: updateError } = await supabase
+          .from('verification_codes')
+          .update({ status: 'expired' })
+          .eq('email', email)
+          .eq('status', 'pending');
+
+        if (updateError) {
+          console.error("Ошибка при обновлении старых кодов:", updateError);
+          throw new Error("Не удалось обновить старые коды");
+        }
+      }
+
+      console.log("3. Сохранение нового кода верификации");
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -54,7 +80,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         });
 
       if (insertError) {
-        console.error("Ошибка при сохранении кода:", {
+        console.error("4. Ошибка при сохранении кода:", {
           message: insertError.message,
           code: insertError.code,
           details: insertError.details
@@ -62,7 +88,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         throw new Error("Не удалось сохранить код верификации");
       }
 
-      console.log("2. Отправка письма через Resend API");
+      console.log("5. Отправка письма через Resend API");
       const { data: functionData, error: functionError } = await supabase.functions.invoke(
         'send-verification-email',
         {
@@ -74,11 +100,19 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       );
 
       if (functionError) {
-        console.error("Ошибка при отправке письма:", functionError);
+        console.error("6. Ошибка при отправке письма:", functionError);
+        
+        // Помечаем код как failed если не удалось отправить письмо
+        await supabase
+          .from('verification_codes')
+          .update({ status: 'failed' })
+          .eq('email', email)
+          .eq('code', verificationCode);
+          
         throw new Error("Не удалось отправить письмо с кодом");
       }
 
-      console.log("3. Код успешно сохранен и отправлен");
+      console.log("7. Код успешно сохранен и отправлен");
       toast({
         title: "Код отправлен",
         description: "Проверьте вашу электронную почту",
