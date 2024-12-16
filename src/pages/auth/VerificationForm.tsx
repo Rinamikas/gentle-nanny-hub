@@ -45,7 +45,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'email'
+        type: 'signup'
       });
 
       if (verifyError) {
