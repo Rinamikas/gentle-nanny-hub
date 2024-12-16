@@ -67,6 +67,7 @@ export default function PhotoUpload({ onUpload, currentPhotoUrl }: PhotoUploadPr
       )}
       <div>
         <Button
+          type="button"
           variant="outline"
           disabled={uploading}
           onClick={() => document.getElementById('photo')?.click()}

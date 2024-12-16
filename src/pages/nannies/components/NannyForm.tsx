@@ -248,7 +248,7 @@ export default function NannyForm() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4">
         <Button 
           variant="ghost" 
           onClick={handleBack}
@@ -257,10 +257,11 @@ export default function NannyForm() {
           <ArrowLeft className="h-4 w-4" />
           Назад к списку
         </Button>
-        <h1 className="text-2xl font-bold">
-          {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
-        </h1>
       </div>
+      
+      <h1 className="text-2xl font-bold mt-6 mb-6">
+        {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
+      </h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
