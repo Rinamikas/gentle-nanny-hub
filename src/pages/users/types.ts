@@ -7,5 +7,6 @@ export interface User {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  photo_url: string | null;
   user_roles: UserRole[] | null;
 }
