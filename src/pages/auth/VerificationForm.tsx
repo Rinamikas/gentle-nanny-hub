@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { testAuthFlow } from "@/tests/auth-flow.test";
 
 interface VerificationFormProps {
   email: string;
@@ -15,57 +16,62 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
   const handleVerification = async () => {
     setIsLoading(true);
-    console.log("Начинаем проверку кода:", otp, "для email:", email);
+    console.log("=== Starting verification process ===");
+    console.log("Email:", email);
+    console.log("OTP:", otp);
 
     try {
-      // Проверяем существование кода в БД
-      console.log("Проверяем код в базе данных");
-      const { data: codes, error: fetchError } = await supabase
-        .from("verification_codes")
-        .select("*")
-        .eq("email", email)
-        .eq("code", otp)
-        .eq("status", "pending")
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1);
+      // Запускаем тест процесса аутентификации
+      console.log("Running auth flow test");
+      const { hasValidCode, initialSession } = await testAuthFlow(email, otp);
+      console.log("Auth flow test results:", { hasValidCode, initialSession });
 
-      if (fetchError) {
-        console.error("Ошибка при поиске кода:", fetchError);
-        throw new Error("Ошибка при проверке кода");
-      }
-
-      if (!codes || codes.length === 0) {
-        console.error("Код не найден или истек");
+      if (!hasValidCode) {
         throw new Error("Неверный код или срок его действия истек");
       }
 
       // Верифицируем OTP
-      console.log("Верифицируем OTP");
-      const { error: verifyError } = await supabase.auth.verifyOtp({
+      console.log("Verifying OTP with type 'email'");
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: 'email'
       });
+      
+      console.log("Verify OTP response:", { data: verifyData, error: verifyError });
 
       if (verifyError) {
-        console.error("Ошибка при верификации:", verifyError);
-        throw new Error("Ошибка при верификации кода");
+        console.error("Verification error details:", {
+          error: verifyError,
+          message: verifyError.message,
+          status: verifyError.status
+        });
+        throw verifyError;
+      }
+
+      // Проверяем создание сессии
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log("Session after verification:", session);
+      
+      if (sessionError || !session) {
+        console.error("Session error:", sessionError);
+        throw new Error("Ошибка при создании сессии");
       }
 
       // Обновляем статус кода в БД
-      console.log("Обновляем статус кода");
+      console.log("Updating verification code status");
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
-        .eq("id", codes[0].id);
+        .eq("email", email)
+        .eq("code", otp);
 
       if (updateError) {
-        console.error("Ошибка при обновлении статуса:", updateError);
+        console.error("Status update error:", updateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
-      console.log("Верификация успешно завершена");
+      console.log("=== Verification completed successfully ===");
       toast({
         title: "Успешно!",
         description: "Вы успешно авторизовались",
@@ -74,7 +80,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       onVerificationSuccess();
 
     } catch (error: any) {
-      console.error("Ошибка при проверке кода:", error);
+      console.error("=== Verification failed ===");
+      console.error("Error details:", error);
+      
       toast({
         variant: "destructive",
         title: "Ошибка",
