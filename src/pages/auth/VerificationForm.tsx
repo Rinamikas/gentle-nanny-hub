@@ -52,21 +52,16 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
-      // Создаем сессию через signInWithOtp
-      console.log("Создаем сессию через signInWithOtp");
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Создаем сессию через verifyOtp
+      console.log("Создаем сессию через verifyOtp");
+      const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
+        type: 'email',
         token: otp,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            email_verified: true
-          }
-        }
       });
 
-      if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
+      if (verifyError) {
+        console.error("Ошибка при создании сессии:", verifyError);
         throw new Error("Ошибка при создании сессии");
       }
 
@@ -79,6 +74,17 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       console.log("Сессия успешно создана");
+
+      // Обновляем профиль пользователя, синхронизируя email
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ email: email })
+        .eq('id', session.user.id);
+
+      if (profileUpdateError) {
+        console.error("Ошибка при обновлении профиля:", profileUpdateError);
+        // Не прерываем процесс, так как сессия уже создана
+      }
 
       toast({
         title: "Успешно!",
