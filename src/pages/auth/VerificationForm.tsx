@@ -32,12 +32,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 2. Создаем сессию через API
       console.log("2. Creating session through API");
-      const { data: { session }, error: signInError } = await supabase.auth.signInWithOtp({
+      const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        code: otp,
-        options: {
-          shouldCreateUser: true
-        }
+        password: otp
       });
 
       console.log("3. SignIn response:", { session, error: signInError });
