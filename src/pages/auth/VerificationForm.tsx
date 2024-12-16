@@ -18,20 +18,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Сначала отправляем код через signInWithOtp
-      console.log("Отправляем код через signInWithOtp");
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true
-        }
-      });
-
-      if (signInError) {
-        console.error("Ошибка при отправке кода:", signInError);
-        throw new Error("Ошибка при отправке кода");
-      }
-
       // Проверяем код в базе данных
       const { data: codes, error: fetchError } = await supabase
         .from("verification_codes")
