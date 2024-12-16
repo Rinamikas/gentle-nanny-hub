@@ -6,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
 import DocumentsSection from "./sections/DocumentsSection";
@@ -237,15 +238,30 @@ export default function NannyForm() {
     mutation.mutate(data);
   };
 
+  const handleBack = () => {
+    navigate("/nannies");
+  };
+
   if (isLoading) {
     return <div>Загрузка...</div>;
   }
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">
-        {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
-      </h1>
+      <div className="flex items-center gap-4 mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={handleBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Назад к списку
+        </Button>
+        <h1 className="text-2xl font-bold">
+          {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
+        </h1>
+      </div>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="space-y-8">
@@ -259,7 +275,7 @@ export default function NannyForm() {
             <Button 
               type="button" 
               variant="outline"
-              onClick={() => navigate("/nannies")}
+              onClick={handleBack}
             >
               Отмена
             </Button>

@@ -24,6 +24,8 @@ export default function DocumentUpload({ onUpload, currentFileUrl, type }: Docum
       const fileExt = file.name.split('.').pop();
       const filePath = `${type}/${Math.random()}.${fileExt}`;
 
+      console.log('Uploading document:', type, filePath);
+
       const { error: uploadError, data } = await supabase.storage
         .from('nanny_files')
         .upload(filePath, file);
@@ -31,6 +33,8 @@ export default function DocumentUpload({ onUpload, currentFileUrl, type }: Docum
       if (uploadError) {
         throw uploadError;
       }
+
+      console.log('Document uploaded successfully');
 
       const { data: { publicUrl } } = supabase.storage
         .from('nanny_files')
@@ -67,6 +71,7 @@ export default function DocumentUpload({ onUpload, currentFileUrl, type }: Docum
       )}
       <div>
         <Button
+          type="button"
           variant="outline"
           disabled={uploading}
           onClick={() => document.getElementById(`document-${type}`)?.click()}

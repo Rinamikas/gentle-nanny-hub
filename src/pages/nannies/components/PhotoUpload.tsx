@@ -21,7 +21,9 @@ export default function PhotoUpload({ onUpload, currentPhotoUrl }: PhotoUploadPr
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const filePath = `${Math.random()}.${fileExt}`;
+      const filePath = `photos/${Math.random()}.${fileExt}`;
+
+      console.log('Uploading photo:', filePath);
 
       const { error: uploadError, data } = await supabase.storage
         .from('nanny_files')
@@ -30,6 +32,8 @@ export default function PhotoUpload({ onUpload, currentPhotoUrl }: PhotoUploadPr
       if (uploadError) {
         throw uploadError;
       }
+
+      console.log('Photo uploaded successfully');
 
       const { data: { publicUrl } } = supabase.storage
         .from('nanny_files')
