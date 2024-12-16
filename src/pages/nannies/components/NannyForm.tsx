@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
+import DocumentsSection from "./sections/DocumentsSection";
+import TrainingSection from "./sections/TrainingSection";
 import { formSchema, FormValues } from "../types/form";
 import { useEffect } from "react";
 
@@ -22,12 +24,24 @@ export default function NannyForm() {
     defaultValues: {
       first_name: "",
       last_name: "",
+      birth_date: "",
       phone: "",
       email: "",
-      experience_years: 0,
-      education: "",
-      hourly_rate: 0,
       photo_url: "",
+      position: "",
+      hourly_rate: 0,
+      age_group: "",
+      camera_phone: "",
+      camera_number: "",
+      address: "",
+      education: "",
+      experience_years: 0,
+      relative_phone: "",
+      criminal_record: "",
+      image_usage_consent: "",
+      medical_book: "",
+      personal_data_consent: "",
+      training_stage: undefined,
     },
   });
   
@@ -45,6 +59,13 @@ export default function NannyForm() {
             last_name,
             email,
             phone
+          ),
+          nanny_documents(
+            type,
+            file_url
+          ),
+          nanny_training(
+            stage
           )
         `)
         .eq("id", id)
@@ -56,19 +77,34 @@ export default function NannyForm() {
     enabled: !!id,
   });
 
-  // Обновляем значения формы при загрузке данных
   useEffect(() => {
     if (nanny) {
-      console.log("Resetting form with nanny data:", nanny);
+      const documents = nanny.nanny_documents?.reduce((acc: any, doc: any) => {
+        acc[doc.type] = doc.file_url;
+        return acc;
+      }, {});
+
       form.reset({
         first_name: nanny.profiles?.first_name || "",
         last_name: nanny.profiles?.last_name || "",
+        birth_date: nanny.birth_date || "",
         phone: nanny.profiles?.phone || "",
         email: nanny.profiles?.email || "",
-        experience_years: nanny.experience_years || 0,
-        education: nanny.education || "",
-        hourly_rate: nanny.hourly_rate || 0,
         photo_url: nanny.photo_url || "",
+        position: nanny.position || "",
+        hourly_rate: nanny.hourly_rate || 0,
+        age_group: nanny.age_group || "",
+        camera_phone: nanny.camera_phone || "",
+        camera_number: nanny.camera_number || "",
+        address: nanny.address || "",
+        education: nanny.education || "",
+        experience_years: nanny.experience_years || 0,
+        relative_phone: nanny.relative_phone || "",
+        criminal_record: documents?.criminal_record || "",
+        image_usage_consent: documents?.image_usage_consent || "",
+        medical_book: documents?.medical_book || "",
+        personal_data_consent: documents?.personal_data_consent || "",
+        training_stage: nanny.nanny_training?.[0]?.stage,
       });
     }
   }, [nanny, form.reset]);
@@ -109,16 +145,25 @@ export default function NannyForm() {
       console.log("Profile updated successfully");
 
       // Затем создаем или обновляем профиль няни
-      const { error: nannyError } = await supabase
+      const { data: nannyData, error: nannyError } = await supabase
         .from("nanny_profiles")
         .upsert({
           id: id || undefined,
           user_id: session.user.id,
+          birth_date: values.birth_date,
+          position: values.position,
+          age_group: values.age_group,
+          camera_phone: values.camera_phone,
+          camera_number: values.camera_number,
+          address: values.address,
+          relative_phone: values.relative_phone,
           experience_years: values.experience_years,
           education: values.education,
           hourly_rate: values.hourly_rate,
           photo_url: values.photo_url,
-        });
+        })
+        .select()
+        .single();
 
       if (nannyError) {
         console.error("Nanny profile update error:", nannyError);
@@ -126,6 +171,48 @@ export default function NannyForm() {
       }
 
       console.log("Nanny profile updated successfully");
+
+      // Обновляем документы
+      const documents = [
+        { type: "criminal_record", file_url: values.criminal_record },
+        { type: "image_usage_consent", file_url: values.image_usage_consent },
+        { type: "medical_book", file_url: values.medical_book },
+        { type: "personal_data_consent", file_url: values.personal_data_consent },
+      ].filter(doc => doc.file_url);
+
+      for (const doc of documents) {
+        const { error: docError } = await supabase
+          .from("nanny_documents")
+          .upsert({
+            nanny_id: nannyData.id,
+            type: doc.type,
+            file_url: doc.file_url,
+          });
+
+        if (docError) {
+          console.error(`Document update error for ${doc.type}:`, docError);
+          throw docError;
+        }
+      }
+
+      console.log("Documents updated successfully");
+
+      // Обновляем этап обучения
+      if (values.training_stage) {
+        const { error: trainingError } = await supabase
+          .from("nanny_training")
+          .upsert({
+            nanny_id: nannyData.id,
+            stage: values.training_stage,
+          });
+
+        if (trainingError) {
+          console.error("Training stage update error:", trainingError);
+          throw trainingError;
+        }
+
+        console.log("Training stage updated successfully");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });
@@ -163,6 +250,8 @@ export default function NannyForm() {
           <div className="space-y-8">
             <PersonalInfoSection form={form} />
             <ProfessionalInfoSection form={form} />
+            <DocumentsSection form={form} />
+            <TrainingSection form={form} />
           </div>
 
           <div className="flex justify-end gap-4">

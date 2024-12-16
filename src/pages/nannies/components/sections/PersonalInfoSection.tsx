@@ -64,6 +64,22 @@ export default function PersonalInfoSection({ form }: PersonalInfoSectionProps) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
+          name="birth_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Дата рождения</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
           name="phone"
           render={({ field }) => (
             <FormItem>

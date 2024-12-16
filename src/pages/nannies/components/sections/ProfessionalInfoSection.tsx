@@ -16,16 +16,12 @@ export default function ProfessionalInfoSection({ form }: ProfessionalInfoSectio
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="experience_years"
+          name="position"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Опыт работы (лет)</FormLabel>
+              <FormLabel>Должность</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  {...field} 
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
+                <Input placeholder="Введите должность" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -43,6 +39,68 @@ export default function ProfessionalInfoSection({ form }: ProfessionalInfoSectio
                   {...field} 
                   onChange={(e) => field.onChange(Number(e.target.value))}
                 />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="age_group"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Возрастная группа</FormLabel>
+              <FormControl>
+                <Input placeholder="Например: 3-7 лет" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="experience_years"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Опыт работы (лет)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  {...field} 
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="camera_phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Телефон камеры</FormLabel>
+              <FormControl>
+                <Input placeholder="+7 (999) 999-99-99" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="camera_number"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Номер камеры</FormLabel>
+              <FormControl>
+                <Input placeholder="Введите номер камеры" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
