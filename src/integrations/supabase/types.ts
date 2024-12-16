@@ -185,6 +185,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_verification_code: {
+        Args: {
+          p_email: string
+          p_code: string
+        }
+        Returns: boolean
+      }
       check_verification_code_access: {
         Args: {
           p_email: string
