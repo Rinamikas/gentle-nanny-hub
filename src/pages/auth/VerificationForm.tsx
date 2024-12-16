@@ -1,25 +1,8 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-const formSchema = z.object({
-  code: z.string().min(6, "Код должен содержать 6 цифр"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface VerificationFormProps {
   email: string;
@@ -27,69 +10,99 @@ interface VerificationFormProps {
 }
 
 const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProps) => {
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      code: "",
-    },
-  });
 
-  const onSubmit = async (data: FormValues) => {
+  const handleVerification = async () => {
+    setIsLoading(true);
+    console.log("=== Starting verification process ===");
+    console.log("Email:", email);
+    console.log("OTP:", otp);
+
     try {
-      setIsLoading(true);
-      console.log("Verifying code for email:", email);
+      // 1. Проверяем код в базе данных через RPC
+      console.log("1. Checking verification code through RPC");
+      const { data: hasValidCode, error: rpcError } = await supabase
+        .rpc('check_verification_code', {
+          p_email: email,
+          p_code: otp
+        });
 
-      const { error } = await supabase.functions.invoke('verify-email', {
-        body: { 
-          email,
-          code: data.code
+      if (rpcError) {
+        console.error("RPC error:", rpcError);
+        throw new Error("Ошибка при проверке кода");
+      }
+
+      console.log("Verification code check result:", hasValidCode);
+      if (!hasValidCode) {
+        throw new Error("Неверный код или срок его действия истек");
+      }
+
+      // 2. Создаем или обновляем пользователя через Edge Function
+      console.log("2. Creating/updating user through Edge Function");
+      const { data: userData, error: createError } = await supabase.functions.invoke(
+        'create-user',
+        {
+          body: JSON.stringify({
+            email,
+            password: otp
+          })
         }
+      );
+
+      if (createError) {
+        console.error("3. User creation error:", createError);
+        throw createError;
+      }
+
+      // Добавляем задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 3. Входим с помощью созданных credentials
+      console.log("4. Signing in with created credentials");
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: otp,
       });
 
-      if (error) throw error;
+      if (signInError) {
+        console.error("5. Sign in error:", signInError);
+        throw signInError;
+      }
 
+      if (!data.session) {
+        throw new Error("Не удалось создать сессию");
+      }
+
+      // 4. Обновляем статус кода в БД
+      console.log("6. Updating verification code status");
+      const { error: codeUpdateError } = await supabase
+        .from("verification_codes")
+        .update({ status: 'verified' })
+        .eq("email", email)
+        .eq("code", otp);
+
+      if (codeUpdateError) {
+        console.error("7. Status update error:", codeUpdateError);
+        throw new Error("Ошибка при обновлении статуса кода");
+      }
+
+      console.log("=== Verification completed successfully ===");
       toast({
-        title: "Успешно",
-        description: "Код подтвержден",
+        title: "Успешно!",
+        description: "Вы успешно авторизовались",
       });
-      
+
       onVerificationSuccess();
-    } catch (error) {
-      console.error("Error verifying code:", error);
+
+    } catch (error: any) {
+      console.error("=== Verification failed ===");
+      console.error("Error details:", error);
+      
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Неверный код верификации",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    try {
-      setIsLoading(true);
-      console.log("Resending verification code to:", email);
-
-      const { error } = await supabase.functions.invoke('verify-email', {
-        body: { email }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Код отправлен",
-        description: "Проверьте вашу почту",
-      });
-    } catch (error) {
-      console.error("Error resending code:", error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось отправить код",
+        description: error.message || "Не удалось проверить код",
       });
     } finally {
       setIsLoading(false);
@@ -97,52 +110,34 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <p className="text-muted-foreground">
-          Код подтверждения отправлен на {email}
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-col items-center space-y-4">
+        <InputOTP
+          maxLength={6}
+          value={otp}
+          onChange={(value) => {
+            console.log("OTP value changed:", value);
+            setOtp(value);
+          }}
+          className="gap-2 justify-center"
+        >
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
       </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Код подтверждения</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="123456" 
-                    {...field}
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isLoading}
-            >
-              Подтвердить
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleResendCode}
-              disabled={isLoading}
-            >
-              Отправить код повторно
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <Button
+        onClick={handleVerification}
+        className="w-full"
+        disabled={isLoading || otp.length !== 6}
+      >
+        {isLoading ? "Проверка..." : "Подтвердить"}
+      </Button>
     </div>
   );
 };
