@@ -92,8 +92,31 @@ export const useUsers = () => {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("profiles").delete().eq("id", id);
-      if (error) throw error;
+      console.log("Deleting user with ID:", id);
+      
+      // Сначала удаляем все связанные роли
+      const { error: rolesError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", id);
+
+      if (rolesError) {
+        console.error("Error deleting user roles:", rolesError);
+        throw rolesError;
+      }
+
+      // Затем удаляем профиль пользователя
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", id);
+
+      if (profileError) {
+        console.error("Error deleting user profile:", profileError);
+        throw profileError;
+      }
+
+      console.log("User successfully deleted");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
