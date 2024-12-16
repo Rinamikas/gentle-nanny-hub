@@ -56,12 +56,13 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   useEffect(() => {
-    // Проверяем, не находимся ли мы уже на странице auth
     if (location.pathname === "/auth") {
+      setShowLoading(false);
       return;
     }
 
     console.log("Starting auth check...");
+    let isSubscribed = true;
     
     const checkAuth = async () => {
       try {
@@ -69,30 +70,45 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         
         if (error) {
           console.error("Error checking auth:", error);
-          navigate("/auth");
+          if (isSubscribed) {
+            navigate("/auth");
+          }
           return;
         }
 
         if (!session) {
           console.log("No session found, redirecting to /auth");
-          navigate("/auth");
+          if (isSubscribed) {
+            navigate("/auth");
+          }
         } else {
           console.log("Session found:", session);
-          setShowLoading(false);
+          if (isSubscribed) {
+            setShowLoading(false);
+          }
         }
       } catch (error) {
         console.error("Error in auth check:", error);
-        navigate("/auth");
+        if (isSubscribed) {
+          navigate("/auth");
+        }
       }
     };
 
-    // Подписываемся на изменения состояния авторизации
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token was refreshed successfully');
+      }
+      
+      if (event === 'SIGNED_OUT' || !session) {
         console.log("Auth state changed: no session");
-        navigate("/auth");
+        if (isSubscribed) {
+          navigate("/auth");
+        }
       }
     });
 
@@ -100,6 +116,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
     return () => {
       console.log("Cleaning up auth subscriptions");
+      isSubscribed = false;
       subscription.unsubscribe();
     };
   }, [navigate, location]);
