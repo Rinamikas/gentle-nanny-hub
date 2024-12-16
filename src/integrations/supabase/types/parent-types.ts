@@ -1,33 +1,31 @@
-import { Json } from './json';
-
 export interface ParentTables {
   parent_profiles: {
     Row: {
-      address: string | null
-      children_count: number | null
-      created_at: string
       id: string
-      special_requirements: string | null
-      updated_at: string
       user_id: string | null
+      children_count: number | null
+      address: string | null
+      special_requirements: string | null
+      created_at: string
+      updated_at: string
     }
     Insert: {
-      address?: string | null
-      children_count?: number | null
-      created_at?: string
       id?: string
-      special_requirements?: string | null
-      updated_at?: string
       user_id?: string | null
+      children_count?: number | null
+      address?: string | null
+      special_requirements?: string | null
+      created_at?: string
+      updated_at?: string
     }
     Update: {
-      address?: string | null
-      children_count?: number | null
-      created_at?: string
       id?: string
-      special_requirements?: string | null
-      updated_at?: string
       user_id?: string | null
+      children_count?: number | null
+      address?: string | null
+      special_requirements?: string | null
+      created_at?: string
+      updated_at?: string
     }
   }
 }
