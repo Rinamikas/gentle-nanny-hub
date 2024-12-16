@@ -23,44 +23,29 @@ export const useUsers = () => {
         throw new Error("Пользователь не аутентифицирован");
       }
 
-      // Получаем профили
+      // Получаем профили с ролями одним запросом
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select(`
+          *,
+          user_roles (
+            role
+          )
+        `);
 
       if (profilesError) {
         console.error("Error fetching profiles:", profilesError);
         throw profilesError;
       }
 
-      // Получаем все роли одним запросом
-      const { data: allRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (rolesError) {
-        console.error("Error fetching roles:", rolesError);
-        throw rolesError;
-      }
-
-      // Группируем роли по user_id
-      const rolesByUserId = allRoles.reduce((acc: { [key: string]: { role: string }[] }, role) => {
-        if (!acc[role.user_id]) {
-          acc[role.user_id] = [];
-        }
-        acc[role.user_id].push({ role: role.role });
-        return acc;
-      }, {});
-
-      // Объединяем профили с ролями
-      const profilesWithRoles = profiles.map(profile => ({
+      // Преобразуем данные в нужный формат
+      const formattedProfiles = profiles.map(profile => ({
         ...profile,
-        user_roles: rolesByUserId[profile.id] || []
+        user_roles: profile.user_roles || []
       }));
 
-      console.log("Fetched profiles with roles:", profilesWithRoles);
-      return profilesWithRoles as User[];
+      console.log("Fetched profiles with roles:", formattedProfiles);
+      return formattedProfiles as User[];
     },
   });
 
