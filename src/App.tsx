@@ -22,6 +22,8 @@ function App() {
                   <Route path="/profile" element={<div>Profile Page</div>} />
                   <Route path="/families" element={<div>Families Page</div>} />
                   <Route path="/nannies" element={<NanniesPage />} />
+                  <Route path="/nannies/create" element={<div>Create Nanny Form</div>} />
+                  <Route path="/nannies/:id/edit" element={<div>Edit Nanny Form</div>} />
                 </Routes>
               </AdminLayout>
             }
