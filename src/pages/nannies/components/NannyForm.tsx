@@ -310,3 +310,5 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
     </div>
   );
 }
+
+export default NannyForm;

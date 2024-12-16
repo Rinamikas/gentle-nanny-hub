@@ -75,6 +75,7 @@ export interface Tables {
       last_name: string | null
       phone: string | null
       updated_at: string
+      photo_url: string | null
     }
     Insert: {
       created_at?: string
@@ -84,6 +85,7 @@ export interface Tables {
       last_name?: string | null
       phone?: string | null
       updated_at?: string
+      photo_url?: string | null
     }
     Update: {
       created_at?: string
@@ -93,6 +95,7 @@ export interface Tables {
       last_name?: string | null
       phone?: string | null
       updated_at?: string
+      photo_url?: string | null
     }
   }
   user_roles: {
