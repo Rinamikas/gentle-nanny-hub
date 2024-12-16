@@ -52,11 +52,14 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
-      // Создаем сессию напрямую через signInWithPassword
-      console.log("Создаем сессию для верифицированного пользователя");
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // Создаем сессию через signInWithOtp
+      console.log("Создаем сессию через signInWithOtp");
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password: otp // Используем OTP как временный пароль
+        token: otp,
+        options: {
+          shouldCreateUser: true
+        }
       });
 
       if (signInError) {
