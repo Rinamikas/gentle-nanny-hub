@@ -30,44 +30,58 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Верифицируем OTP через Supabase Auth
-      console.log("2. Starting OTP verification");
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        token: otp,
-        options: {
-          shouldCreateUser: true
-        }
+      // 2. Создаем сессию через Supabase Auth
+      console.log("2. Creating session with email password");
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: otp // Используем OTP как временный пароль
       });
       
       console.log("3. SignIn response:", { data: signInData, error: signInError });
 
       if (signInError) {
-        console.error("4. SignIn error:", {
-          message: signInError.message,
-          status: signInError.status,
-          name: signInError.name
-        });
-        throw signInError;
+        // Если пользователь не существует, создаем его
+        if (signInError.message.includes("Invalid login credentials")) {
+          console.log("4. User doesn't exist, creating new user");
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: email,
+            password: otp,
+            options: {
+              data: {
+                email: email
+              }
+            }
+          });
+
+          if (signUpError) {
+            console.error("5. SignUp error:", signUpError);
+            throw signUpError;
+          }
+
+          console.log("6. SignUp successful:", signUpData);
+        } else {
+          console.error("7. SignIn error:", signInError);
+          throw signInError;
+        }
       }
 
       // 3. Проверяем создание сессии
-      console.log("5. Checking session after verification");
+      console.log("8. Checking session after verification");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log("6. Current session:", session);
+      console.log("9. Current session:", session);
       
       if (sessionError) {
-        console.error("7. Session error:", sessionError);
+        console.error("10. Session error:", sessionError);
         throw new Error("Ошибка при создании сессии");
       }
 
       if (!session) {
-        console.error("8. No session created");
+        console.error("11. No session created");
         throw new Error("Сессия не была создана");
       }
 
       // 4. Обновляем статус кода в БД
-      console.log("9. Updating verification code status");
+      console.log("12. Updating verification code status");
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -75,7 +89,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp);
 
       if (updateError) {
-        console.error("10. Status update error:", updateError);
+        console.error("13. Status update error:", updateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
