@@ -2,16 +2,12 @@ import { useState, useEffect } from "react";
 import { Menu, User, Users, Home, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import LoadingScreen from "./LoadingScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-interface AdminLayoutProps {
-  children: React.ReactNode;
-}
-
-const AdminLayout = ({ children }: AdminLayoutProps) => {
+const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showLoading, setShowLoading] = useState(true);
   const navigate = useNavigate();
@@ -213,7 +209,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           isSidebarOpen ? "ml-64" : "ml-16"
         )}
       >
-        {children}
+        <Outlet />
       </main>
     </div>
   );
