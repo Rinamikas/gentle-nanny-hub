@@ -26,60 +26,28 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     };
   }, [cooldown]);
 
-  // Функция для выполнения запроса с повторными попытками
-  const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Попытка ${attempt} из ${maxRetries}`);
-        const result = await operation();
-        return result;
-      } catch (err: any) {
-        console.error(`Ошибка на попытке ${attempt}:`, err);
-        
-        // Проверяем наличие rate limit в теле ответа
-        let rateLimitError;
-        try {
-          if (err.error?.body) {
-            rateLimitError = JSON.parse(err.error.body);
-          } else if (typeof err.body === 'string') {
-            rateLimitError = JSON.parse(err.body);
-          }
-        } catch (e) {
-          console.error('Ошибка при парсинге тела ошибки:', e);
-        }
-        
-        // Если это ошибка rate limit, извлекаем время ожидания
-        if (rateLimitError?.code === 'over_email_send_rate_limit' || err.status === 429) {
-          let waitTime = '60';
-          
-          // Пытаемся извлечь точное время ожидания из сообщения
-          if (rateLimitError?.message) {
-            const match = rateLimitError.message.match(/\d+/);
-            if (match) waitTime = match[0];
-          }
-          
-          const rateError = new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`);
-          (rateError as any).cause = { waitTime: parseInt(waitTime) };
-          throw rateError;
-        }
-
-        // Если это последняя попытка, пробрасываем ошибку
-        if (attempt === maxRetries) {
-          throw new Error("Не удалось выполнить операцию после нескольких попыток");
-        }
-
-        // Экспоненциальная задержка между попытками
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
-        console.log(`Ждем ${delay}мс перед следующей попыткой`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+  const extractWaitTime = (error: any): number => {
+    try {
+      let errorBody;
+      if (error.body) {
+        errorBody = JSON.parse(error.body);
       }
+      
+      if (errorBody?.message) {
+        const match = errorBody.message.match(/\d+/);
+        if (match) {
+          return parseInt(match[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Ошибка при парсинге тела ошибки:', e);
     }
+    return 60; // Возвращаем значение по умолчанию, если не удалось извлечь время
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Если уже идет отправка или активен cooldown, прерываем выполнение
     if (isLoading || cooldown > 0) {
       return;
     }
@@ -88,27 +56,29 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     console.log("Начало процесса отправки кода подтверждения");
 
     try {
-      // Генерация 6-значного кода
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
       console.log(`Попытка создания OTP сессии для ${email}`);
 
-      // Используем функцию retryOperation для отправки OTP
-      const { error: signInError } = await retryOperation(async () => {
-        return await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false, // Отключаем автоматическое создание пользователя
-            data: {
-              verification_code: verificationCode
-            }
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+          data: {
+            verification_code: verificationCode
           }
-        });
+        }
       });
 
       if (signInError) {
+        // Проверяем, является ли ошибка ограничением частоты запросов
+        if (signInError.status === 429) {
+          const waitTime = extractWaitTime(signInError);
+          setCooldown(waitTime);
+          throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`);
+        }
         throw signInError;
       }
 
@@ -150,11 +120,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
     } catch (error: any) {
       console.error("Ошибка в процессе отправки кода:", error);
-      
-      // Проверяем, есть ли информация о времени ожидания в ошибке
-      if (error.cause?.waitTime) {
-        setCooldown(error.cause.waitTime);
-      }
       
       toast({
         variant: "destructive",
