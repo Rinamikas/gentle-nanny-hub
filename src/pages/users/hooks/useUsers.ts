@@ -23,7 +23,7 @@ export const useUsers = () => {
         throw new Error("Пользователь не аутентифицирован");
       }
 
-      // Получаем профили
+      // Получаем все профили
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*");
@@ -33,24 +33,29 @@ export const useUsers = () => {
         throw profilesError;
       }
 
-      // Получаем роли отдельным запросом
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+      console.log("Profiles fetched successfully:", profiles);
+
+      // Получаем все роли через RPC вызов
+      const { data: userRoles, error: rolesError } = await supabase
+        .rpc('get_user_roles');
 
       if (rolesError) {
         console.error("Error fetching roles:", rolesError);
         throw rolesError;
       }
 
-      // Создаем мапу ролей по user_id
-      const rolesMap = roles.reduce((acc: { [key: string]: { role: string }[] }, role) => {
-        if (!acc[role.user_id]) {
-          acc[role.user_id] = [];
-        }
-        acc[role.user_id].push({ role: role.role });
-        return acc;
-      }, {});
+      console.log("User roles fetched successfully:", userRoles);
+
+      // Создаем мапу ролей
+      const rolesMap: { [key: string]: { role: string }[] } = {};
+      if (userRoles) {
+        userRoles.forEach((role: { user_id: string; role: string }) => {
+          if (!rolesMap[role.user_id]) {
+            rolesMap[role.user_id] = [];
+          }
+          rolesMap[role.user_id].push({ role: role.role });
+        });
+      }
 
       // Объединяем данные
       const usersWithRoles = profiles.map(profile => ({
@@ -58,7 +63,7 @@ export const useUsers = () => {
         user_roles: rolesMap[profile.id] || []
       }));
 
-      console.log("Successfully fetched users with roles:", usersWithRoles);
+      console.log("Final users with roles:", usersWithRoles);
       return usersWithRoles as User[];
     },
   });
