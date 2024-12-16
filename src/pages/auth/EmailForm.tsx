@@ -100,7 +100,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         return await supabase.auth.signInWithOtp({
           email,
           options: {
-            shouldCreateUser: true,
+            shouldCreateUser: false, // Отключаем автоматическое создание пользователя
             data: {
               verification_code: verificationCode
             }
