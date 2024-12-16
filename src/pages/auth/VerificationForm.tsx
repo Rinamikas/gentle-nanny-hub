@@ -41,14 +41,15 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       console.log("Код найден в БД, пытаемся верифицировать через auth API");
 
-      // Если код валиден, создаем новую сессию через signInWithOtp
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Если код валиден, верифицируем через verifyOtp
+      const { error: signInError } = await supabase.auth.verifyOtp({
         email,
-        code: otp, // Используем code вместо token
+        token: otp,
+        type: 'email'
       });
 
       if (signInError) {
-        console.error("Ошибка при верификации через signInWithOtp:", signInError);
+        console.error("Ошибка при верификации через verifyOtp:", signInError);
         
         if (signInError.message?.includes('expired')) {
           throw new Error("Срок действия кода истек. Пожалуйста, запросите новый код");
