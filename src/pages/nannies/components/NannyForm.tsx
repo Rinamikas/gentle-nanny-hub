@@ -128,6 +128,25 @@ export default function NannyForm() {
 
       console.log("User session found:", session.user.id);
 
+      // Проверяем существование профиля няни для текущего пользователя
+      if (!id) {
+        const { data: existingNanny, error: checkError } = await supabase
+          .from("nanny_profiles")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (checkError && checkError.code !== "PGRST116") {
+          console.error("Error checking existing nanny:", checkError);
+          throw checkError;
+        }
+
+        if (existingNanny) {
+          console.error("Nanny profile already exists");
+          throw new Error("Профиль няни уже существует для этого пользователя");
+        }
+      }
+
       // Сначала создаем или обновляем запись в profiles
       const { error: profileError } = await supabase
         .from("profiles")
@@ -229,7 +248,7 @@ export default function NannyForm() {
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось сохранить данные",
+        description: error instanceof Error ? error.message : "Не удалось сохранить данные",
       });
     },
   });
