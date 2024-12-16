@@ -10,35 +10,19 @@ export async function testAuthFlow(email: string, code: string) {
     console.log("Initial session:", initialSession);
     if (sessionError) throw sessionError;
 
-    // 2. Проверяем код в базе данных
-    console.log("2. Checking verification code in database");
-    const { data: codes, error: codesError } = await supabase
-      .from('verification_codes')
-      .select('*')
-      .eq('email', email)
-      .eq('code', code)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString());
+    // 2. Проверяем код в базе данных через RPC
+    console.log("2. Checking verification code using RPC");
+    const { data: hasValidCode, error: rpcError } = await supabase
+      .rpc('check_verification_code', {
+        p_email: email,
+        p_code: code
+      });
     
-    console.log("Found codes:", codes);
-    if (codesError) throw codesError;
-
-    // 3. Проверяем время жизни кода
-    let hasValidCode = false;
-    if (codes && codes.length > 0) {
-      const expiresAt = new Date(codes[0].expires_at);
-      const now = new Date();
-      console.log("Code expires at:", expiresAt);
-      console.log("Current time:", now);
-      const timeUntilExpiration = expiresAt.getTime() - now.getTime();
-      console.log("Time until expiration:", timeUntilExpiration, "ms");
-      hasValidCode = timeUntilExpiration > 0;
-    }
-
-    console.log("Auth flow test results:", { hasValidCode, initialSession });
+    console.log("Verification check result:", hasValidCode);
+    if (rpcError) throw rpcError;
 
     return {
-      hasValidCode,
+      hasValidCode: !!hasValidCode,
       initialSession
     };
   } catch (error) {
