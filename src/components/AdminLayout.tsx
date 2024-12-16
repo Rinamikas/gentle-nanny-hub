@@ -56,20 +56,15 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   useEffect(() => {
-    if (location.pathname === "/auth") {
-      setShowLoading(false);
-      return;
-    }
-
-    console.log("Starting auth check...");
     let isSubscribed = true;
-    
+
     const checkAuth = async () => {
       try {
+        console.log("Проверяем сессию...");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Error checking auth:", error);
+          console.error("Ошибка при проверке сессии:", error);
           if (isSubscribed) {
             navigate("/auth");
           }
@@ -77,18 +72,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         }
 
         if (!session) {
-          console.log("No session found, redirecting to /auth");
+          console.log("Сессия не найдена, перенаправляем на /auth");
           if (isSubscribed) {
             navigate("/auth");
           }
-        } else {
-          console.log("Session found:", session);
-          if (isSubscribed) {
-            setShowLoading(false);
-          }
+          return;
+        }
+
+        console.log("Сессия найдена:", session);
+        if (isSubscribed) {
+          setShowLoading(false);
         }
       } catch (error) {
-        console.error("Error in auth check:", error);
+        console.error("Ошибка при проверке авторизации:", error);
         if (isSubscribed) {
           navigate("/auth");
         }
@@ -98,24 +94,33 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
+      console.log("Изменение состояния авторизации:", event, session);
       
       if (event === 'TOKEN_REFRESHED') {
-        console.log('Token was refreshed successfully');
+        console.log('Токен успешно обновлен');
       }
       
       if (event === 'SIGNED_OUT' || !session) {
-        console.log("Auth state changed: no session");
+        console.log("Изменение состояния авторизации: нет сессии");
         if (isSubscribed) {
           navigate("/auth");
         }
+        return;
+      }
+
+      if (isSubscribed) {
+        setShowLoading(false);
       }
     });
 
-    checkAuth();
+    if (location.pathname === "/auth") {
+      setShowLoading(false);
+    } else {
+      checkAuth();
+    }
 
     return () => {
-      console.log("Cleaning up auth subscriptions");
+      console.log("Очистка подписок на авторизацию");
       isSubscribed = false;
       subscription.unsubscribe();
     };
@@ -179,7 +184,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             ))}
           </div>
           
-          {/* Кнопка выхода внизу сайдбара */}
           <div className="p-2 mt-auto">
             <Button
               variant="ghost"
