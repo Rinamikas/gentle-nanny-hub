@@ -26,6 +26,43 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     };
   }, [cooldown]);
 
+  // Функция для выполнения запроса с повторными попытками
+  const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Попытка ${attempt} из ${maxRetries}`);
+        const result = await operation();
+        return result;
+      } catch (err: any) {
+        console.error(`Ошибка на попытке ${attempt}:`, err);
+        lastError = err;
+        
+        // Проверяем специфические ошибки, которые не нужно повторять
+        if (err.status === 429 || (err.error && err.error.status === 429)) {
+          throw err;
+        }
+
+        // Если это последняя попытка, пробрасываем ошибку
+        if (attempt === maxRetries) {
+          break;
+        }
+
+        // Экспоненциальная задержка между попытками
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+        console.log(`Ждем ${delay}мс перед следующей попыткой`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    // Если все попытки исчерпаны, проверяем тип последней ошибки
+    if (lastError?.message === "Load failed") {
+      throw new Error("Не удалось установить соединение с сервером. Пожалуйста, проверьте подключение к интернету и попробуйте снова.");
+    }
+    throw lastError;
+  };
+
   const extractWaitTime = (error: any): number => {
     try {
       let errorBody;
@@ -42,7 +79,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     } catch (e) {
       console.error('Ошибка при парсинге тела ошибки:', e);
     }
-    return 60; // Возвращаем значение по умолчанию, если не удалось извлечь время
+    return 60;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,18 +99,19 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       console.log(`Попытка создания OTP сессии для ${email}`);
 
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          data: {
-            verification_code: verificationCode
+      const { error: signInError } = await retryOperation(async () => {
+        return await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+            data: {
+              verification_code: verificationCode
+            }
           }
-        }
+        });
       });
 
       if (signInError) {
-        // Проверяем, является ли ошибка ограничением частоты запросов
         if (signInError.status === 429) {
           const waitTime = extractWaitTime(signInError);
           setCooldown(waitTime);
@@ -99,11 +137,13 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       console.log("Код успешно сохранен, отправка через edge function");
       
-      const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
-        body: { 
-          to: email,
-          code: verificationCode
-        }
+      const { error: sendError } = await retryOperation(async () => {
+        return await supabase.functions.invoke('send-verification-email', {
+          body: { 
+            to: email,
+            code: verificationCode
+          }
+        });
       });
 
       if (sendError) {
