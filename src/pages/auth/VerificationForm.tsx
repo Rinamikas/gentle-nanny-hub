@@ -45,9 +45,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true,
+          emailRedirectTo: window.location.origin,
           data: {
-            email_verified: true
+            email_token: otp
           }
         }
       });
@@ -68,17 +68,17 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         // Не выбрасываем ошибку, так как сессия уже создана
       }
 
-      console.log("Верификация успешна, обновляем UI");
+      console.log("Верификация успешна, проверяем сессию");
       
-      toast({
-        title: "Успешно!",
-        description: "Вы успешно авторизовались",
-      });
-
-      // Проверяем наличие сессии перед редиректом
+      // Проверяем наличие сессии
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (session) {
         console.log("Сессия успешно создана:", session);
+        toast({
+          title: "Успешно!",
+          description: "Вы успешно авторизовались",
+        });
         onVerificationSuccess();
       } else {
         console.error("Сессия не найдена после создания");

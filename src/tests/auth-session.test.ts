@@ -38,6 +38,17 @@ describe('Authentication Flow', () => {
       })
     } as any));
 
+    // Create a properly typed mock user
+    const mockUser: User = {
+      id: 'test_user_id',
+      email: 'test@example.com',
+      aud: 'authenticated',
+      role: 'authenticated',
+      app_metadata: {},
+      user_metadata: {},
+      created_at: new Date().toISOString()
+    };
+
     // Create a properly typed mock session
     const mockSession: Session = {
       access_token: 'test_token',
@@ -45,20 +56,12 @@ describe('Authentication Flow', () => {
       expires_in: 3600,
       expires_at: new Date(Date.now() + 3600000).getTime(),
       token_type: 'bearer',
-      user: {
-        id: 'test_user_id',
-        aud: 'authenticated',
-        role: 'authenticated',
-        email: 'test@example.com',
-        app_metadata: {},
-        user_metadata: {},
-        created_at: new Date().toISOString()
-      }
+      user: mockUser
     };
 
     // Mock auth methods with proper return types
     vi.spyOn(supabase.auth, 'signInWithOtp').mockResolvedValue({
-      data: { session: mockSession, user: mockSession.user },
+      data: { user: null, session: null },
       error: null
     });
 
