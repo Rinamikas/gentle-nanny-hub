@@ -40,7 +40,21 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // Верифицируем OTP для создания сессии
+      // Сначала отправляем OTP
+      console.log("Отправляем OTP для создания сессии");
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false
+        }
+      });
+
+      if (signInError) {
+        console.error("Ошибка при отправке OTP:", signInError);
+        throw new Error("Ошибка при отправке кода");
+      }
+
+      // Теперь верифицируем OTP
       console.log("Верифицируем OTP");
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
