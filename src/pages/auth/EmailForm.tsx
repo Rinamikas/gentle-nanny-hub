@@ -34,21 +34,32 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     }
     
     setIsLoading(true);
-    console.log("Начало процесса отправки кода подтверждения для:", email);
+    console.log("=== Начало процесса отправки кода подтверждения ===");
+    console.log("Email:", email);
+    console.log("Origin URL:", window.location.origin);
 
     try {
       // Сначала отправляем OTP через Supabase Auth
       console.log("1. Отправка OTP через Supabase Auth");
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: `${window.location.origin}/auth`,
+          data: {
+            email
+          }
         }
       });
 
+      console.log("OTP Response:", { data: otpData, error: otpError });
+
       if (otpError) {
-        console.error("Ошибка при отправке OTP:", otpError);
-        throw new Error("Не удалось отправить код верификации");
+        console.error("Ошибка при отправке OTP:", {
+          message: otpError.message,
+          status: otpError.status,
+          name: otpError.name
+        });
+        throw otpError;
       }
 
       // После успешной отправки OTP сохраняем код в базу
@@ -67,7 +78,11 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         });
 
       if (insertError) {
-        console.error("Ошибка при сохранении кода:", insertError);
+        console.error("Ошибка при сохранении кода:", {
+          message: insertError.message,
+          code: insertError.code,
+          details: insertError.details
+        });
         throw new Error("Не удалось сохранить код верификации");
       }
 
@@ -81,7 +96,13 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       setCooldown(60);
 
     } catch (error: any) {
-      console.error("Ошибка в процессе отправки кода:", error);
+      console.error("=== Ошибка в процессе отправки кода ===");
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        status: error.status,
+        stack: error.stack
+      });
       
       toast({
         variant: "destructive",
