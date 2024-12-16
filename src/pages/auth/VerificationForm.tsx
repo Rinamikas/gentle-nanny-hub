@@ -30,34 +30,18 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем пользователя через Edge Function
-      console.log("2. Creating user through Edge Function");
-      const { data: createUserData, error: createUserError } = await supabase.functions.invoke(
-        'create-user',
-        {
-          body: JSON.stringify({
-            email,
-            password: otp
-          })
-        }
-      );
-
-      if (createUserError) {
-        console.error("3. Create user error:", createUserError);
-        throw createUserError;
-      }
-
-      console.log("4. User created successfully:", createUserData);
-
-      // 3. Входим с созданными данными
-      console.log("5. Signing in with created credentials");
-      const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
+      // 2. Входим с помощью OTP
+      console.log("2. Signing in with OTP");
+      const { data: { session }, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password: otp
+        token: otp,
+        options: {
+          shouldCreateUser: true
+        }
       });
 
       if (signInError) {
-        console.error("6. Sign in error:", signInError);
+        console.error("3. Sign in error:", signInError);
         throw signInError;
       }
 
@@ -65,8 +49,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Не удалось создать сессию");
       }
 
-      // 4. Обновляем статус кода в БД
-      console.log("7. Updating verification code status");
+      // 3. Обновляем статус кода в БД
+      console.log("4. Updating verification code status");
       const { error: codeUpdateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -74,7 +58,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp);
 
       if (codeUpdateError) {
-        console.error("8. Status update error:", codeUpdateError);
+        console.error("5. Status update error:", codeUpdateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
