@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  to: string;
+  to: string[];
   code: string;
 }
 
@@ -39,7 +39,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "Nanny System <nanny@rnmka.ru>",
-        to: [to],
+        to,
         subject: "Код подтверждения",
         html: `
           <!DOCTYPE html>

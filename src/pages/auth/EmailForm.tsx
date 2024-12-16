@@ -36,38 +36,14 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     setIsLoading(true);
     console.log("=== Начало процесса отправки кода подтверждения ===");
     console.log("Email:", email);
-    console.log("Origin URL:", window.location.origin);
 
     try {
-      // Сначала отправляем OTP через Supabase Auth
-      console.log("1. Отправка OTP через Supabase Auth");
-      const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
-          data: {
-            email
-          }
-        }
-      });
-
-      console.log("OTP Response:", { data: otpData, error: otpError });
-
-      if (otpError) {
-        console.error("Ошибка при отправке OTP:", {
-          message: otpError.message,
-          status: otpError.status,
-          name: otpError.name
-        });
-        throw otpError;
-      }
-
-      // После успешной отправки OTP сохраняем код в базу
+      // Генерируем код верификации
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      console.log("2. Сохранение кода верификации в базу");
+      console.log("1. Сохранение кода верификации в базу");
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -84,6 +60,25 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           details: insertError.details
         });
         throw new Error("Не удалось сохранить код верификации");
+      }
+
+      console.log("2. Отправка письма через Resend API");
+      const response = await fetch('/functions/v1/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          to: [email],
+          code: verificationCode
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Ошибка при отправке письма:", errorData);
+        throw new Error("Не удалось отправить письмо с кодом");
       }
 
       console.log("3. Код успешно сохранен и отправлен");
