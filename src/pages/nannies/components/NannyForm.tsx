@@ -2,21 +2,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Form } from "@/components/ui/form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import PhotoUpload from "./PhotoUpload";
+import PersonalInfoSection from "./sections/PersonalInfoSection";
+import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "Имя должно содержать минимум 2 символа"),
@@ -122,138 +114,11 @@ export default function NannyForm() {
         {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
       </h1>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="mb-6">
-            <FormField
-              control={form.control}
-              name="photo_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Фотография</FormLabel>
-                  <FormControl>
-                    <PhotoUpload
-                      onUpload={(url) => field.onChange(url)}
-                      currentPhotoUrl={field.value}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <div className="space-y-8">
+            <PersonalInfoSection form={form} />
+            <ProfessionalInfoSection form={form} />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="first_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Имя</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Введите имя" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="last_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Фамилия</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Введите фамилию" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Телефон</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+7 (999) 999-99-99" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="example@mail.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="experience_years"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Опыт работы (лет)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="hourly_rate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Почасовая ставка (₽)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="education"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Образование</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Опишите ваше образование..." 
-                    className="min-h-[100px]"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <div className="flex justify-end gap-4">
             <Button 
