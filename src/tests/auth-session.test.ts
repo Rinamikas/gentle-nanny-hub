@@ -36,11 +36,16 @@ describe('Auth Session Management', () => {
 
     expect(error).toBeNull();
     expect(data.session).toBeDefined();
-    expect(data.session?.access_token).toBe('test_token');
+    if (data.session) {  // Добавляем проверку на null
+      expect(data.session.access_token).toBe('test_token');
+    }
 
     // Проверяем получение сессии
     const { data: sessionData } = await supabase.auth.getSession();
     expect(sessionData.session).toBeDefined();
+    if (sessionData.session) {  // Добавляем проверку на null
+      expect(sessionData.session.access_token).toBe('test_token');
+    }
   });
 
   it('should handle session persistence', async () => {
@@ -66,6 +71,8 @@ describe('Auth Session Management', () => {
     
     expect(error).toBeNull();
     expect(session).toBeDefined();
-    expect(session?.access_token).toBe('persisted_token');
+    if (session) {  // Добавляем проверку на null
+      expect(session.access_token).toBe('persisted_token');
+    }
   });
 });

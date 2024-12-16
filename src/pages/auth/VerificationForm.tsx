@@ -39,12 +39,12 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или истек срок его действия");
       }
 
-      console.log("Код найден в БД, создаем сессию через auth API");
+      console.log("Код найден в БД, пытаемся верифицировать через auth API");
 
       // Создаем сессию через signInWithOtp
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        token: otp,
+        code: otp,
         options: {
           shouldCreateUser: true,
           data: {
