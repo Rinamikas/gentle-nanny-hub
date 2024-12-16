@@ -39,24 +39,21 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или истек срок его действия");
       }
 
-      console.log("Код найден в БД, создаем сессию");
+      console.log("Код найден в БД, верифицируем через Supabase Auth");
 
-      // Создаем сессию с помощью signInWithOtp
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Верифицируем OTP через Supabase Auth
+      const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
-        options: {
-          data: {
-            verification_code: otp
-          }
-        }
+        token: otp,
+        type: 'email'
       });
 
-      if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
-        throw new Error("Ошибка при создании сессии");
+      if (verifyError) {
+        console.error("Ошибка при верификации кода:", verifyError);
+        throw new Error("Ошибка при верификации кода");
       }
 
-      console.log("Сессия создана, обновляем статус кода");
+      console.log("Код успешно верифицирован, обновляем статус");
 
       // Обновляем статус кода
       const { error: updateError } = await supabase
