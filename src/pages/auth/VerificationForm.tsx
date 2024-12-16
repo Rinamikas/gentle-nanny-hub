@@ -52,18 +52,16 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
-      // Создаем сессию через signInWithOtp
-      console.log("Создаем сессию через signInWithOtp");
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Создаем сессию через verifyOtp
+      console.log("Создаем сессию через verifyOtp");
+      const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
-        token: otp,
-        options: {
-          shouldCreateUser: true
-        }
+        type: 'email',
+        token: otp
       });
 
-      if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
+      if (verifyError) {
+        console.error("Ошибка при создании сессии:", verifyError);
         throw new Error("Ошибка при создании сессии");
       }
 
