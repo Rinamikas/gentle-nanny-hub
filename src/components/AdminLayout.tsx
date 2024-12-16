@@ -21,6 +21,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: User, label: "Профиль пользователя", path: "/profile" },
     { icon: Users, label: "Пользователи", path: "/users" },
     { icon: Home, label: "Семьи и дети", path: "/families" },
+    { icon: Users, label: "Няни", path: "/nannies" },
   ];
 
   const handleLogout = async () => {

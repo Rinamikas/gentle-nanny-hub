@@ -9,36 +9,107 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      nanny_documents: {
+        Row: {
+          created_at: string
+          file_url: string
+          id: string
+          nanny_id: string | null
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_url: string
+          id?: string
+          nanny_id?: string | null
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_url?: string
+          id?: string
+          nanny_id?: string | null
+          type?: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nanny_documents_nanny_id_fkey"
+            columns: ["nanny_id"]
+            isOneToOne: false
+            referencedRelation: "nanny_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nanny_profiles: {
         Row: {
+          address: string | null
+          age_group: string | null
+          birth_date: string | null
+          camera_number: string | null
+          camera_phone: string | null
           certifications: string[] | null
           created_at: string
+          deleted_at: string | null
           education: string | null
+          email: string | null
           experience_years: number | null
           hourly_rate: number | null
           id: string
+          is_deleted: boolean | null
+          phone: string | null
+          photo_url: string | null
+          position: string | null
+          relative_phone: string | null
           specializations: string[] | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          address?: string | null
+          age_group?: string | null
+          birth_date?: string | null
+          camera_number?: string | null
+          camera_phone?: string | null
           certifications?: string[] | null
           created_at?: string
+          deleted_at?: string | null
           education?: string | null
+          email?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
+          is_deleted?: boolean | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: string | null
+          relative_phone?: string | null
           specializations?: string[] | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          address?: string | null
+          age_group?: string | null
+          birth_date?: string | null
+          camera_number?: string | null
+          camera_phone?: string | null
           certifications?: string[] | null
           created_at?: string
+          deleted_at?: string | null
           education?: string | null
+          email?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
+          is_deleted?: boolean | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: string | null
+          relative_phone?: string | null
           specializations?: string[] | null
           updated_at?: string
           user_id?: string | null
@@ -49,6 +120,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nanny_training: {
+        Row: {
+          completed_at: string
+          created_at: string
+          id: string
+          nanny_id: string | null
+          stage: Database["public"]["Enums"]["training_stage"]
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          nanny_id?: string | null
+          stage: Database["public"]["Enums"]["training_stage"]
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          nanny_id?: string | null
+          stage?: Database["public"]["Enums"]["training_stage"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nanny_training_nanny_id_fkey"
+            columns: ["nanny_id"]
+            isOneToOne: false
+            referencedRelation: "nanny_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -204,6 +310,12 @@ export type Database = {
       }
     }
     Enums: {
+      document_type:
+        | "criminal_record"
+        | "image_usage_consent"
+        | "medical_book"
+        | "personal_data_consent"
+      training_stage: "stage_1" | "stage_2" | "stage_3" | "stage_4" | "stage_5"
       user_role: "nanny" | "owner" | "admin" | "parent"
       verification_status: "pending" | "verified" | "expired" | "failed"
     }
