@@ -39,15 +39,27 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или истек срок его действия");
       }
 
-      console.log("Код найден в БД, пытаемся верифицировать через auth API");
+      console.log("Код найден в БД, обновляем статус");
+
+      // Обновляем статус кода
+      const { error: updateError } = await supabase
+        .from("verification_codes")
+        .update({ status: 'verified' })
+        .eq("id", codes[0].id);
+
+      if (updateError) {
+        console.error("Ошибка при обновлении статуса кода:", updateError);
+        // Продолжаем выполнение, так как это некритичная ошибка
+      }
 
       // Создаем сессию через signInWithOtp
+      console.log("Создаем сессию через signInWithOtp");
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin,
+          shouldCreateUser: true,
           data: {
-            email_token: otp
+            email_verified: true
           }
         }
       });
@@ -57,33 +69,41 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при создании сессии");
       }
 
-      // После успешного создания сессии обновляем статус кода
-      const { error: updateError } = await supabase
-        .from("verification_codes")
-        .update({ status: 'verified' })
-        .eq("id", codes[0].id);
-
-      if (updateError) {
-        console.error("Ошибка при обновлении статуса кода:", updateError);
-        // Не выбрасываем ошибку, так как сессия уже создана
-      }
-
-      console.log("Верификация успешна, проверяем сессию");
+      console.log("Проверяем создание сессии");
       
       // Проверяем наличие сессии
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (session) {
-        console.log("Сессия успешно создана:", session);
-        toast({
-          title: "Успешно!",
-          description: "Вы успешно авторизовались",
-        });
-        onVerificationSuccess();
-      } else {
-        console.error("Сессия не найдена после создания");
-        throw new Error("Ошибка при создании сессии");
+      if (sessionError) {
+        console.error("Ошибка при получении сессии:", sessionError);
+        throw new Error("Ошибка при получении сессии");
       }
+
+      if (!session) {
+        console.error("Сессия не создана после signInWithOtp");
+        
+        // Пробуем создать сессию еще раз через signIn
+        const { data: signInRetryData, error: signInRetryError } = await supabase.auth.signInWithPassword({
+          email,
+          password: otp // Используем OTP как временный пароль
+        });
+
+        if (signInRetryError || !signInRetryData.session) {
+          console.error("Повторная попытка создания сессии не удалась:", signInRetryError);
+          throw new Error("Не удалось создать сессию");
+        }
+
+        console.log("Сессия успешно создана после повторной попытки");
+      } else {
+        console.log("Сессия успешно создана с первой попытки");
+      }
+
+      toast({
+        title: "Успешно!",
+        description: "Вы успешно авторизовались",
+      });
+
+      onVerificationSuccess();
 
     } catch (error: any) {
       console.error("Ошибка при проверке кода:", error);
