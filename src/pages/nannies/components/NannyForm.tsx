@@ -57,15 +57,23 @@ export default function NannyForm() {
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      console.log("Starting mutation with values:", values);
+      
       // Получаем текущую сессию пользователя
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw sessionError;
+      }
       
       if (!session?.user?.id) {
+        console.error("No user session found");
         throw new Error("Пользователь не авторизован");
       }
 
-      // Сначала обновляем или создаем запись в profiles
+      console.log("User session found:", session.user.id);
+
+      // Сначала создаем или обновляем запись в profiles
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({
@@ -76,21 +84,31 @@ export default function NannyForm() {
           email: values.email,
         });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        throw profileError;
+      }
 
-      // Затем обновляем или создаем профиль няни
-      const { error } = await supabase
+      console.log("Profile updated successfully");
+
+      // Затем создаем или обновляем профиль няни
+      const { error: nannyError } = await supabase
         .from("nanny_profiles")
         .upsert({
           id: id || undefined,
-          user_id: session.user.id, // Важно! Связываем с текущим пользователем
+          user_id: session.user.id,
           experience_years: values.experience_years,
           education: values.education,
           hourly_rate: values.hourly_rate,
           photo_url: values.photo_url,
         });
 
-      if (error) throw error;
+      if (nannyError) {
+        console.error("Nanny profile update error:", nannyError);
+        throw nannyError;
+      }
+
+      console.log("Nanny profile updated successfully");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });
