@@ -16,4 +16,11 @@ export interface Functions {
     Args: Record<PropertyKey, never>
     Returns: string
   }
+  get_user_roles: {
+    Args: Record<PropertyKey, never>
+    Returns: {
+      user_id: string
+      role: string
+    }[]
+  }
 }
