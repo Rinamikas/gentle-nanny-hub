@@ -18,34 +18,12 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Проверяем код в базе данных
-      const { data: codes, error: fetchError } = await supabase
-        .from("verification_codes")
-        .select("*")
-        .eq("email", email)
-        .eq("code", otp)
-        .eq("status", "pending")
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (fetchError) {
-        console.error("Ошибка при проверке кода в БД:", fetchError);
-        throw new Error("Ошибка при проверке кода");
-      }
-
-      if (!codes || codes.length === 0) {
-        console.error("Код не найден или истек срок его действия");
-        throw new Error("Неверный код или истек срок его действия");
-      }
-
-      console.log("Код найден в БД, верифицируем через Supabase Auth");
-
       // Верифицируем OTP через Supabase Auth
+      console.log("Верифицируем код через Supabase Auth");
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'signup'
+        type: 'email'
       });
 
       if (verifyError) {
@@ -53,17 +31,33 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при верификации кода");
       }
 
-      console.log("Код успешно верифицирован, обновляем статус");
+      console.log("Код успешно верифицирован, обновляем статус в БД");
 
-      // Обновляем статус кода
-      const { error: updateError } = await supabase
+      // После успешной верификации обновляем статус кода в БД
+      const { data: codes, error: fetchError } = await supabase
         .from("verification_codes")
-        .update({ status: 'verified' })
-        .eq("id", codes[0].id);
+        .select("*")
+        .eq("email", email)
+        .eq("code", otp)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      if (updateError) {
-        console.error("Ошибка при обновлении статуса кода:", updateError);
-        throw new Error("Ошибка при обновлении статуса кода");
+      if (fetchError) {
+        console.error("Ошибка при поиске кода в БД:", fetchError);
+        throw new Error("Ошибка при проверке кода");
+      }
+
+      if (codes && codes.length > 0) {
+        const { error: updateError } = await supabase
+          .from("verification_codes")
+          .update({ status: 'verified' })
+          .eq("id", codes[0].id);
+
+        if (updateError) {
+          console.error("Ошибка при обновлении статуса кода:", updateError);
+          throw new Error("Ошибка при обновлении статуса кода");
+        }
       }
 
       console.log("Верификация успешно завершена");
