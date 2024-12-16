@@ -18,7 +18,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("Начинаем проверку кода:", otp, "для email:", email);
 
     try {
-      // Сначала проверяем код в базе данных
+      // Проверяем код в базе данных
       const { data: codes, error: fetchError } = await supabase
         .from("verification_codes")
         .select("*")
@@ -39,29 +39,31 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или истек срок его действия");
       }
 
-      console.log("Код найден в БД, пытаемся верифицировать через auth API");
+      console.log("Код найден в БД, создаем сессию через auth API");
 
-      // Если код валиден, верифицируем через signInWithOtp для создания сессии
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // Создаем сессию через signInWithOtp
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
+        token: otp,
         options: {
+          shouldCreateUser: true,
           data: {
-            verification_code: otp
+            email_verified: true
           }
         }
       });
 
       if (signInError) {
-        console.error("Ошибка при верификации через signInWithOtp:", signInError);
-        
-        if (signInError.message?.includes('expired')) {
-          throw new Error("Срок действия кода истек. Пожалуйста, запросите новый код");
-        }
-        
-        throw new Error("Ошибка при проверке кода. Пожалуйста, попробуйте снова");
+        console.error("Ошибка при создании сессии:", signInError);
+        throw new Error("Ошибка при создании сессии");
       }
 
-      // После успешной верификации обновляем статус кода
+      if (!signInData.session) {
+        console.error("Сессия не была создана");
+        throw new Error("Не удалось создать сессию");
+      }
+
+      // После успешного создания сессии обновляем статус кода
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -69,7 +71,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса кода:", updateError);
-        // Не выбрасываем ошибку, так как верификация уже прошла успешно
+        // Не выбрасываем ошибку, так как сессия уже создана
       }
 
       console.log("Верификация успешна, обновляем UI");
@@ -79,7 +81,15 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         description: "Вы успешно авторизовались",
       });
 
-      onVerificationSuccess();
+      // Проверяем наличие сессии перед редиректом
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Сессия успешно создана:", session);
+        onVerificationSuccess();
+      } else {
+        console.error("Сессия не найдена после создания");
+        throw new Error("Ошибка при создании сессии");
+      }
 
     } catch (error: any) {
       console.error("Ошибка при проверке кода:", error);
@@ -95,7 +105,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-center space-y-2">
+      <div className="flex flex-col items-center space-y-4">
         <InputOTP
           maxLength={6}
           value={otp}
@@ -103,7 +113,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
             console.log("OTP value changed:", value);
             setOtp(value);
           }}
-          className="gap-2"
+          className="gap-2 justify-center"
         >
           <InputOTPGroup>
             <InputOTPSlot index={0} />
