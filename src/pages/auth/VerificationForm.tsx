@@ -30,15 +30,32 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Входим с помощью кода как пароля
-      console.log("2. Signing in with password");
+      // 2. Создаем пользователя через Edge Function
+      console.log("2. Creating user through Edge Function");
+      const { data: userData, error: createError } = await supabase.functions.invoke(
+        'create-user',
+        {
+          body: JSON.stringify({
+            email,
+            password: otp
+          })
+        }
+      );
+
+      if (createError) {
+        console.error("3. User creation error:", createError);
+        throw createError;
+      }
+
+      // 3. Входим с помощью созданных credentials
+      console.log("4. Signing in with created credentials");
       const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: otp,
       });
 
       if (signInError) {
-        console.error("3. Sign in error:", signInError);
+        console.error("5. Sign in error:", signInError);
         throw signInError;
       }
 
@@ -46,8 +63,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Не удалось создать сессию");
       }
 
-      // 3. Обновляем статус кода в БД
-      console.log("4. Updating verification code status");
+      // 4. Обновляем статус кода в БД
+      console.log("6. Updating verification code status");
       const { error: codeUpdateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -55,7 +72,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp);
 
       if (codeUpdateError) {
-        console.error("5. Status update error:", codeUpdateError);
+        console.error("7. Status update error:", codeUpdateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
