@@ -26,6 +26,34 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     };
   }, [cooldown]);
 
+  // Функция для выполнения запроса с повторными попытками
+  const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Попытка ${attempt} из ${maxRetries}`);
+        const result = await operation();
+        return result;
+      } catch (error: any) {
+        console.error(`Ошибка на попытке ${attempt}:`, error);
+        
+        // Если это ошибка rate limit, сразу пробрасываем её
+        if (error.message?.includes('rate_limit') || error.status === 429) {
+          throw error;
+        }
+
+        // Если это последняя попытка, пробрасываем ошибку
+        if (attempt === maxRetries) {
+          throw new Error("Не удалось выполнить операцию после нескольких попыток");
+        }
+
+        // Экспоненциальная задержка между попытками
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+        console.log(`Ждем ${delay}мс перед следующей попыткой`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -39,19 +67,21 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       console.log(`Попытка создания OTP сессии для ${email}`);
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            verification_code: verificationCode
+      // Используем функцию retryOperation для отправки OTP
+      const { error } = await retryOperation(async () => {
+        return await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: true,
+            data: {
+              verification_code: verificationCode
+            }
           }
-        }
+        });
       });
 
       if (error) {
         if (error.message?.includes('rate_limit') || error.status === 429) {
-          // Извлекаем время ожидания из сообщения об ошибке
           const waitTime = error.message.match(/\d+/)?.[0] || '60';
           setCooldown(parseInt(waitTime));
           throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`);
