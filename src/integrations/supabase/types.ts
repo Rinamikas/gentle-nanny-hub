@@ -198,7 +198,7 @@ export type Database = {
     }
     Enums: {
       user_role: "nanny" | "owner" | "admin" | "parent"
-      verification_status: "pending" | "verified" | "expired"
+      verification_status: "pending" | "verified" | "expired" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
