@@ -37,11 +37,26 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     console.log("Начало процесса отправки кода подтверждения для:", email);
 
     try {
+      // Сначала отправляем OTP через Supabase Auth
+      console.log("1. Отправка OTP через Supabase Auth");
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
+      });
+
+      if (otpError) {
+        console.error("Ошибка при отправке OTP:", otpError);
+        throw new Error("Не удалось отправить код верификации");
+      }
+
+      // После успешной отправки OTP сохраняем код в базу
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      console.log("Сохранение нового кода верификации");
+      console.log("2. Сохранение кода верификации в базу");
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -56,28 +71,14 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
         throw new Error("Не удалось сохранить код верификации");
       }
 
-      console.log("Код успешно сохранен, отправка через edge function");
-      
-      const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
-        body: { 
-          to: email,
-          code: verificationCode
-        }
-      });
-
-      if (sendError) {
-        console.error("Ошибка при отправке кода:", sendError);
-        throw new Error("Не удалось отправить код");
-      }
-
-      console.log("Код успешно отправлен");
+      console.log("3. Код успешно сохранен и отправлен");
       toast({
         title: "Код отправлен",
         description: "Проверьте вашу электронную почту",
       });
 
       onEmailSubmit(email);
-      setCooldown(60); // Устанавливаем 60-секундный кулдаун
+      setCooldown(60);
 
     } catch (error: any) {
       console.error("Ошибка в процессе отправки кода:", error);
