@@ -63,21 +63,18 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       }
 
       console.log("2. Отправка письма через Resend API");
-      const response = await fetch('/functions/v1/send-verification-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          to: [email],
-          code: verificationCode
-        })
-      });
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'send-verification-email',
+        {
+          body: JSON.stringify({
+            to: [email],
+            code: verificationCode
+          })
+        }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Ошибка при отправке письма:", errorData);
+      if (functionError) {
+        console.error("Ошибка при отправке письма:", functionError);
         throw new Error("Не удалось отправить письмо с кодом");
       }
 
