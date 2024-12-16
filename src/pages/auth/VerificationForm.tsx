@@ -31,12 +31,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       // 2. Создаем сессию через Supabase Auth
-      console.log("2. Creating session with custom token");
+      console.log("2. Creating session with OTP");
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email: email,
-        token: otp,
         options: {
-          shouldCreateUser: true,
           data: {
             email: email
           }
