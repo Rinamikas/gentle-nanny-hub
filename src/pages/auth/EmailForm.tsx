@@ -36,9 +36,35 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       } catch (error: any) {
         console.error(`Ошибка на попытке ${attempt}:`, error);
         
-        // Если это ошибка rate limit, сразу пробрасываем её
-        if (error.message?.includes('rate_limit') || error.status === 429) {
-          throw error;
+        // Проверяем наличие rate limit в теле ответа
+        let rateLimitError;
+        try {
+          if (error.body) {
+            const errorBody = JSON.parse(error.body);
+            if (errorBody.code === 'over_email_send_rate_limit') {
+              rateLimitError = errorBody;
+            }
+          }
+        } catch (e) {
+          console.error('Ошибка при парсинге тела ошибки:', e);
+        }
+        
+        // Если это ошибка rate limit, извлекаем время ожидания и пробрасываем ошибку
+        if (rateLimitError || error.message?.includes('rate_limit') || error.status === 429) {
+          let waitTime = '60';
+          
+          // Пытаемся извлечь точное время ожидания из сообщения
+          if (rateLimitError?.message) {
+            const match = rateLimitError.message.match(/\d+/);
+            if (match) waitTime = match[0];
+          } else if (error.message) {
+            const match = error.message.match(/\d+/);
+            if (match) waitTime = match[0];
+          }
+          
+          throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`, { 
+            cause: { waitTime: parseInt(waitTime) } 
+          });
         }
 
         // Если это последняя попытка, пробрасываем ошибку
@@ -56,6 +82,12 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Если уже идет отправка или активен cooldown, прерываем выполнение
+    if (isLoading || cooldown > 0) {
+      return;
+    }
+    
     setIsLoading(true);
     console.log("Начало процесса отправки кода подтверждения");
 
@@ -81,11 +113,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       });
 
       if (error) {
-        if (error.message?.includes('rate_limit') || error.status === 429) {
-          const waitTime = error.message.match(/\d+/)?.[0] || '60';
-          setCooldown(parseInt(waitTime));
-          throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`);
-        }
         throw error;
       }
 
@@ -127,6 +154,12 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
     } catch (error: any) {
       console.error("Ошибка в процессе отправки кода:", error);
+      
+      // Проверяем, есть ли информация о времени ожидания в ошибке
+      if (error.cause?.waitTime) {
+        setCooldown(error.cause.waitTime);
+      }
+      
       toast({
         variant: "destructive",
         title: "Ошибка",
