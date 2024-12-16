@@ -49,13 +49,14 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       if (updateError) {
         console.error("Ошибка при обновлении статуса кода:", updateError);
-        // Продолжаем выполнение, так как это некритичная ошибка
+        throw new Error("Ошибка при обновлении статуса кода");
       }
 
       // Создаем сессию через signInWithOtp
       console.log("Создаем сессию через signInWithOtp");
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
+        token: otp,
         options: {
           shouldCreateUser: true,
           data: {
@@ -69,34 +70,15 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Ошибка при создании сессии");
       }
 
-      console.log("Проверяем создание сессии");
-      
-      // Проверяем наличие сессии
+      // Проверяем создание сессии
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError) {
+      if (sessionError || !session) {
         console.error("Ошибка при получении сессии:", sessionError);
         throw new Error("Ошибка при получении сессии");
       }
 
-      if (!session) {
-        console.error("Сессия не создана после signInWithOtp");
-        
-        // Пробуем создать сессию еще раз через signIn
-        const { data: signInRetryData, error: signInRetryError } = await supabase.auth.signInWithPassword({
-          email,
-          password: otp // Используем OTP как временный пароль
-        });
-
-        if (signInRetryError || !signInRetryData.session) {
-          console.error("Повторная попытка создания сессии не удалась:", signInRetryError);
-          throw new Error("Не удалось создать сессию");
-        }
-
-        console.log("Сессия успешно создана после повторной попытки");
-      } else {
-        console.log("Сессия успешно создана с первой попытки");
-      }
+      console.log("Сессия успешно создана");
 
       toast({
         title: "Успешно!",
