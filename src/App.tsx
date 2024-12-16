@@ -11,13 +11,15 @@ function App() {
     <Router>
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
-        <Route path="/" element={<AdminLayout />}>
-          <Route path="users" element={<UsersPage />} />
-          <Route path="nannies" element={<NanniesPage />} />
-          <Route path="nannies/create" element={<NannyForm />} />
-          <Route path="nannies/:id/edit" element={<NannyForm />} />
-          <Route path="profile" element={<ProfilePage />} />
-        </Route>
+        <Route path="/" element={<AdminLayout>
+          <Routes>
+            <Route path="users" element={<UsersPage />} />
+            <Route path="nannies" element={<NanniesPage />} />
+            <Route path="nannies/create" element={<NannyForm />} />
+            <Route path="nannies/:id/edit" element={<NannyForm />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Routes>
+        </AdminLayout>} />
       </Routes>
     </Router>
   );

@@ -15,7 +15,11 @@ import { formSchema, FormValues } from "../types/form";
 import { DocumentType, NannyDocument } from "../types/documents";
 import { useEffect } from "react";
 
-export default function NannyForm() {
+interface NannyFormProps {
+  nannyId?: string;
+}
+
+const NannyForm = ({ nannyId }: NannyFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams();

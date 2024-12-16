@@ -15,14 +15,20 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
 
-  // Получаем данные текущего пользователя
-  const { data: session } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-
   const { data: profile, isLoading } = useQuery({
-    queryKey: ["profile", userId],
+    queryKey: ["profile"],
     queryFn: async () => {
-      if (!userId) return null;
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw new Error("Ошибка аутентификации");
+      }
+
+      if (!session?.user?.id) {
+        console.error("No active session");
+        throw new Error("Пользователь не аутентифицирован");
+      }
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -38,17 +44,20 @@ export default function ProfilePage() {
             *
           )
         `)
-        .eq("id", userId)
+        .eq("id", session.user.id)
         .single();
 
       if (profileError) throw profileError;
       return profileData;
     },
-    enabled: !!userId,
   });
 
   const uploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
+      if (!profile?.id) {
+        throw new Error("Профиль не найден");
+      }
+
       setUploading(true);
 
       if (!event.target.files || event.target.files.length === 0) {
@@ -57,7 +66,7 @@ export default function ProfilePage() {
 
       const file = event.target.files[0];
       const fileExt = file.name.split(".").pop();
-      const filePath = `${userId}/avatar.${fileExt}`;
+      const filePath = `${profile.id}/avatar.${fileExt}`;
 
       console.log("Uploading photo:", filePath);
 
@@ -73,11 +82,10 @@ export default function ProfilePage() {
         .from("nanny_files")
         .getPublicUrl(filePath);
 
-      // Обновляем URL фото в профиле
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ photo_url: publicUrl })
-        .eq("id", userId);
+        .eq("id", profile.id);
 
       if (updateError) throw updateError;
 
@@ -165,7 +173,7 @@ export default function ProfilePage() {
         {isNanny && profile.nanny_profiles?.[0] && (
           <div>
             <h2 className="text-lg font-semibold mb-4">Анкета няни</h2>
-            <NannyForm id={profile.nanny_profiles[0].id} />
+            <NannyForm nannyId={profile.nanny_profiles[0].id} />
           </div>
         )}
 
