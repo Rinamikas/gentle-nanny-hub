@@ -9,12 +9,27 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
 import { formSchema, FormValues } from "../types/form";
+import { useEffect } from "react";
 
 export default function NannyForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams();
   const queryClient = useQueryClient();
+  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      phone: "",
+      email: "",
+      experience_years: 0,
+      education: "",
+      hourly_rate: 0,
+      photo_url: "",
+    },
+  });
   
   const { data: nanny, isLoading } = useQuery({
     queryKey: ["nanny", id],
@@ -41,25 +56,27 @@ export default function NannyForm() {
     enabled: !!id,
   });
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: nanny?.profiles?.first_name || "",
-      last_name: nanny?.profiles?.last_name || "",
-      phone: nanny?.profiles?.phone || "",
-      email: nanny?.profiles?.email || "",
-      experience_years: nanny?.experience_years || 0,
-      education: nanny?.education || "",
-      hourly_rate: nanny?.hourly_rate || 0,
-      photo_url: nanny?.photo_url || "",
-    },
-  });
+  // Обновляем значения формы при загрузке данных
+  useEffect(() => {
+    if (nanny) {
+      console.log("Resetting form with nanny data:", nanny);
+      form.reset({
+        first_name: nanny.profiles?.first_name || "",
+        last_name: nanny.profiles?.last_name || "",
+        phone: nanny.profiles?.phone || "",
+        email: nanny.profiles?.email || "",
+        experience_years: nanny.experience_years || 0,
+        education: nanny.education || "",
+        hourly_rate: nanny.hourly_rate || 0,
+        photo_url: nanny.photo_url || "",
+      });
+    }
+  }, [nanny, form.reset]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
       console.log("Starting mutation with values:", values);
       
-      // Получаем текущую сессию пользователя
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("Session error:", sessionError);
