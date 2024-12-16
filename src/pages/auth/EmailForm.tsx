@@ -26,62 +26,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     };
   }, [cooldown]);
 
-  // Функция для выполнения запроса с повторными попытками
-  const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
-    let lastError;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Попытка ${attempt} из ${maxRetries}`);
-        const result = await operation();
-        return result;
-      } catch (err: any) {
-        console.error(`Ошибка на попытке ${attempt}:`, err);
-        lastError = err;
-        
-        // Проверяем специфические ошибки, которые не нужно повторять
-        if (err.status === 429 || (err.error && err.error.status === 429)) {
-          throw err;
-        }
-
-        // Если это последняя попытка, пробрасываем ошибку
-        if (attempt === maxRetries) {
-          break;
-        }
-
-        // Экспоненциальная задержка между попытками
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
-        console.log(`Ждем ${delay}мс перед следующей попыткой`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-    
-    // Если все попытки исчерпаны, проверяем тип последней ошибки
-    if (lastError?.message === "Load failed") {
-      throw new Error("Не удалось установить соединение с сервером. Пожалуйста, проверьте подключение к интернету и попробуйте снова.");
-    }
-    throw lastError;
-  };
-
-  const extractWaitTime = (error: any): number => {
-    try {
-      let errorBody;
-      if (error.body) {
-        errorBody = JSON.parse(error.body);
-      }
-      
-      if (errorBody?.message) {
-        const match = errorBody.message.match(/\d+/);
-        if (match) {
-          return parseInt(match[0]);
-        }
-      }
-    } catch (e) {
-      console.error('Ошибка при парсинге тела ошибки:', e);
-    }
-    return 60;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -90,14 +34,14 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     }
     
     setIsLoading(true);
-    console.log("Начало процесса отправки кода подтверждения");
+    console.log("Начало процесса отправки кода подтверждения для:", email);
 
     try {
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      console.log("Сохранение нового кода для:", email);
+      console.log("Сохранение нового кода верификации");
       const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
@@ -109,31 +53,31 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
 
       if (insertError) {
         console.error("Ошибка при сохранении кода:", insertError);
-        throw new Error("Ошибка при сохранении кода");
+        throw new Error("Не удалось сохранить код верификации");
       }
 
       console.log("Код успешно сохранен, отправка через edge function");
       
-      const { error: sendError } = await retryOperation(async () => {
-        return await supabase.functions.invoke('send-verification-email', {
-          body: { 
-            to: email,
-            code: verificationCode
-          }
-        });
+      const { error: sendError } = await supabase.functions.invoke('send-verification-email', {
+        body: { 
+          to: email,
+          code: verificationCode
+        }
       });
 
       if (sendError) {
         console.error("Ошибка при отправке кода:", sendError);
-        throw new Error("Ошибка при отправке кода");
+        throw new Error("Не удалось отправить код");
       }
 
+      console.log("Код успешно отправлен");
       toast({
         title: "Код отправлен",
         description: "Проверьте вашу электронную почту",
       });
 
       onEmailSubmit(email);
+      setCooldown(60); // Устанавливаем 60-секундный кулдаун
 
     } catch (error: any) {
       console.error("Ошибка в процессе отправки кода:", error);
@@ -141,7 +85,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: error instanceof Error ? error.message : "Произошла ошибка при отправке кода",
+        description: error.message || "Произошла ошибка при отправке кода",
       });
     } finally {
       setIsLoading(false);
@@ -157,6 +101,7 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className="w-full"
         />
       </div>
       <Button 
