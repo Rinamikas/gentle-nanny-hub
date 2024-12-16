@@ -21,7 +21,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("OTP:", otp);
 
     try {
-      // Проверяем код в базе данных
+      // 1. Проверяем код в базе данных
       console.log("1. Checking verification code");
       const { hasValidCode } = await testAuthFlow(email, otp);
       console.log("Verification code check result:", { hasValidCode });
@@ -30,26 +30,28 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // Верифицируем OTP
+      // 2. Верифицируем OTP через Supabase Auth
       console.log("2. Starting OTP verification");
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
         token: otp,
-        type: 'email'
+        options: {
+          shouldCreateUser: true
+        }
       });
       
-      console.log("3. Verify OTP response:", { data: verifyData, error: verifyError });
+      console.log("3. SignIn response:", { data: signInData, error: signInError });
 
-      if (verifyError) {
-        console.error("4. Verification error:", {
-          message: verifyError.message,
-          status: verifyError.status,
-          name: verifyError.name
+      if (signInError) {
+        console.error("4. SignIn error:", {
+          message: signInError.message,
+          status: signInError.status,
+          name: signInError.name
         });
-        throw verifyError;
+        throw signInError;
       }
 
-      // Проверяем создание сессии
+      // 3. Проверяем создание сессии
       console.log("5. Checking session after verification");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log("6. Current session:", session);
@@ -64,7 +66,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Сессия не была создана");
       }
 
-      // Обновляем статус кода в БД
+      // 4. Обновляем статус кода в БД
       console.log("9. Updating verification code status");
       const { error: updateError } = await supabase
         .from("verification_codes")
