@@ -21,17 +21,26 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("OTP:", otp);
 
     try {
-      // 1. Проверяем код в базе данных
-      console.log("1. Checking verification code");
-      const { hasValidCode } = await testAuthFlow(email, otp);
-      console.log("Verification code check result:", { hasValidCode });
+      // 1. Проверяем код в базе данных через RPC
+      console.log("1. Checking verification code through RPC");
+      const { data: hasValidCode, error: rpcError } = await supabase
+        .rpc('check_verification_code', {
+          p_email: email,
+          p_code: otp
+        });
 
+      if (rpcError) {
+        console.error("RPC error:", rpcError);
+        throw new Error("Ошибка при проверке кода");
+      }
+
+      console.log("Verification code check result:", hasValidCode);
       if (!hasValidCode) {
         throw new Error("Неверный код или срок его действия истек");
       }
 
       // 2. Создаем или обновляем пользователя через Edge Function
-      console.log("2. Creating user through Edge Function");
+      console.log("2. Creating/updating user through Edge Function");
       const { data: userData, error: createError } = await supabase.functions.invoke(
         'create-user',
         {
