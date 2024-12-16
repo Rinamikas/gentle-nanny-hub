@@ -30,7 +30,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем пользователя через Edge Function
+      // 2. Создаем или обновляем пользователя через Edge Function
       console.log("2. Creating user through Edge Function");
       const { data: userData, error: createError } = await supabase.functions.invoke(
         'create-user',
@@ -49,7 +49,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 3. Входим с помощью созданных credentials
       console.log("4. Signing in with created credentials");
-      const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: otp,
       });
@@ -59,7 +59,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw signInError;
       }
 
-      if (!session) {
+      if (!data.session) {
         throw new Error("Не удалось создать сессию");
       }
 
