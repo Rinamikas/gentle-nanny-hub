@@ -62,8 +62,8 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
             if (match) waitTime = match[0];
           }
           
-          throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`, { 
-            cause: { waitTime: parseInt(waitTime) } 
+          throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`, {
+            cause: { waitTime: parseInt(waitTime) }
           });
         }
 
