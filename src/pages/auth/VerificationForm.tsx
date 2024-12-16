@@ -95,7 +95,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      <div className="flex justify-center space-y-2">
         <InputOTP
           maxLength={6}
           value={otp}
@@ -103,6 +103,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
             console.log("OTP value changed:", value);
             setOtp(value);
           }}
+          className="gap-2"
         >
           <InputOTPGroup>
             <InputOTPSlot index={0} />

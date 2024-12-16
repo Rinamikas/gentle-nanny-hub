@@ -97,29 +97,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      console.log(`Попытка создания OTP сессии для ${email}`);
-
-      const { error: signInError } = await retryOperation(async () => {
-        return await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-            data: {
-              verification_code: verificationCode
-            }
-          }
-        });
-      });
-
-      if (signInError) {
-        if (signInError.status === 429) {
-          const waitTime = extractWaitTime(signInError);
-          setCooldown(waitTime);
-          throw new Error(`Пожалуйста, подождите ${waitTime} секунд перед повторной попыткой`);
-        }
-        throw signInError;
-      }
-
       console.log("Сохранение нового кода для:", email);
       const { error: insertError } = await supabase
         .from('verification_codes')
