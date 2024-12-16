@@ -48,14 +48,12 @@ export const useUsers = () => {
 
       // Создаем мапу ролей
       const rolesMap: { [key: string]: { role: string }[] } = {};
-      if (userRoles) {
-        userRoles.forEach((role: { user_id: string; role: string }) => {
-          if (!rolesMap[role.user_id]) {
-            rolesMap[role.user_id] = [];
-          }
-          rolesMap[role.user_id].push({ role: role.role });
-        });
-      }
+      userRoles.forEach((role: { user_id: string; role: string }) => {
+        if (!rolesMap[role.user_id]) {
+          rolesMap[role.user_id] = [];
+        }
+        rolesMap[role.user_id].push({ role: role.role });
+      });
 
       // Объединяем данные
       const usersWithRoles = profiles.map(profile => ({

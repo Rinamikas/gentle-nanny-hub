@@ -308,6 +308,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          role: string
+        }[]
+      }
     }
     Enums: {
       document_type:
