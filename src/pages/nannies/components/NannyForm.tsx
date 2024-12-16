@@ -57,10 +57,33 @@ export default function NannyForm() {
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      // Получаем текущую сессию пользователя
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      
+      if (!session?.user?.id) {
+        throw new Error("Пользователь не авторизован");
+      }
+
+      // Сначала обновляем или создаем запись в profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: session.user.id,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          phone: values.phone,
+          email: values.email,
+        });
+
+      if (profileError) throw profileError;
+
+      // Затем обновляем или создаем профиль няни
       const { error } = await supabase
         .from("nanny_profiles")
         .upsert({
           id: id || undefined,
+          user_id: session.user.id, // Важно! Связываем с текущим пользователем
           experience_years: values.experience_years,
           education: values.education,
           hourly_rate: values.hourly_rate,
