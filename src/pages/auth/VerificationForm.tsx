@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { testAuthFlow } from "@/tests/auth-flow.test";
 
 interface VerificationFormProps {
   email: string;
@@ -55,6 +54,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         console.error("3. User creation error:", createError);
         throw createError;
       }
+
+      // Добавляем задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 3. Входим с помощью созданных credentials
       console.log("4. Signing in with created credentials");
