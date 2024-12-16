@@ -24,16 +24,21 @@ export async function testAuthFlow(email: string, code: string) {
     if (codesError) throw codesError;
 
     // 3. Проверяем время жизни кода
+    let hasValidCode = false;
     if (codes && codes.length > 0) {
       const expiresAt = new Date(codes[0].expires_at);
       const now = new Date();
       console.log("Code expires at:", expiresAt);
       console.log("Current time:", now);
-      console.log("Time until expiration:", expiresAt.getTime() - now.getTime(), "ms");
+      const timeUntilExpiration = expiresAt.getTime() - now.getTime();
+      console.log("Time until expiration:", timeUntilExpiration, "ms");
+      hasValidCode = timeUntilExpiration > 0;
     }
 
+    console.log("Auth flow test results:", { hasValidCode, initialSession });
+
     return {
-      hasValidCode: codes && codes.length > 0,
+      hasValidCode,
       initialSession
     };
   } catch (error) {

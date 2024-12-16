@@ -21,45 +21,51 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("OTP:", otp);
 
     try {
-      // Запускаем тест процесса аутентификации
-      console.log("Running auth flow test");
-      const { hasValidCode, initialSession } = await testAuthFlow(email, otp);
-      console.log("Auth flow test results:", { hasValidCode, initialSession });
+      // Проверяем код в базе данных
+      console.log("1. Checking verification code");
+      const { hasValidCode } = await testAuthFlow(email, otp);
+      console.log("Verification code check result:", { hasValidCode });
 
       if (!hasValidCode) {
         throw new Error("Неверный код или срок его действия истек");
       }
 
       // Верифицируем OTP
-      console.log("Verifying OTP with type 'email'");
+      console.log("2. Starting OTP verification");
       const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: 'email'
       });
       
-      console.log("Verify OTP response:", { data: verifyData, error: verifyError });
+      console.log("3. Verify OTP response:", { data: verifyData, error: verifyError });
 
       if (verifyError) {
-        console.error("Verification error details:", {
-          error: verifyError,
+        console.error("4. Verification error:", {
           message: verifyError.message,
-          status: verifyError.status
+          status: verifyError.status,
+          name: verifyError.name
         });
         throw verifyError;
       }
 
       // Проверяем создание сессии
+      console.log("5. Checking session after verification");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log("Session after verification:", session);
+      console.log("6. Current session:", session);
       
-      if (sessionError || !session) {
-        console.error("Session error:", sessionError);
+      if (sessionError) {
+        console.error("7. Session error:", sessionError);
         throw new Error("Ошибка при создании сессии");
       }
 
+      if (!session) {
+        console.error("8. No session created");
+        throw new Error("Сессия не была создана");
+      }
+
       // Обновляем статус кода в БД
-      console.log("Updating verification code status");
+      console.log("9. Updating verification code status");
       const { error: updateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -67,7 +73,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp);
 
       if (updateError) {
-        console.error("Status update error:", updateError);
+        console.error("10. Status update error:", updateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
