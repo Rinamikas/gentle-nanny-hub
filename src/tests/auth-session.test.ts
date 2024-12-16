@@ -58,7 +58,7 @@ describe('Authentication Flow', () => {
 
     // Mock auth methods with proper return types
     vi.spyOn(supabase.auth, 'signInWithOtp').mockResolvedValue({
-      data: { session: mockSession },
+      data: { session: mockSession, user: mockSession.user },
       error: null
     });
 
@@ -68,12 +68,12 @@ describe('Authentication Flow', () => {
     });
 
     // Simulate verification process
-    const { data, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
 
     expect(error).toBeNull();
-    expect(data.session).toBeDefined();
-    if (data.session) {
-      expect(data.session.access_token).toBe('test_token');
+    expect(session).toBeDefined();
+    if (session) {
+      expect(session.access_token).toBe('test_token');
     }
 
     // Проверяем получение сессии

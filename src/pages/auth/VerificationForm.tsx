@@ -44,7 +44,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // Создаем сессию через signInWithOtp
       const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        token: otp,
         options: {
           shouldCreateUser: true,
           data: {
@@ -56,11 +55,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       if (signInError) {
         console.error("Ошибка при создании сессии:", signInError);
         throw new Error("Ошибка при создании сессии");
-      }
-
-      if (!signInData.session) {
-        console.error("Сессия не была создана");
-        throw new Error("Не удалось создать сессию");
       }
 
       // После успешного создания сессии обновляем статус кода
