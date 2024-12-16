@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Menu, User, Users, Home } from "lucide-react";
+import { Menu, User, Users, Home, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import LoadingScreen from "./LoadingScreen";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,37 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: Users, label: "Пользователи", path: "/users" },
     { icon: Home, label: "Семьи и дети", path: "/families" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      console.log("Начинаем процесс выхода...");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Ошибка при выходе:", error);
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Не удалось выйти из системы",
+        });
+        return;
+      }
+
+      console.log("Выход успешно выполнен");
+      toast({
+        title: "Успешно",
+        description: "Вы вышли из системы",
+      });
+      navigate("/auth");
+    } catch (error) {
+      console.error("Неожиданная ошибка при выходе:", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Произошла неожиданная ошибка",
+      });
+    }
+  };
 
   useEffect(() => {
     // Проверяем, не находимся ли мы уже на странице auth
@@ -77,7 +109,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed top-0 left-0 z-40 h-screen transition-transform bg-[#8B5CF6] border-r border-[#7C3AED]",
@@ -105,32 +136,55 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             <Menu className="h-5 w-5" />
           </Button>
         </div>
-        <nav className="p-2">
-          {menuItems.map((item) => (
+        <nav className="flex flex-col justify-between h-[calc(100%-4rem)]">
+          <div className="p-2">
+            {menuItems.map((item) => (
+              <Button
+                key={item.path}
+                variant="ghost"
+                onClick={() => navigate(item.path)}
+                className={cn(
+                  "w-full justify-start mb-1 text-white hover:text-white hover:bg-[#7C3AED]",
+                  isSidebarOpen ? "px-4" : "px-2"
+                )}
+              >
+                <item.icon className="h-5 w-5 mr-2" />
+                <span
+                  className={cn(
+                    "transition-opacity whitespace-nowrap",
+                    isSidebarOpen ? "opacity-100" : "opacity-0 w-0"
+                  )}
+                >
+                  {item.label}
+                </span>
+              </Button>
+            ))}
+          </div>
+          
+          {/* Кнопка выхода внизу сайдбара */}
+          <div className="p-2 mt-auto">
             <Button
-              key={item.path}
               variant="ghost"
-              onClick={() => navigate(item.path)}
+              onClick={handleLogout}
               className={cn(
                 "w-full justify-start mb-1 text-white hover:text-white hover:bg-[#7C3AED]",
                 isSidebarOpen ? "px-4" : "px-2"
               )}
             >
-              <item.icon className="h-5 w-5 mr-2" />
+              <LogOut className="h-5 w-5 mr-2" />
               <span
                 className={cn(
                   "transition-opacity whitespace-nowrap",
                   isSidebarOpen ? "opacity-100" : "opacity-0 w-0"
                 )}
               >
-                {item.label}
+                Выйти
               </span>
             </Button>
-          ))}
+          </div>
         </nav>
       </aside>
 
-      {/* Main content */}
       <main
         className={cn(
           "transition-all duration-300 p-8 bg-gray-50",
