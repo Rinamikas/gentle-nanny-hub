@@ -14,19 +14,22 @@ interface EmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log("Получен запрос на отправку email");
+  
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY is not set");
-      throw new Error("RESEND_API_KEY is not configured");
+      console.error("RESEND_API_KEY не настроен");
+      throw new Error("RESEND_API_KEY не настроен");
     }
 
     const { to, code }: EmailRequest = await req.json();
     
-    console.log("Attempting to send verification email to:", to);
+    console.log("Отправка кода верификации на:", to);
     
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -43,75 +46,16 @@ const handler = async (req: Request): Promise<Response> => {
           <html>
             <head>
               <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Код подтверждения</title>
-              <style>
-                body {
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                  line-height: 1.6;
-                  margin: 0;
-                  padding: 0;
-                  background-color: #f4f4f5;
-                }
-                .container {
-                  max-width: 600px;
-                  margin: 2rem auto;
-                  padding: 2rem;
-                  background-color: white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                }
-                .header {
-                  text-align: center;
-                  margin-bottom: 2rem;
-                }
-                .logo {
-                  color: #8B5CF6;
-                  font-size: 1.5rem;
-                  font-weight: bold;
-                  margin-bottom: 1rem;
-                }
-                .code {
-                  text-align: center;
-                  font-size: 2rem;
-                  letter-spacing: 0.5rem;
-                  color: #8B5CF6;
-                  background-color: #f4f4f5;
-                  padding: 1rem;
-                  border-radius: 4px;
-                  margin: 2rem 0;
-                }
-                .footer {
-                  text-align: center;
-                  color: #6b7280;
-                  font-size: 0.875rem;
-                  margin-top: 2rem;
-                }
-              </style>
             </head>
             <body>
-              <div class="container">
-                <div class="header">
-                  <div class="logo">Nanny Management System</div>
-                  <h1 style="color: #1f2937; font-size: 1.5rem; margin-bottom: 1rem;">
-                    Код подтверждения для входа
-                  </h1>
-                  <p style="color: #6b7280;">
-                    Используйте этот код для подтверждения вашего email адреса
-                  </p>
-                </div>
-                
-                <div class="code">
+              <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #8B5CF6; text-align: center;">Nanny Management System</h1>
+                <p style="text-align: center;">Ваш код подтверждения:</p>
+                <div style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
                   ${code}
                 </div>
-                
-                <p style="color: #6b7280; text-align: center;">
-                  Код действителен в течение 30 минут
-                </p>
-                
-                <div class="footer">
-                  <p>Если вы не запрашивали этот код, просто проигнорируйте это письмо.</p>
-                </div>
+                <p style="text-align: center; color: #6b7280;">Код действителен в течение 10 минут</p>
               </div>
             </body>
           </html>
@@ -120,11 +64,11 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const responseData = await res.json();
-    console.log("Resend API response:", responseData);
+    console.log("Ответ от Resend API:", responseData);
 
     if (!res.ok) {
-      console.error("Error from Resend API:", responseData);
-      throw new Error(responseData.message || "Failed to send email");
+      console.error("Ошибка от Resend API:", responseData);
+      throw new Error(responseData.message || "Не удалось отправить email");
     }
 
     return new Response(JSON.stringify(responseData), {
@@ -132,11 +76,11 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
     });
   } catch (error: any) {
-    console.error("Error in send-verification-email function:", error);
+    console.error("Ошибка в функции send-verification-email:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: "Check if RESEND_API_KEY is properly configured"
+        details: "Проверьте настройку RESEND_API_KEY"
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
