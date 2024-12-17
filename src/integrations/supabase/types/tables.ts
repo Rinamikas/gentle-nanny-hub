@@ -3,8 +3,8 @@ import { NannyTables } from './nanny-types';
 import { ParentTables } from './parent-types';
 import { VerificationTables } from './verification-types';
 
-export type NannyProfile = NannyTables['nanny_profiles']['Row'];
-export type ParentProfile = ParentTables['parent_profiles']['Row'];
+export type { NannyProfile } from './nanny-types';
+export type { ParentProfile } from './parent-types';
 
 export interface Tables extends 
   ProfileTables,
