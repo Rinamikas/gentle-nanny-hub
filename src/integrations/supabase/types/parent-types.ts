@@ -1,14 +1,18 @@
 import type { Database } from './database';
 
-export type ParentTables = {
+type ParentProfileRow = Database['public']['Tables']['parent_profiles']['Row'];
+type ParentProfileInsert = Database['public']['Tables']['parent_profiles']['Insert'];
+type ParentProfileUpdate = Database['public']['Tables']['parent_profiles']['Update'];
+
+export interface ParentTables {
   parent_profiles: {
-    Row: Database['public']['Tables']['parent_profiles']['Row'];
-    Insert: Database['public']['Tables']['parent_profiles']['Insert'];
-    Update: Database['public']['Tables']['parent_profiles']['Update'];
+    Row: ParentProfileRow;
+    Insert: ParentProfileInsert;
+    Update: ParentProfileUpdate;
   }
 }
 
-export type ParentProfile = ParentTables['parent_profiles']['Row'] & {
+export interface ParentProfile extends ParentProfileRow {
   profiles?: {
     first_name: string | null;
     last_name: string | null;

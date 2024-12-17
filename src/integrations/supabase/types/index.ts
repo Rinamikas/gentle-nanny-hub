@@ -3,3 +3,4 @@ export * from './enums';
 export * from './tables';
 export * from './functions';
 export * from './database';
+export * from './parent-types';
