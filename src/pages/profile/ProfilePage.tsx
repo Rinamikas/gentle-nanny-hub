@@ -16,6 +16,22 @@ interface NannyProfile {
   experience_years: number | null;
   education: string | null;
   hourly_rate: number | null;
+  birth_date: string | null;
+  phone: string | null;
+  email: string | null;
+  photo_url: string | null;
+  position: string | null;
+  age_group: string | null;
+  camera_phone: string | null;
+  camera_number: string | null;
+  address: string | null;
+  relative_phone: string | null;
+  specializations: string[] | null;
+  certifications: string[] | null;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean | null;
+  deleted_at: string | null;
 }
 
 interface ParentProfile {
@@ -24,6 +40,8 @@ interface ParentProfile {
   children_count: number | null;
   address: string | null;
   special_requirements: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UserRole {
@@ -40,8 +58,8 @@ interface Profile {
   created_at: string;
   updated_at: string;
   user_roles: UserRole[];
-  nanny_profiles?: NannyProfile[];
-  parent_profiles?: ParentProfile[];
+  nanny_profiles: NannyProfile[] | null;
+  parent_profiles: ParentProfile[] | null;
 }
 
 export default function ProfilePage() {
@@ -68,7 +86,6 @@ export default function ProfilePage() {
 
       console.log("ID пользователя:", session.user.id);
 
-      // Сначала получаем базовый профиль
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select(`
@@ -86,7 +103,15 @@ export default function ProfilePage() {
       }
 
       console.log("Профиль загружен:", profileData);
-      return profileData as Profile;
+      
+      // Преобразуем данные в правильный формат
+      const formattedData: Profile = {
+        ...profileData,
+        nanny_profiles: profileData.nanny_profiles ? [profileData.nanny_profiles] : null,
+        parent_profiles: profileData.parent_profiles ? [profileData.parent_profiles] : null
+      };
+
+      return formattedData;
     },
     retry: 1,
   });
