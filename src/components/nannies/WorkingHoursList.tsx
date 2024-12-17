@@ -8,20 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 
 interface WorkingHoursListProps {
   nannyId: string;
 }
-
-const daysOfWeek = [
-  "Воскресенье",
-  "Понедельник",
-  "Вторник",
-  "Среда",
-  "Четверг",
-  "Пятница",
-  "Суббота",
-];
 
 export function WorkingHoursList({ nannyId }: WorkingHoursListProps) {
   const { data: workingHours, isLoading } = useQuery({
@@ -31,7 +23,8 @@ export function WorkingHoursList({ nannyId }: WorkingHoursListProps) {
         .from("working_hours")
         .select("*")
         .eq("nanny_id", nannyId)
-        .order("day_of_week");
+        .order("work_date")
+        .order("start_time");
 
       if (error) throw error;
       return data;
@@ -46,7 +39,7 @@ export function WorkingHoursList({ nannyId }: WorkingHoursListProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>День недели</TableHead>
+          <TableHead>Дата</TableHead>
           <TableHead>Начало работы</TableHead>
           <TableHead>Конец работы</TableHead>
         </TableRow>
@@ -54,7 +47,9 @@ export function WorkingHoursList({ nannyId }: WorkingHoursListProps) {
       <TableBody>
         {workingHours?.map((hours) => (
           <TableRow key={hours.id}>
-            <TableCell>{daysOfWeek[hours.day_of_week]}</TableCell>
+            <TableCell>
+              {format(new Date(hours.work_date), "d MMMM yyyy", { locale: ru })}
+            </TableCell>
             <TableCell>{hours.start_time}</TableCell>
             <TableCell>{hours.end_time}</TableCell>
           </TableRow>

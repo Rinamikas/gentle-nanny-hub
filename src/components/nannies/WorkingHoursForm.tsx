@@ -14,9 +14,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useQueryClient } from "@tanstack/react-query";
 
 const workingHoursSchema = z.object({
-  day_of_week: z.number().min(0).max(6),
+  work_date: z.date(),
   start_time: z.string(),
   end_time: z.string(),
 });
@@ -25,27 +36,16 @@ type WorkingHoursFormValues = z.infer<typeof workingHoursSchema>;
 
 interface WorkingHoursFormProps {
   nannyId: string;
-  onSuccess?: () => void;
 }
 
-const daysOfWeek = [
-  "Воскресенье",
-  "Понедельник",
-  "Вторник",
-  "Среда",
-  "Четверг",
-  "Пятница",
-  "Суббота",
-];
-
-export function WorkingHoursForm({ nannyId, onSuccess }: WorkingHoursFormProps) {
+export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   const { toast } = useToast();
-  const [selectedDay, setSelectedDay] = useState<number>(1);
+  const queryClient = useQueryClient();
+  const [date, setDate] = useState<Date>();
 
   const form = useForm<WorkingHoursFormValues>({
     resolver: zodResolver(workingHoursSchema),
     defaultValues: {
-      day_of_week: 1,
       start_time: "09:00",
       end_time: "18:00",
     },
@@ -53,9 +53,10 @@ export function WorkingHoursForm({ nannyId, onSuccess }: WorkingHoursFormProps) 
 
   const onSubmit = async (values: WorkingHoursFormValues) => {
     try {
-      const { error } = await supabase.from("working_hours").upsert({
+      console.log("Сохраняем рабочие часы:", values);
+      const { error } = await supabase.from("working_hours").insert({
         nanny_id: nannyId,
-        day_of_week: selectedDay,
+        work_date: format(values.work_date, "yyyy-MM-dd"),
         start_time: values.start_time,
         end_time: values.end_time,
       });
@@ -67,7 +68,9 @@ export function WorkingHoursForm({ nannyId, onSuccess }: WorkingHoursFormProps) 
         description: "Рабочие часы сохранены",
       });
 
-      onSuccess?.();
+      queryClient.invalidateQueries({ queryKey: ["working-hours", nannyId] });
+      form.reset();
+      setDate(undefined);
     } catch (error) {
       console.error("Ошибка при сохранении рабочих часов:", error);
       toast({
@@ -81,18 +84,50 @@ export function WorkingHoursForm({ nannyId, onSuccess }: WorkingHoursFormProps) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {daysOfWeek.map((day, index) => (
-            <Button
-              key={index}
-              type="button"
-              variant={selectedDay === index ? "default" : "outline"}
-              onClick={() => setSelectedDay(index)}
-            >
-              {day}
-            </Button>
-          ))}
-        </div>
+        <FormField
+          control={form.control}
+          name="work_date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Дата</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP", { locale: ru })
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDate(date);
+                        field.onChange(date);
+                      }
+                    }}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <FormField

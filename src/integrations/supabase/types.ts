@@ -475,30 +475,30 @@ export type Database = {
       working_hours: {
         Row: {
           created_at: string
-          day_of_week: number
           end_time: string
           id: string
           nanny_id: string
           start_time: string
           updated_at: string
+          work_date: string
         }
         Insert: {
           created_at?: string
-          day_of_week: number
           end_time: string
           id?: string
           nanny_id: string
           start_time: string
           updated_at?: string
+          work_date: string
         }
         Update: {
           created_at?: string
-          day_of_week?: number
           end_time?: string
           id?: string
           nanny_id?: string
           start_time?: string
           updated_at?: string
+          work_date?: string
         }
         Relationships: [
           {
