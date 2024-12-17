@@ -11,6 +11,17 @@ export interface ParentProfile {
   status: Database['public']['Enums']['parent_status'] | null;
   additional_phone: string | null;
   notes: string | null;
+  profiles?: {
+    first_name: string | null;
+    last_name: string | null;
+    phone: string | null;
+  };
+  children?: Array<{
+    id: string;
+    first_name: string;
+    birth_date: string;
+    gender: string;
+  }>;
 }
 
 export interface ParentTables {
