@@ -1,6 +1,8 @@
 import type { Database } from './database';
 
-export interface ParentProfile extends Database['public']['Tables']['parent_profiles']['Row'] {
+export type ParentProfileBase = Database['public']['Tables']['parent_profiles']['Row'];
+
+export interface ParentProfile extends ParentProfileBase {
   profiles?: {
     first_name: string | null;
     last_name: string | null;
@@ -14,7 +16,7 @@ export interface ParentProfile extends Database['public']['Tables']['parent_prof
 
 export interface ParentTables {
   parent_profiles: {
-    Row: Database['public']['Tables']['parent_profiles']['Row'];
+    Row: ParentProfileBase;
     Insert: Database['public']['Tables']['parent_profiles']['Insert'];
     Update: Database['public']['Tables']['parent_profiles']['Update'];
   }
