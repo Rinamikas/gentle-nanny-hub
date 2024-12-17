@@ -42,16 +42,16 @@ const ProfilePage = () => {
         throw profileError;
       }
 
-      // Получаем роли пользователя отдельным запросом
+      // Получаем роли пользователя через функцию
       const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id);
+        .rpc('get_user_roles', { user_id_param: session.user.id });
 
       if (rolesError) {
         console.error("Ошибка при загрузке ролей:", rolesError);
         throw rolesError;
       }
+
+      console.log("Роли пользователя:", rolesData);
 
       // Получаем данные няни
       const { data: nannyData } = await supabase
@@ -67,7 +67,7 @@ const ProfilePage = () => {
 
       const formattedData: Profile = {
         ...profileData,
-        user_roles: rolesData || [],
+        user_roles: rolesData?.map(({ role }) => ({ role })) || [],
         nanny_profiles: nannyData,
         parent_profiles: parentData,
       };
