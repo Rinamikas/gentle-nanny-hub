@@ -42,9 +42,13 @@ const ProfilePage = () => {
         throw profileError;
       }
 
-      // Получаем роли пользователя через функцию
+      console.log("Загружен профиль:", profileData);
+
+      // Получаем роли пользователя через новую функцию
       const { data: rolesData, error: rolesError } = await supabase
-        .rpc('get_user_roles', { user_id_param: session.user.id });
+        .rpc('get_user_roles_by_id', { 
+          user_id_param: session.user.id 
+        });
 
       if (rolesError) {
         console.error("Ошибка при загрузке ролей:", rolesError);
@@ -54,25 +58,35 @@ const ProfilePage = () => {
       console.log("Роли пользователя:", rolesData);
 
       // Получаем данные няни
-      const { data: nannyData } = await supabase
+      const { data: nannyData, error: nannyError } = await supabase
         .from("nanny_profiles")
         .select("*")
-        .eq("user_id", session.user.id);
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (nannyError && nannyError.code !== 'PGRST116') {
+        console.error("Ошибка при загрузке профиля няни:", nannyError);
+      }
 
       // Получаем данные родителя
-      const { data: parentData } = await supabase
+      const { data: parentData, error: parentError } = await supabase
         .from("parent_profiles")
         .select("*")
-        .eq("user_id", session.user.id);
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (parentError && parentError.code !== 'PGRST116') {
+        console.error("Ошибка при загрузке профиля родителя:", parentError);
+      }
 
       const formattedData: Profile = {
         ...profileData,
         user_roles: rolesData?.map(({ role }) => ({ role })) || [],
-        nanny_profiles: nannyData,
-        parent_profiles: parentData,
+        nanny_profiles: nannyData ? [nannyData] : [],
+        parent_profiles: parentData ? [parentData] : [],
       };
 
-      console.log("Загруженные данные профиля:", formattedData);
+      console.log("Форматированные данные профиля:", formattedData);
       return formattedData;
     },
   });
