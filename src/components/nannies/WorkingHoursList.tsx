@@ -16,9 +16,12 @@ interface WorkingHoursListProps {
 }
 
 export function WorkingHoursList({ nannyId }: WorkingHoursListProps) {
+  console.log("Rendering WorkingHoursList for nanny:", nannyId);
+  
   const { data: workingHours, isLoading } = useQuery({
     queryKey: ["working-hours", nannyId],
     queryFn: async () => {
+      console.log("Fetching working hours for nanny:", nannyId);
       const { data, error } = await supabase
         .from("working_hours")
         .select("*")
@@ -26,14 +29,22 @@ export function WorkingHoursList({ nannyId }: WorkingHoursListProps) {
         .order("work_date")
         .order("start_time");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching working hours:", error);
+        throw error;
+      }
+      
+      console.log("Received working hours:", data);
       return data;
     },
   });
 
   if (isLoading) {
+    console.log("Loading working hours...");
     return <div>Загрузка...</div>;
   }
+
+  console.log("Rendering working hours table with data:", workingHours);
 
   return (
     <Table>
