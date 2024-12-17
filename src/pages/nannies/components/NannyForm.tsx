@@ -15,11 +15,7 @@ import { formSchema, FormValues } from "../types/form";
 import { DocumentType, NannyDocument } from "../types/documents";
 import { useEffect } from "react";
 
-interface NannyFormProps {
-  nannyId?: string;
-}
-
-const NannyForm = ({ nannyId }: NannyFormProps) => {
+const NannyForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -51,11 +47,14 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
     },
   });
 
+  console.log("Fetching nanny data for ID:", id);
+
   const { data: nanny, isLoading } = useQuery({
     queryKey: ["nanny", id],
     queryFn: async () => {
       if (!id) return null;
       
+      console.log("Making Supabase query for nanny ID:", id);
       const { data, error } = await supabase
         .from("nanny_profiles")
         .select(`
@@ -77,7 +76,12 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching nanny data:", error);
+        throw error;
+      }
+      
+      console.log("Received nanny data:", data);
       return data;
     },
     enabled: !!id,
@@ -85,6 +89,7 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
 
   useEffect(() => {
     if (nanny) {
+      console.log("Setting form values from nanny data:", nanny);
       const documents = nanny.nanny_documents?.reduce((acc: any, doc: any) => {
         acc[doc.type] = doc.file_url;
         return acc;
@@ -229,6 +234,8 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
           .upsert({
             nanny_id: nannyData.id,
             stage: values.training_stage,
+          }, {
+            onConflict: 'nanny_id'
           });
 
         if (trainingError) {
@@ -238,6 +245,8 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
 
         console.log("Training stage updated successfully");
       }
+
+      return nannyData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });
@@ -258,6 +267,7 @@ const NannyForm = ({ nannyId }: NannyFormProps) => {
   });
 
   const onSubmit = (data: FormValues) => {
+    console.log("Form submitted with data:", data);
     mutation.mutate(data);
   };
 
