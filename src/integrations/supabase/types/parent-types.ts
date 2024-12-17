@@ -1,8 +1,21 @@
 import type { Database } from './database';
 
-export type ParentProfileBase = Database['public']['Tables']['parent_profiles']['Row'];
+// Define the base interface for parent profile data
+export interface ParentProfileData {
+  id: string;
+  user_id: string | null;
+  children_count: number | null;
+  address: string | null;
+  special_requirements: string | null;
+  created_at: string;
+  updated_at: string;
+  status: Database['public']['Enums']['parent_status'] | null;
+  additional_phone: string | null;
+  notes: string | null;
+}
 
-export interface ParentProfile extends ParentProfileBase {
+// Extend the base interface for the full parent profile
+export interface ParentProfile extends ParentProfileData {
   profiles?: {
     first_name: string | null;
     last_name: string | null;
@@ -14,10 +27,11 @@ export interface ParentProfile extends ParentProfileBase {
   }>;
 }
 
+// Define the table interface
 export interface ParentTables {
   parent_profiles: {
-    Row: ParentProfileBase;
-    Insert: Database['public']['Tables']['parent_profiles']['Insert'];
-    Update: Database['public']['Tables']['parent_profiles']['Update'];
+    Row: ParentProfileData;
+    Insert: Omit<ParentProfileData, 'id' | 'created_at' | 'updated_at'>;
+    Update: Partial<Omit<ParentProfileData, 'id'>>;
   }
 }
