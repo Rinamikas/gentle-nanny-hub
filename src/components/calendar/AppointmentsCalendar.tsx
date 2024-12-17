@@ -138,8 +138,8 @@ export default function AppointmentsCalendar() {
         <DragAndDropCalendar
           localizer={localizer}
           events={events}
-          startAccessor="start"
-          endAccessor="end"
+          startAccessor={(event: CalendarEvent) => event.start}
+          endAccessor={(event: CalendarEvent) => event.end}
           style={{ height: "100%" }}
           onSelectEvent={handleEventClick}
           onEventDrop={handleEventDrop}

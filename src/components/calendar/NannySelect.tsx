@@ -48,7 +48,7 @@ export function NannySelect({ value, onSelect }: NannySelectProps) {
         <SelectValue placeholder="Выберите няню" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Все няни</SelectItem>
+        <SelectItem value="all">Все няни</SelectItem>
         {nannies?.map((nanny) => (
           <SelectItem key={nanny.id} value={nanny.id}>
             {nanny.profiles?.first_name} {nanny.profiles?.last_name}
