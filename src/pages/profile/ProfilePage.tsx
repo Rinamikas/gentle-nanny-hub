@@ -10,11 +10,45 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import NannyForm from "../nannies/components/NannyForm";
 
+interface NannyProfile {
+  id: string;
+  user_id: string | null;
+  experience_years: number | null;
+  education: string | null;
+  hourly_rate: number | null;
+}
+
+interface ParentProfile {
+  id: string;
+  user_id: string | null;
+  children_count: number | null;
+  address: string | null;
+  special_requirements: string | null;
+}
+
+interface UserRole {
+  role: "nanny" | "owner" | "admin" | "parent";
+}
+
+interface Profile {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  created_at: string;
+  updated_at: string;
+  user_roles: UserRole[];
+  nanny_profiles?: NannyProfile[];
+  parent_profiles?: ParentProfile[];
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading } = useQuery<Profile>({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Начинаем загрузку профиля...");
@@ -37,7 +71,12 @@ export default function ProfilePage() {
       // Сначала получаем базовый профиль
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*, user_roles(role)")
+        .select(`
+          *,
+          user_roles (role),
+          nanny_profiles (*),
+          parent_profiles (*)
+        `)
         .eq("id", session.user.id)
         .single();
 
@@ -46,40 +85,8 @@ export default function ProfilePage() {
         throw profileError;
       }
 
-      console.log("Базовый профиль загружен:", profileData);
-
-      // Затем, в зависимости от роли, загружаем дополнительные данные
-      if (profileData.user_roles?.[0]?.role === 'nanny') {
-        const { data: nannyData, error: nannyError } = await supabase
-          .from("nanny_profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (nannyError && nannyError.code !== 'PGRST116') {
-          console.error("Ошибка загрузки профиля няни:", nannyError);
-          throw nannyError;
-        }
-
-        return { ...profileData, nanny_profiles: nannyData ? [nannyData] : [] };
-      }
-
-      if (profileData.user_roles?.[0]?.role === 'parent') {
-        const { data: parentData, error: parentError } = await supabase
-          .from("parent_profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (parentError && parentError.code !== 'PGRST116') {
-          console.error("Ошибка загрузки профиля родителя:", parentError);
-          throw parentError;
-        }
-
-        return { ...profileData, parent_profiles: parentData ? [parentData] : [] };
-      }
-
-      return profileData;
+      console.log("Профиль загружен:", profileData);
+      return profileData as Profile;
     },
     retry: 1,
   });
