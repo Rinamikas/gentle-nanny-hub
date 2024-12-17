@@ -1,5 +1,7 @@
 import { Json } from './json';
 
+export type DocumentType = 'criminal_record' | 'image_usage_consent' | 'medical_book' | 'personal_data_consent';
+
 export interface NannyTables {
   nanny_profiles: {
     Row: {
