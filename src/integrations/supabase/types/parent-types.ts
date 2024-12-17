@@ -1,6 +1,10 @@
-import type { Tables } from '../types';
+import type { Database } from '../types/database';
 
-export interface ParentProfile extends Tables['parent_profiles'] {
+type ParentProfileRow = Database['public']['Tables']['parent_profiles']['Row'];
+type ParentProfileInsert = Database['public']['Tables']['parent_profiles']['Insert'];
+type ParentProfileUpdate = Database['public']['Tables']['parent_profiles']['Update'];
+
+export interface ParentProfile extends ParentProfileRow {
   profiles?: {
     first_name: string | null;
     last_name: string | null;
@@ -14,28 +18,8 @@ export interface ParentProfile extends Tables['parent_profiles'] {
 
 export interface ParentTables {
   parent_profiles: {
-    Row: Tables['parent_profiles'];
-    Insert: {
-      user_id?: string | null;
-      children_count?: number | null;
-      address?: string | null;
-      special_requirements?: string | null;
-      created_at?: string;
-      updated_at?: string;
-      status?: 'default' | 'star' | 'diamond' | null;
-      additional_phone?: string | null;
-      notes?: string | null;
-    };
-    Update: {
-      user_id?: string | null;
-      children_count?: number | null;
-      address?: string | null;
-      special_requirements?: string | null;
-      created_at?: string;
-      updated_at?: string;
-      status?: 'default' | 'star' | 'diamond' | null;
-      additional_phone?: string | null;
-      notes?: string | null;
-    };
+    Row: ParentProfileRow;
+    Insert: ParentProfileInsert;
+    Update: ParentProfileUpdate;
   }
 }
