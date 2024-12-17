@@ -72,56 +72,6 @@ export interface NannyTables {
       deleted_at?: string | null
     }
   }
-  nanny_documents: {
-    Row: {
-      created_at: string
-      file_url: string
-      id: string
-      nanny_id: string | null
-      type: string
-      updated_at: string
-    }
-    Insert: {
-      created_at?: string
-      file_url: string
-      id?: string
-      nanny_id?: string | null
-      type: string
-      updated_at?: string
-    }
-    Update: {
-      created_at?: string
-      file_url?: string
-      id?: string
-      nanny_id?: string | null
-      type?: string
-      updated_at?: string
-    }
-  }
-  nanny_training: {
-    Row: {
-      completed_at: string
-      created_at: string
-      id: string
-      nanny_id: string | null
-      stage: string
-      updated_at: string
-    }
-    Insert: {
-      completed_at?: string
-      created_at?: string
-      id?: string
-      nanny_id?: string | null
-      stage: string
-      updated_at?: string
-    }
-    Update: {
-      completed_at?: string
-      created_at?: string
-      id?: string
-      nanny_id?: string | null
-      stage?: string
-      updated_at?: string
-    }
-  }
 }
+
+export type NannyProfile = NannyTables['nanny_profiles']['Row'];
