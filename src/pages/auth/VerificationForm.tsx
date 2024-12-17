@@ -58,20 +58,20 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // Добавляем задержку перед входом
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // 3. Входим с помощью magic link
-      console.log("4. Signing in with OTP");
-      const { data, error: signInError } = await supabase.auth.signInWithOtp({
+      // 3. Входим с помощью созданных credentials
+      console.log("4. Signing in with created credentials");
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          data: {
-            verification_code: otp
-          }
-        }
+        password: otp,
       });
 
       if (signInError) {
         console.error("5. Sign in error:", signInError);
         throw signInError;
+      }
+
+      if (!data.session) {
+        throw new Error("Не удалось создать сессию");
       }
 
       // 4. Обновляем статус кода в БД
