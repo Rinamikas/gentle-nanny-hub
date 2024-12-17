@@ -8,6 +8,9 @@ export interface ParentTables {
       special_requirements: string | null
       created_at: string
       updated_at: string
+      status: 'default' | 'star' | 'diamond' | null
+      additional_phone: string | null
+      notes: string | null
     }
     Insert: {
       id?: string
@@ -17,6 +20,9 @@ export interface ParentTables {
       special_requirements?: string | null
       created_at?: string
       updated_at?: string
+      status?: 'default' | 'star' | 'diamond' | null
+      additional_phone?: string | null
+      notes?: string | null
     }
     Update: {
       id?: string
@@ -26,6 +32,11 @@ export interface ParentTables {
       special_requirements?: string | null
       created_at?: string
       updated_at?: string
+      status?: 'default' | 'star' | 'diamond' | null
+      additional_phone?: string | null
+      notes?: string | null
     }
   }
 }
+
+export type ParentProfile = ParentTables['parent_profiles']['Row'];
