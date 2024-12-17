@@ -8,7 +8,7 @@ export interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
-  type: 'appointment' | 'schedule_event';
+  type: 'appointment' | 'schedule_event' | 'working_hours';
   status?: AppointmentStatus;
   eventType?: ScheduleEventType;
   nannyId?: string;
