@@ -103,7 +103,7 @@ const ProfilePage = () => {
       {profile?.user_roles?.[0]?.role === "nanny" && profile.nanny_profiles?.[0] && (
         <div>
           <h2 className="text-lg font-semibold mb-4">Анкета няни</h2>
-          <NannyForm nannyId={profile.nanny_profiles[0].id} />
+          <NannyForm />
         </div>
       )}
 
