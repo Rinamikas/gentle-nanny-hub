@@ -1,21 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { useQuery } from "@tanstack/react-query";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import NannyForm from "../nannies/components/NannyForm";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface NannyProfile {
   id: string;
   user_id: string | null;
   experience_years: number | null;
   education: string | null;
+  specializations: string[] | null;
+  certifications: string[] | null;
   hourly_rate: number | null;
+  created_at: string;
+  updated_at: string;
   birth_date: string | null;
   phone: string | null;
   email: string | null;
@@ -26,10 +30,6 @@ interface NannyProfile {
   camera_number: string | null;
   address: string | null;
   relative_phone: string | null;
-  specializations: string[] | null;
-  certifications: string[] | null;
-  created_at: string;
-  updated_at: string;
   is_deleted: boolean | null;
   deleted_at: string | null;
 }
@@ -62,7 +62,8 @@ interface Profile {
   parent_profiles: ParentProfile[] | null;
 }
 
-export default function ProfilePage() {
+const ProfilePage = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
 
@@ -74,14 +75,14 @@ export default function ProfilePage() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error("Ошибка получения сессии:", sessionError);
-        throw new Error("Ошибка аутентификации");
+        console.error("Ошибка при получении сессии:", sessionError);
+        throw sessionError;
       }
 
-      if (!session?.user?.id) {
-        console.error("Нет активной сессии");
+      if (!session) {
+        console.log("Сессия не найдена, перенаправляем на /auth");
         navigate("/auth");
-        throw new Error("Пользователь не аутентифицирован");
+        throw new Error("Не авторизован");
       }
 
       console.log("ID пользователя:", session.user.id);
@@ -91,21 +92,20 @@ export default function ProfilePage() {
         .from("profiles")
         .select(`
           *,
-          user_roles (role),
-          nanny_profiles (*),
-          parent_profiles (*)
+          user_roles(role),
+          nanny_profiles(*),
+          parent_profiles(*)
         `)
         .eq("id", session.user.id)
         .single();
 
       if (profileError) {
-        console.error("Ошибка загрузки профиля:", profileError);
+        console.error("Ошибка при загрузке профиля:", profileError);
         throw profileError;
       }
 
-      console.log("Профиль загружен:", profileData);
-      
-      // Преобразуем данные в правильный формат
+      console.log("Загруженные данные профиля:", profileData);
+
       const formattedData: Profile = {
         ...profileData,
         nanny_profiles: profileData.nanny_profiles ? [profileData.nanny_profiles] : null,
@@ -115,73 +115,67 @@ export default function ProfilePage() {
 
       return formattedData;
     },
-    retry: 1,
   });
 
-  const uploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      if (!profile?.id) {
-        throw new Error("Профиль не найден");
-      }
-
-      setUploading(true);
-
       if (!event.target.files || event.target.files.length === 0) {
-        throw new Error("Необходимо выбрать файл для загрузки");
+        throw new Error("Вы должны выбрать изображение для загрузки.");
       }
 
       const file = event.target.files[0];
       const fileExt = file.name.split(".").pop();
-      const filePath = `${profile.id}/avatar.${fileExt}`;
+      const filePath = `${Math.random()}.${fileExt}`;
 
-      console.log("Uploading photo:", filePath);
+      setUploading(true);
 
+      // Загружаем файл в storage
       const { error: uploadError } = await supabase.storage
         .from("nanny_files")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file);
 
       if (uploadError) {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      // Получаем публичную ссылку на загруженный файл
+      const { data: { publicUrl }, error: urlError } = await supabase.storage
         .from("nanny_files")
         .getPublicUrl(filePath);
 
+      if (urlError) {
+        throw urlError;
+      }
+
+      // Обновляем профиль с новой ссылкой на фото
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ photo_url: publicUrl })
-        .eq("id", profile.id);
+        .eq("id", profile?.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
       toast({
         title: "Успешно",
-        description: "Фотография профиля обновлена",
+        description: "Фото профиля обновлено",
       });
+
     } catch (error) {
-      console.error("Error uploading photo:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось загрузить фотографию",
+        description: error instanceof Error ? error.message : "Произошла ошибка при загрузке фото",
       });
     } finally {
       setUploading(false);
     }
   };
 
-  if (isLoading) {
-    return <div>Загрузка...</div>;
+  if (isLoading || !profile) {
+    return <LoadingScreen />;
   }
-
-  if (!profile) {
-    return <div>Профиль не найден</div>;
-  }
-
-  const userRole = profile.user_roles?.[0]?.role;
-  const isNanny = userRole === "nanny";
-  const isParent = userRole === "parent";
 
   return (
     <div className="container mx-auto py-6">
@@ -198,19 +192,19 @@ export default function ProfilePage() {
             variant="outline"
             size="icon"
             className="absolute bottom-0 right-0 rounded-full"
-            onClick={() => document.getElementById("photo-upload")?.click()}
             disabled={uploading}
           >
-            <Camera className="h-4 w-4" />
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+              />
+              {uploading ? "..." : "📷"}
+            </label>
           </Button>
-          <input
-            type="file"
-            id="photo-upload"
-            accept="image/*"
-            className="hidden"
-            onChange={uploadPhoto}
-            disabled={uploading}
-          />
         </div>
         <div>
           <h1 className="text-2xl font-bold">
@@ -227,7 +221,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="grid gap-4">
           <h2 className="text-lg font-semibold">Контактная информация</h2>
           <div className="grid gap-2">
@@ -252,4 +246,6 @@ export default function ProfilePage() {
       </div>
     </div>
   );
-}
+};
+
+export default ProfilePage;
