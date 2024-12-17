@@ -1,4 +1,3 @@
-import { Json } from './json';
 import type { Database } from './database';
 
 export interface ParentTables {
