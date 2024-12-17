@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, User, Users, Home, LogOut } from "lucide-react";
+import { Menu, User, Users, Home, LogOut, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
@@ -20,6 +20,7 @@ const AdminLayout = () => {
     { icon: Users, label: "Пользователи", path: "/users" },
     { icon: Home, label: "Семьи и дети", path: "/families" },
     { icon: Users, label: "Няни", path: "/nannies" },
+    { icon: Calendar, label: "Заявки", path: "/appointments" },
   ];
 
   useEffect(() => {

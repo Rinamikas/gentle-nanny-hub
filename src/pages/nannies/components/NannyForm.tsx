@@ -11,6 +11,7 @@ import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
 import DocumentsSection from "./sections/DocumentsSection";
 import TrainingSection from "./sections/TrainingSection";
+import WorkingHoursSection from "./sections/WorkingHoursSection";
 import { formSchema, FormValues } from "../types/form";
 import { DocumentType, NannyDocument } from "../types/documents";
 import { useEffect } from "react";
@@ -302,6 +303,7 @@ const NannyForm = () => {
             <ProfessionalInfoSection form={form} />
             <DocumentsSection form={form} />
             <TrainingSection form={form} />
+            {id && <WorkingHoursSection nannyId={id} />}
           </div>
 
           <div className="flex justify-end gap-4">

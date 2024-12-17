@@ -8,6 +8,7 @@ import NannyForm from "./pages/nannies/components/NannyForm";
 import ProfilePage from "./pages/profile/ProfilePage";
 import FamiliesPage from "./pages/families/FamiliesPage";
 import FamilyForm from "./pages/families/components/FamilyForm";
+import AppointmentsPage from "./pages/appointments/AppointmentsPage";
 import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ function App() {
             <Route path="families" element={<FamiliesPage />} />
             <Route path="families/create" element={<FamilyForm />} />
             <Route path="families/:id/edit" element={<FamilyForm />} />
+            <Route path="appointments" element={<AppointmentsPage />} />
           </Route>
         </Routes>
       </Router>
