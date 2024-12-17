@@ -6,3 +6,6 @@ export * from './database';
 export * from './parent-types';
 export * from './profile-types';
 export * from './nanny-types';
+
+// Явный реэкспорт ParentProfile
+export type { ParentProfile } from './parent-types';
