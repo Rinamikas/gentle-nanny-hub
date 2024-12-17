@@ -21,6 +21,9 @@ export interface ParentProfile {
     first_name: string;
     birth_date: string;
     gender: string;
+    medical_conditions?: string | null;
+    notes?: string | null;
+    notify_before_birthday?: number;
   }>;
 }
 
