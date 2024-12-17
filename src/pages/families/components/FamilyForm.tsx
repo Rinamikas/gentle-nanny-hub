@@ -74,6 +74,8 @@ const FamilyForm = () => {
   const mutation = useMutation({
     mutationFn: async (data: FamilyFormData) => {
       console.log("Сохранение данных семьи...", data);
+      
+      // Получаем текущую сессию
       const { data: session } = await supabase.auth.getSession();
       
       if (!session?.session?.user) {
@@ -97,12 +99,14 @@ const FamilyForm = () => {
         throw profileError;
       }
 
+      console.log("Профиль сохранен:", profile);
+
       // Создаем или обновляем профиль родителя
       const { data: parentProfile, error: parentError } = await supabase
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
-          user_id: profile.id,
+          user_id: profile.id, // Важно! Устанавливаем user_id
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
@@ -116,6 +120,7 @@ const FamilyForm = () => {
         throw parentError;
       }
 
+      console.log("Профиль родителя сохранен:", parentProfile);
       return parentProfile;
     },
     onSuccess: () => {
