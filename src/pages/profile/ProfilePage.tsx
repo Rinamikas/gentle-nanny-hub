@@ -9,7 +9,6 @@ import { Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import NannyForm from "../nannies/components/NannyForm";
-import { User } from "../users/types";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -18,38 +17,71 @@ export default function ProfilePage() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
+      console.log("Начинаем загрузку профиля...");
+      
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error("Session error:", sessionError);
+        console.error("Ошибка получения сессии:", sessionError);
         throw new Error("Ошибка аутентификации");
       }
 
       if (!session?.user?.id) {
-        console.error("No active session");
+        console.error("Нет активной сессии");
+        navigate("/auth");
         throw new Error("Пользователь не аутентифицирован");
       }
 
+      console.log("ID пользователя:", session.user.id);
+
+      // Сначала получаем базовый профиль
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          user_roles (
-            role
-          ),
-          nanny_profiles (
-            *
-          ),
-          parent_profiles (
-            *
-          )
-        `)
+        .select("*, user_roles(role)")
         .eq("id", session.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Ошибка загрузки профиля:", profileError);
+        throw profileError;
+      }
+
+      console.log("Базовый профиль загружен:", profileData);
+
+      // Затем, в зависимости от роли, загружаем дополнительные данные
+      if (profileData.user_roles?.[0]?.role === 'nanny') {
+        const { data: nannyData, error: nannyError } = await supabase
+          .from("nanny_profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (nannyError && nannyError.code !== 'PGRST116') {
+          console.error("Ошибка загрузки профиля няни:", nannyError);
+          throw nannyError;
+        }
+
+        return { ...profileData, nanny_profiles: nannyData ? [nannyData] : [] };
+      }
+
+      if (profileData.user_roles?.[0]?.role === 'parent') {
+        const { data: parentData, error: parentError } = await supabase
+          .from("parent_profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (parentError && parentError.code !== 'PGRST116') {
+          console.error("Ошибка загрузки профиля родителя:", parentError);
+          throw parentError;
+        }
+
+        return { ...profileData, parent_profiles: parentData ? [parentData] : [] };
+      }
+
       return profileData;
     },
+    retry: 1,
   });
 
   const uploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {

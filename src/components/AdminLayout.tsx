@@ -20,39 +20,14 @@ const AdminLayout = () => {
     { icon: Users, label: "Няни", path: "/nannies" },
   ];
 
-  const handleLogout = async () => {
-    try {
-      console.log("Начинаем процесс выхода...");
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Ошибка при выходе:", error);
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Не удалось выйти из системы",
-        });
-        return;
-      }
-
-      console.log("Выход успешно выполнен");
-      toast({
-        title: "Успешно",
-        description: "Вы вышли из системы",
-      });
-      navigate("/auth");
-    } catch (error) {
-      console.error("Неожиданная ошибка при выходе:", error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Произошла неожиданная ошибка",
-      });
-    }
-  };
-
   useEffect(() => {
     let isSubscribed = true;
+
+    // Если мы на странице авторизации, не показываем загрузку
+    if (location.pathname === "/auth") {
+      setShowLoading(false);
+      return;
+    }
 
     const checkAuth = async () => {
       try {
@@ -87,6 +62,7 @@ const AdminLayout = () => {
       }
     };
 
+    // Подписываемся на изменения состояния авторизации
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -94,10 +70,11 @@ const AdminLayout = () => {
       
       if (event === 'TOKEN_REFRESHED') {
         console.log('Токен успешно обновлен');
+        return;
       }
       
       if (event === 'SIGNED_OUT' || !session) {
-        console.log("Изменение состояния авторизации: нет сессии");
+        console.log("Пользователь не авторизован");
         if (isSubscribed) {
           navigate("/auth");
         }
@@ -109,11 +86,7 @@ const AdminLayout = () => {
       }
     });
 
-    if (location.pathname === "/auth") {
-      setShowLoading(false);
-    } else {
-      checkAuth();
-    }
+    checkAuth();
 
     return () => {
       console.log("Очистка подписок на авторизацию");
@@ -121,6 +94,37 @@ const AdminLayout = () => {
       subscription.unsubscribe();
     };
   }, [navigate, location]);
+
+  const handleLogout = async () => {
+    try {
+      console.log("Начинаем процесс выхода...");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Ошибка при выходе:", error);
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Не удалось выйти из системы",
+        });
+        return;
+      }
+
+      console.log("Выход успешно выполнен");
+      toast({
+        title: "Успешно",
+        description: "Вы вышли из системы",
+      });
+      navigate("/auth");
+    } catch (error) {
+      console.error("Неожиданная ошибка при выходе:", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Произошла неожиданная ошибка",
+      });
+    }
+  };
 
   if (showLoading) {
     return <LoadingScreen />;
