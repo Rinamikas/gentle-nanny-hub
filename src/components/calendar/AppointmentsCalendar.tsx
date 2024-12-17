@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarEvent, EventModalData } from "@/types/calendar";
 import { EventModal } from "./EventModal";
 import { useToast } from "@/hooks/use-toast";
+import { dateToISOString } from "@/utils/dateUtils";
 
 const locales = {
   'ru': ru,
@@ -19,6 +22,8 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+const DragAndDropCalendar = withDragAndDrop(Calendar);
 
 export default function AppointmentsCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -115,8 +120,8 @@ export default function AppointmentsCalendar() {
         const { error } = await supabase
           .from('appointments')
           .update({
-            start_time: start,
-            end_time: end,
+            start_time: dateToISOString(start),
+            end_time: dateToISOString(end),
           })
           .eq('id', event.id);
 
@@ -125,8 +130,8 @@ export default function AppointmentsCalendar() {
         const { error } = await supabase
           .from('schedule_events')
           .update({
-            start_time: start,
-            end_time: end,
+            start_time: dateToISOString(start),
+            end_time: dateToISOString(end),
           })
           .eq('id', event.id);
 
@@ -156,8 +161,8 @@ export default function AppointmentsCalendar() {
         const { error } = await supabase
           .from('appointments')
           .update({
-            start_time: updatedEvent.start,
-            end_time: updatedEvent.end,
+            start_time: dateToISOString(updatedEvent.start),
+            end_time: dateToISOString(updatedEvent.end),
             notes: updatedEvent.notes,
           })
           .eq('id', updatedEvent.id);
@@ -167,8 +172,8 @@ export default function AppointmentsCalendar() {
         const { error } = await supabase
           .from('schedule_events')
           .update({
-            start_time: updatedEvent.start,
-            end_time: updatedEvent.end,
+            start_time: dateToISOString(updatedEvent.start),
+            end_time: dateToISOString(updatedEvent.end),
             notes: updatedEvent.notes,
           })
           .eq('id', updatedEvent.id);
@@ -193,7 +198,7 @@ export default function AppointmentsCalendar() {
 
   return (
     <div className="h-[800px] p-4">
-      <Calendar
+      <DragAndDropCalendar
         localizer={localizer}
         events={events}
         startAccessor="start"
@@ -219,6 +224,7 @@ export default function AppointmentsCalendar() {
           time: "Время",
           event: "Событие",
         }}
+        defaultView={Views.MONTH}
       />
       
       <EventModal
