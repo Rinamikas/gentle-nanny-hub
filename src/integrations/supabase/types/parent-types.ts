@@ -44,7 +44,7 @@ export interface ParentTables {
 
 export type ParentProfileBase = ParentTables['parent_profiles']['Row'];
 
-export interface ParentProfile extends ParentProfileBase {
+export type ParentProfile = ParentProfileBase & {
   profiles?: {
     first_name: string | null;
     last_name: string | null;

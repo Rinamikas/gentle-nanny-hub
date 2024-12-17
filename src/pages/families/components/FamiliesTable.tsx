@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import type { ParentProfile } from "@/integrations/supabase/types";
 
 interface FamiliesTableProps {
-  families: Array<ParentProfile>;
+  families: ParentProfile[];
 }
 
 const StatusIcon = ({ status }: { status: string | null }) => {
@@ -21,6 +21,7 @@ const StatusIcon = ({ status }: { status: string | null }) => {
 };
 
 const FamiliesTable = ({ families }: FamiliesTableProps) => {
+  console.log("FamiliesTable received families:", families);
   const navigate = useNavigate();
 
   return (
@@ -36,48 +37,51 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {families.map((family) => (
-          <TableRow key={family.id}>
-            <TableCell>
-              {family.profiles?.first_name} {family.profiles?.last_name}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <StatusIcon status={family.status} />
-                <Badge variant={family.status === "diamond" ? "default" : "secondary"}>
-                  {family.status === "diamond" 
-                    ? "Бриллиант" 
-                    : family.status === "star" 
-                    ? "Звезда" 
-                    : "Обычный"}
-                </Badge>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="space-y-1">
-                <div>{family.profiles?.phone}</div>
-                {family.additional_phone && (
-                  <div className="text-sm text-gray-500">{family.additional_phone}</div>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>{family.address}</TableCell>
-            <TableCell>
-              {family.children?.map((child) => (
-                <div key={child.id}>{child.first_name}</div>
-              ))}
-            </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(`/families/${family.id}/edit`)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
+        {families.map((family) => {
+          console.log("Rendering family:", family);
+          return (
+            <TableRow key={family.id}>
+              <TableCell>
+                {family.profiles?.first_name} {family.profiles?.last_name}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={family.status} />
+                  <Badge variant={family.status === "diamond" ? "default" : "secondary"}>
+                    {family.status === "diamond" 
+                      ? "Бриллиант" 
+                      : family.status === "star" 
+                      ? "Звезда" 
+                      : "Обычный"}
+                  </Badge>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div>{family.profiles?.phone}</div>
+                  {family.additional_phone && (
+                    <div className="text-sm text-gray-500">{family.additional_phone}</div>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>{family.address}</TableCell>
+              <TableCell>
+                {family.children?.map((child) => (
+                  <div key={child.id}>{child.first_name}</div>
+                ))}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(`/families/${family.id}/edit`)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

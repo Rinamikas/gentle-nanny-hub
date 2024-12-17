@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
 import FamiliesTable from "./components/FamiliesTable";
+import type { ParentProfile } from "@/integrations/supabase/types";
 
 const FamiliesPage = () => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const FamiliesPage = () => {
   const { data: families, isLoading } = useQuery({
     queryKey: ["families"],
     queryFn: async () => {
-      console.log("Загрузка списка семей...");
+      console.log("Loading families list...");
       const { data, error } = await supabase
         .from("parent_profiles")
         .select(`
@@ -26,12 +27,12 @@ const FamiliesPage = () => {
         `);
 
       if (error) {
-        console.error("Ошибка при загрузке семей:", error);
+        console.error("Error loading families:", error);
         throw error;
       }
 
-      console.log("Загружены семьи:", data);
-      return data;
+      console.log("Loaded families data:", data);
+      return data as ParentProfile[];
     },
   });
 
