@@ -1,4 +1,5 @@
 import type { Database } from './database';
+import type { ProfileRow } from './profile-types';
 
 export interface ParentProfile {
   id: string;
@@ -11,11 +12,7 @@ export interface ParentProfile {
   status: Database['public']['Enums']['parent_status'] | null;
   additional_phone: string | null;
   notes: string | null;
-  profiles?: {
-    first_name: string | null;
-    last_name: string | null;
-    phone: string | null;
-  };
+  profiles?: ProfileRow;
   children?: Array<{
     id: string;
     first_name: string;
