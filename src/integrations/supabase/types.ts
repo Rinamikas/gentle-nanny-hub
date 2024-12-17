@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          nanny_id: string
+          notes: string | null
+          parent_id: string
+          start_time: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          nanny_id: string
+          notes?: string | null
+          parent_id: string
+          start_time: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          nanny_id?: string
+          notes?: string | null
+          parent_id?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_nanny_id_fkey"
+            columns: ["nanny_id"]
+            isOneToOne: false
+            referencedRelation: "nanny_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       children: {
         Row: {
           birth_date: string
@@ -171,6 +222,41 @@ export type Database = {
           },
         ]
       }
+      nanny_settings: {
+        Row: {
+          created_at: string
+          id: string
+          min_appointment_interval: number
+          min_break_duration: number
+          nanny_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          min_appointment_interval?: number
+          min_break_duration?: number
+          nanny_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          min_appointment_interval?: number
+          min_break_duration?: number
+          nanny_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nanny_settings_nanny_id_fkey"
+            columns: ["nanny_id"]
+            isOneToOne: true
+            referencedRelation: "nanny_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nanny_training: {
         Row: {
           completed_at: string
@@ -286,6 +372,47 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_events: {
+        Row: {
+          created_at: string
+          end_time: string
+          event_type: Database["public"]["Enums"]["schedule_event_type"]
+          id: string
+          nanny_id: string
+          notes: string | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          event_type: Database["public"]["Enums"]["schedule_event_type"]
+          id?: string
+          nanny_id: string
+          notes?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          event_type?: Database["public"]["Enums"]["schedule_event_type"]
+          id?: string
+          nanny_id?: string
+          notes?: string | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_nanny_id_fkey"
+            columns: ["nanny_id"]
+            isOneToOne: false
+            referencedRelation: "nanny_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -345,11 +472,57 @@ export type Database = {
         }
         Relationships: []
       }
+      working_hours: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          nanny_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          nanny_id: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          nanny_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "working_hours_nanny_id_fkey"
+            columns: ["nanny_id"]
+            isOneToOne: false
+            referencedRelation: "nanny_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_nanny_availability: {
+        Args: {
+          p_nanny_id: string
+          p_start_time: string
+          p_end_time: string
+        }
+        Returns: boolean
+      }
       check_verification_code: {
         Args: {
           p_email: string
@@ -384,12 +557,14 @@ export type Database = {
       }
     }
     Enums: {
+      appointment_status: "pending" | "confirmed" | "cancelled" | "completed"
       document_type:
         | "criminal_record"
         | "image_usage_consent"
         | "medical_book"
         | "personal_data_consent"
       parent_status: "default" | "star" | "diamond"
+      schedule_event_type: "sick_leave" | "vacation" | "busy" | "break"
       training_stage: "stage_1" | "stage_2" | "stage_3" | "stage_4" | "stage_5"
       user_role: "nanny" | "owner" | "admin" | "parent"
       verification_status: "pending" | "verified" | "expired" | "failed"
