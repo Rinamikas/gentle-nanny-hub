@@ -24,13 +24,18 @@ export function useCalendarEvents(selectedNanny?: string) {
             )
           `);
 
-        if (selectedNanny) {
+        if (selectedNanny && selectedNanny !== 'all') {
           appointmentsQuery.eq('nanny_id', selectedNanny);
         }
 
         const { data: appointments, error: appointmentsError } = await appointmentsQuery;
 
-        if (appointmentsError) throw appointmentsError;
+        if (appointmentsError) {
+          console.error("Ошибка загрузки заявок:", appointmentsError);
+          throw appointmentsError;
+        }
+
+        console.log("Загруженные заявки:", appointments);
 
         // Загружаем события расписания
         const scheduleQuery = supabase
@@ -43,33 +48,39 @@ export function useCalendarEvents(selectedNanny?: string) {
             )
           `);
 
-        if (selectedNanny) {
+        if (selectedNanny && selectedNanny !== 'all') {
           scheduleQuery.eq('nanny_id', selectedNanny);
         }
 
         const { data: scheduleEvents, error: scheduleError } = await scheduleQuery;
 
-        if (scheduleError) throw scheduleError;
+        if (scheduleError) {
+          console.error("Ошибка загрузки событий расписания:", scheduleError);
+          throw scheduleError;
+        }
+
+        console.log("Загруженные события расписания:", scheduleEvents);
 
         // Загружаем рабочие часы
         const workingHoursQuery = supabase
           .from('working_hours')
           .select('*');
 
-        if (selectedNanny) {
+        if (selectedNanny && selectedNanny !== 'all') {
           workingHoursQuery.eq('nanny_id', selectedNanny);
         }
 
         const { data: workingHours, error: workingHoursError } = await workingHoursQuery;
 
-        if (workingHoursError) throw workingHoursError;
+        if (workingHoursError) {
+          console.error("Ошибка загрузки рабочих часов:", workingHoursError);
+          throw workingHoursError;
+        }
 
-        console.log("Загруженные заявки:", appointments);
-        console.log("Загруженные события расписания:", scheduleEvents);
         console.log("Загруженные рабочие часы:", workingHours);
 
         const calendarEvents: CalendarEvent[] = [
-          ...appointments.map(apt => ({
+          ...(appointments?.map(apt => ({
             id: apt.id,
             title: `Заявка ${apt.id.slice(0, 8)}`,
             start: new Date(apt.start_time),
@@ -80,8 +91,8 @@ export function useCalendarEvents(selectedNanny?: string) {
             parentId: apt.parent_id,
             notes: apt.notes,
             color: getStatusColor(apt.status),
-          })),
-          ...scheduleEvents.map(evt => ({
+          })) || []),
+          ...(scheduleEvents?.map(evt => ({
             id: evt.id,
             title: getEventTypeTitle(evt.event_type),
             start: new Date(evt.start_time),
@@ -91,7 +102,7 @@ export function useCalendarEvents(selectedNanny?: string) {
             nannyId: evt.nanny_id,
             notes: evt.notes,
             color: getEventTypeColor(evt.event_type),
-          })),
+          })) || []),
           ...(workingHours?.map(wh => ({
             id: wh.id,
             title: 'Рабочие часы',
