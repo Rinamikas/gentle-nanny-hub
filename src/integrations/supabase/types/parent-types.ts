@@ -39,4 +39,14 @@ export interface ParentTables {
   }
 }
 
-export type ParentProfile = ParentTables['parent_profiles']['Row'];
+export type ParentProfile = ParentTables['parent_profiles']['Row'] & {
+  profiles?: {
+    first_name: string | null
+    last_name: string | null
+    phone: string | null
+  } | null
+  children?: Array<{
+    id: string
+    first_name: string
+  }>
+}
