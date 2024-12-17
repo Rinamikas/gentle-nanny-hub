@@ -1,4 +1,4 @@
-import type { NannyProfile, ParentProfile, UserRole } from "@/integrations/supabase/types";
+import type { Tables } from '@/integrations/supabase/types';
 
 export interface Profile {
   id: string;
@@ -9,7 +9,7 @@ export interface Profile {
   photo_url: string | null;
   created_at: string;
   updated_at: string;
-  user_roles: UserRole[];
-  nanny_profiles: NannyProfile[] | null;
-  parent_profiles: ParentProfile[] | null;
+  user_roles: Array<{ role: Tables['user_roles']['Row']['role'] }>;
+  nanny_profiles: Tables['nanny_profiles']['Row'][] | null;
+  parent_profiles: Tables['parent_profiles']['Row'][] | null;
 }

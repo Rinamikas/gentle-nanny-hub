@@ -30,14 +30,10 @@ const ProfilePage = () => {
 
       console.log("ID пользователя:", session.user.id);
 
+      // Сначала получаем базовый профиль
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          user_roles(role),
-          nanny_profiles(*),
-          parent_profiles(*)
-        `)
+        .select("*, user_roles(role)")
         .eq("id", session.user.id)
         .single();
 
@@ -46,15 +42,25 @@ const ProfilePage = () => {
         throw profileError;
       }
 
-      console.log("Загруженные данные профиля:", profileData);
+      // Затем получаем данные няни, если они есть
+      const { data: nannyData } = await supabase
+        .from("nanny_profiles")
+        .select("*")
+        .eq("user_id", session.user.id);
+
+      // И данные родителя, если они есть
+      const { data: parentData } = await supabase
+        .from("parent_profiles")
+        .select("*")
+        .eq("user_id", session.user.id);
 
       const formattedData: Profile = {
         ...profileData,
-        nanny_profiles: profileData.nanny_profiles ? [profileData.nanny_profiles] : null,
-        parent_profiles: profileData.parent_profiles ? [profileData.parent_profiles] : null,
-        user_roles: profileData.user_roles || []
+        nanny_profiles: nannyData,
+        parent_profiles: parentData,
       };
 
+      console.log("Загруженные данные профиля:", formattedData);
       return formattedData;
     },
   });
