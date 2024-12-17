@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-
-type TrainingStage = "stage1" | "stage2" | "stage3"; // Define your training stages
+import { TrainingStage } from "@/integrations/supabase/types/enums";
 
 const NannyForm = ({ nannyId }: { nannyId?: string }) => {
   const [trainingStage, setTrainingStage] = useState<TrainingStage | null>(null);
@@ -10,6 +9,7 @@ const NannyForm = ({ nannyId }: { nannyId?: string }) => {
   useEffect(() => {
     const fetchNannyData = async () => {
       if (nannyId) {
+        console.log("Fetching training data for nanny:", nannyId);
         const { data, error } = await supabase
           .from('nanny_training')
           .select('*')
@@ -22,7 +22,8 @@ const NannyForm = ({ nannyId }: { nannyId?: string }) => {
         }
 
         if (data) {
-          setTrainingStage(data.stage);
+          console.log("Loaded training data:", data);
+          setTrainingStage(data.stage as TrainingStage);
         }
       }
     };
@@ -41,7 +42,7 @@ const NannyForm = ({ nannyId }: { nannyId?: string }) => {
           stage: stage,
           completed_at: new Date().toISOString()
         }, {
-          onConflict: 'nanny_id,stage'
+          onConflict: 'nanny_id'
         });
 
       if (error) {
@@ -54,6 +55,7 @@ const NannyForm = ({ nannyId }: { nannyId?: string }) => {
         return;
       }
 
+      setTrainingStage(stage);
       console.log("Этап обучения успешно сохранен");
       toast({
         title: "Успешно",
@@ -80,9 +82,11 @@ const NannyForm = ({ nannyId }: { nannyId?: string }) => {
           onChange={(e) => handleTrainingStageChange(e.target.value as TrainingStage)}
         >
           <option value="">Выберите этап</option>
-          <option value="stage1">Этап 1</option>
-          <option value="stage2">Этап 2</option>
-          <option value="stage3">Этап 3</option>
+          <option value="stage_1">Этап 1</option>
+          <option value="stage_2">Этап 2</option>
+          <option value="stage_3">Этап 3</option>
+          <option value="stage_4">Этап 4</option>
+          <option value="stage_5">Этап 5</option>
         </select>
       </div>
     </div>
