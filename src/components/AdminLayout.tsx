@@ -138,7 +138,7 @@ const AdminLayout = () => {
           isSidebarOpen ? "w-64" : "w-16"
         )}
       >
-        <div className="flex items-center h-16 px-4 border-b border-[#7C3AED]">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-[#7C3AED]">
           <h1
             className={cn(
               "font-semibold text-white transition-opacity",
@@ -152,8 +152,8 @@ const AdminLayout = () => {
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={cn(
-              "text-white hover:text-white hover:bg-[#7C3AED] ml-auto",
-              !isSidebarOpen && "mx-auto"
+              "text-white hover:text-white hover:bg-[#7C3AED]",
+              !isSidebarOpen && "w-full flex justify-center"
             )}
           >
             <Menu className="h-5 w-5" />
