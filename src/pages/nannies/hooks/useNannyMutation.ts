@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FormValues } from "../types/form";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentType } from "@/integrations/supabase/types";
 
 export const useNannyMutation = (onSuccess: () => void) => {
   const { toast } = useToast();
@@ -94,33 +95,29 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Nanny profile created successfully:", nannyData);
 
       // Создаем документы
-      if (values.criminal_record || values.image_usage_consent || 
-          values.medical_book || values.personal_data_consent) {
-        
-        const documents = [
-          { type: "criminal_record", file_url: values.criminal_record },
-          { type: "image_usage_consent", file_url: values.image_usage_consent },
-          { type: "medical_book", file_url: values.medical_book },
-          { type: "personal_data_consent", file_url: values.personal_data_consent },
-        ].filter(doc => doc.file_url);
+      const documents: Array<{type: DocumentType, file_url: string}> = [
+        { type: "criminal_record", file_url: values.criminal_record },
+        { type: "image_usage_consent", file_url: values.image_usage_consent },
+        { type: "medical_book", file_url: values.medical_book },
+        { type: "personal_data_consent", file_url: values.personal_data_consent },
+      ].filter(doc => doc.file_url);
 
-        for (const doc of documents) {
-          const { error: docError } = await supabase
-            .from("nanny_documents")
-            .insert({
-              nanny_id: nannyData.id,
-              type: doc.type,
-              file_url: doc.file_url,
-            });
+      for (const doc of documents) {
+        const { error: docError } = await supabase
+          .from("nanny_documents")
+          .insert({
+            nanny_id: nannyData.id,
+            type: doc.type,
+            file_url: doc.file_url,
+          });
 
-          if (docError) {
-            console.error(`Document creation error for ${doc.type}:`, docError);
-            throw docError;
-          }
+        if (docError) {
+          console.error(`Document creation error for ${doc.type}:`, docError);
+          throw docError;
         }
-
-        console.log("Documents created successfully");
       }
+
+      console.log("Documents created successfully");
 
       // Создаем этап обучения
       if (values.training_stage) {
