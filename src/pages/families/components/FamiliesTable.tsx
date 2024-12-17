@@ -6,17 +6,7 @@ import { useNavigate } from "react-router-dom";
 import type { ParentProfile } from "@/integrations/supabase/types";
 
 interface FamiliesTableProps {
-  families: Array<ParentProfile & {
-    profiles: {
-      first_name: string | null;
-      last_name: string | null;
-      phone: string | null;
-    } | null;
-    children: Array<{
-      id: string;
-      first_name: string;
-    }>;
-  }>;
+  families: Array<ParentProfile>;
 }
 
 const StatusIcon = ({ status }: { status: string | null }) => {
