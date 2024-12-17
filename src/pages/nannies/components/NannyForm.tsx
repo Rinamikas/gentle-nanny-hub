@@ -157,96 +157,106 @@ const NannyForm = () => {
         }
       }
 
-      // Сначала создаем или обновляем запись в profiles
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: session.user.id,
-          first_name: values.first_name,
-          last_name: values.last_name,
-          phone: values.phone,
-          email: values.email,
-        });
-
-      if (profileError) {
-        console.error("Profile update error:", profileError);
-        throw profileError;
-      }
-
-      console.log("Profile updated successfully");
-
-      // Затем создаем или обновляем профиль няни
-      const { data: nannyData, error: nannyError } = await supabase
-        .from("nanny_profiles")
-        .upsert({
-          id: id || undefined,
-          user_id: session.user.id,
-          birth_date: values.birth_date,
-          position: values.position,
-          age_group: values.age_group,
-          camera_phone: values.camera_phone,
-          camera_number: values.camera_number,
-          address: values.address,
-          relative_phone: values.relative_phone,
-          experience_years: values.experience_years,
-          education: values.education,
-          hourly_rate: values.hourly_rate,
-          photo_url: values.photo_url,
-        })
-        .select()
-        .single();
-
-      if (nannyError) {
-        console.error("Nanny profile update error:", nannyError);
-        throw nannyError;
-      }
-
-      console.log("Nanny profile updated successfully");
-
-      // Обновляем документы
-      const documents: NannyDocument[] = [
-        { type: "criminal_record" as DocumentType, file_url: values.criminal_record },
-        { type: "image_usage_consent" as DocumentType, file_url: values.image_usage_consent },
-        { type: "medical_book" as DocumentType, file_url: values.medical_book },
-        { type: "personal_data_consent" as DocumentType, file_url: values.personal_data_consent },
-      ].filter(doc => doc.file_url);
-
-      for (const doc of documents) {
-        const { error: docError } = await supabase
-          .from("nanny_documents")
+      try {
+        // Сначала создаем или обновляем запись в profiles
+        const { error: profileError } = await supabase
+          .from("profiles")
           .upsert({
-            nanny_id: nannyData.id,
-            type: doc.type,
-            file_url: doc.file_url,
+            id: session.user.id,
+            first_name: values.first_name,
+            last_name: values.last_name,
+            phone: values.phone,
+            email: values.email,
           });
 
-        if (docError) {
-          console.error(`Document update error for ${doc.type}:`, docError);
-          throw docError;
+        if (profileError) {
+          console.error("Profile update error:", profileError);
+          throw profileError;
         }
-      }
 
-      console.log("Documents updated successfully");
+        console.log("Profile updated successfully");
 
-      // Обновляем этап обучения с учетом уникального ограничения
-      if (values.training_stage) {
-        const { error: trainingError } = await supabase
-          .from("nanny_training")
+        // Затем создаем или обновляем профиль няни
+        const { data: nannyData, error: nannyError } = await supabase
+          .from("nanny_profiles")
           .upsert({
-            nanny_id: nannyData.id,
-            stage: values.training_stage,
-            completed_at: new Date().toISOString(),
-          });
+            id: id || undefined,
+            user_id: session.user.id,
+            birth_date: values.birth_date,
+            position: values.position,
+            age_group: values.age_group,
+            camera_phone: values.camera_phone,
+            camera_number: values.camera_number,
+            address: values.address,
+            relative_phone: values.relative_phone,
+            experience_years: values.experience_years,
+            education: values.education,
+            hourly_rate: values.hourly_rate,
+            photo_url: values.photo_url,
+          })
+          .select()
+          .single();
 
-        if (trainingError) {
-          console.error("Training stage update error:", trainingError);
-          throw trainingError;
+        if (nannyError) {
+          console.error("Nanny profile update error:", nannyError);
+          throw nannyError;
         }
 
-        console.log("Training stage updated successfully");
-      }
+        if (!nannyData) {
+          console.error("No nanny data returned after upsert");
+          throw new Error("Не удалось создать профиль няни");
+        }
 
-      return nannyData;
+        console.log("Nanny profile updated successfully:", nannyData);
+
+        // Обновляем документы
+        const documents: NannyDocument[] = [
+          { type: "criminal_record" as DocumentType, file_url: values.criminal_record },
+          { type: "image_usage_consent" as DocumentType, file_url: values.image_usage_consent },
+          { type: "medical_book" as DocumentType, file_url: values.medical_book },
+          { type: "personal_data_consent" as DocumentType, file_url: values.personal_data_consent },
+        ].filter(doc => doc.file_url);
+
+        for (const doc of documents) {
+          const { error: docError } = await supabase
+            .from("nanny_documents")
+            .upsert({
+              nanny_id: nannyData.id,
+              type: doc.type,
+              file_url: doc.file_url,
+            });
+
+          if (docError) {
+            console.error(`Document update error for ${doc.type}:`, docError);
+            throw docError;
+          }
+        }
+
+        console.log("Documents updated successfully");
+
+        // Обновляем этап обучения с учетом уникального ограничения
+        if (values.training_stage) {
+          const { error: trainingError } = await supabase
+            .from("nanny_training")
+            .upsert({
+              nanny_id: nannyData.id,
+              stage: values.training_stage,
+              completed_at: new Date().toISOString(),
+            });
+
+          if (trainingError) {
+            console.error("Training stage update error:", trainingError);
+            throw trainingError;
+          }
+
+          console.log("Training stage updated successfully");
+        }
+
+        return nannyData;
+      } catch (error) {
+        console.error("Error in mutation:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });
@@ -314,7 +324,9 @@ const NannyForm = () => {
             >
               Отмена
             </Button>
-            <Button type="submit">Сохранить</Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Сохранение..." : "Сохранить"}
+            </Button>
           </div>
         </form>
       </Form>
