@@ -227,15 +227,14 @@ const NannyForm = () => {
 
       console.log("Documents updated successfully");
 
-      // Обновляем этап обучения
+      // Обновляем этап обучения с учетом уникального ограничения
       if (values.training_stage) {
         const { error: trainingError } = await supabase
           .from("nanny_training")
           .upsert({
             nanny_id: nannyData.id,
             stage: values.training_stage,
-          }, {
-            onConflict: 'nanny_id'
+            completed_at: new Date().toISOString(),
           });
 
         if (trainingError) {
