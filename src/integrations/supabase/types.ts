@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      children: {
+        Row: {
+          birth_date: string
+          created_at: string
+          first_name: string
+          gender: string
+          id: string
+          medical_conditions: string | null
+          notes: string | null
+          notify_before_birthday: number | null
+          parent_profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          birth_date: string
+          created_at?: string
+          first_name: string
+          gender: string
+          id?: string
+          medical_conditions?: string | null
+          notes?: string | null
+          notify_before_birthday?: number | null
+          parent_profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          birth_date?: string
+          created_at?: string
+          first_name?: string
+          gender?: string
+          id?: string
+          medical_conditions?: string | null
+          notes?: string | null
+          notify_before_birthday?: number | null
+          parent_profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "children_parent_profile_id_fkey"
+            columns: ["parent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "parent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nanny_documents: {
         Row: {
           created_at: string
@@ -161,29 +208,38 @@ export type Database = {
       }
       parent_profiles: {
         Row: {
+          additional_phone: string | null
           address: string | null
           children_count: number | null
           created_at: string
           id: string
+          notes: string | null
           special_requirements: string | null
+          status: Database["public"]["Enums"]["parent_status"] | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          additional_phone?: string | null
           address?: string | null
           children_count?: number | null
           created_at?: string
           id?: string
+          notes?: string | null
           special_requirements?: string | null
+          status?: Database["public"]["Enums"]["parent_status"] | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          additional_phone?: string | null
           address?: string | null
           children_count?: number | null
           created_at?: string
           id?: string
+          notes?: string | null
           special_requirements?: string | null
+          status?: Database["public"]["Enums"]["parent_status"] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -333,6 +389,7 @@ export type Database = {
         | "image_usage_consent"
         | "medical_book"
         | "personal_data_consent"
+      parent_status: "default" | "star" | "diamond"
       training_stage: "stage_1" | "stage_2" | "stage_3" | "stage_4" | "stage_5"
       user_role: "nanny" | "owner" | "admin" | "parent"
       verification_status: "pending" | "verified" | "expired" | "failed"
