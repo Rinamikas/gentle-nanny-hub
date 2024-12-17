@@ -7,5 +7,9 @@ export * from './parent-types';
 export * from './profile-types';
 export * from './nanny-types';
 
-// Явный реэкспорт ParentProfile
-export type { ParentProfile } from './parent-types';
+// Явный реэкспорт ParentProfile и связанных типов
+export type { 
+  ParentProfile,
+  ParentProfileBase,
+  ParentTables 
+} from './parent-types';
