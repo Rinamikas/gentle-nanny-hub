@@ -66,7 +66,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
 
-  const { data: profile, isLoading } = useQuery<Profile>({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Начинаем загрузку профиля...");
@@ -86,6 +86,7 @@ export default function ProfilePage() {
 
       console.log("ID пользователя:", session.user.id);
 
+      // Сначала загружаем базовый профиль
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select(`
@@ -108,7 +109,8 @@ export default function ProfilePage() {
       const formattedData: Profile = {
         ...profileData,
         nanny_profiles: profileData.nanny_profiles ? [profileData.nanny_profiles] : null,
-        parent_profiles: profileData.parent_profiles ? [profileData.parent_profiles] : null
+        parent_profiles: profileData.parent_profiles ? [profileData.parent_profiles] : null,
+        user_roles: profileData.user_roles || []
       };
 
       return formattedData;
@@ -186,10 +188,10 @@ export default function ProfilePage() {
       <div className="mb-8 flex items-center gap-6">
         <div className="relative">
           <Avatar className="h-24 w-24">
-            <AvatarImage src={profile.photo_url || ""} />
+            <AvatarImage src={profile?.photo_url || ""} />
             <AvatarFallback>
-              {profile.first_name?.[0]}
-              {profile.last_name?.[0]}
+              {profile?.first_name?.[0]}
+              {profile?.last_name?.[0]}
             </AvatarFallback>
           </Avatar>
           <Button
@@ -212,15 +214,15 @@ export default function ProfilePage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">
-            {profile.first_name} {profile.last_name}
+            {profile?.first_name} {profile?.last_name}
           </h1>
           <p className="text-muted-foreground">
-            {userRole && (
+            {profile?.user_roles?.[0]?.role && (
               <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-sm mr-2">
-                {userRole}
+                {profile.user_roles[0].role}
               </span>
             )}
-            Создан: {format(new Date(profile.created_at), "dd MMMM yyyy", { locale: ru })}
+            Создан: {profile?.created_at && format(new Date(profile.created_at), "dd MMMM yyyy", { locale: ru })}
           </p>
         </div>
       </div>
@@ -229,19 +231,19 @@ export default function ProfilePage() {
         <div className="grid gap-4">
           <h2 className="text-lg font-semibold">Контактная информация</h2>
           <div className="grid gap-2">
-            <p><strong>Email:</strong> {profile.email}</p>
-            <p><strong>Телефон:</strong> {profile.phone}</p>
+            <p><strong>Email:</strong> {profile?.email}</p>
+            <p><strong>Телефон:</strong> {profile?.phone}</p>
           </div>
         </div>
 
-        {isNanny && profile.nanny_profiles?.[0] && (
+        {profile?.user_roles?.[0]?.role === "nanny" && profile.nanny_profiles?.[0] && (
           <div>
             <h2 className="text-lg font-semibold mb-4">Анкета няни</h2>
             <NannyForm nannyId={profile.nanny_profiles[0].id} />
           </div>
         )}
 
-        {isParent && profile.parent_profiles?.[0] && (
+        {profile?.user_roles?.[0]?.role === "parent" && profile.parent_profiles?.[0] && (
           <div>
             <h2 className="text-lg font-semibold mb-4">Анкета родителя</h2>
             {/* TODO: Добавить форму родителя */}
