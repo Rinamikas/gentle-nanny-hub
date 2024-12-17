@@ -44,18 +44,18 @@ const ProfilePage = () => {
 
       console.log("Загружен профиль:", profileData);
 
-      // Получаем роли пользователя через новую функцию
+      // Получаем роли пользователя
       const { data: rolesData, error: rolesError } = await supabase
-        .rpc('get_user_roles_by_id', { 
-          user_id_param: session.user.id 
-        });
+        .rpc('get_user_roles');
 
       if (rolesError) {
         console.error("Ошибка при загрузке ролей:", rolesError);
         throw rolesError;
       }
 
-      console.log("Роли пользователя:", rolesData);
+      // Фильтруем роли для текущего пользователя
+      const userRoles = rolesData.filter(role => role.user_id === session.user.id);
+      console.log("Роли пользователя:", userRoles);
 
       // Получаем данные няни
       const { data: nannyData, error: nannyError } = await supabase
@@ -81,7 +81,7 @@ const ProfilePage = () => {
 
       const formattedData: Profile = {
         ...profileData,
-        user_roles: rolesData?.map(({ role }) => ({ role })) || [],
+        user_roles: userRoles.map(({ role }) => ({ role })),
         nanny_profiles: nannyData ? [nannyData] : [],
         parent_profiles: parentData ? [parentData] : [],
       };

@@ -318,6 +318,14 @@ export type Database = {
           role: string
         }[]
       }
+      get_user_roles_by_id: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: {
+          role: string
+        }[]
+      }
     }
     Enums: {
       document_type:
