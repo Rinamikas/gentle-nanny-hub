@@ -9,6 +9,40 @@ export interface Tables extends
   ProfileTables,
   NannyTables,
   VerificationTables {
+    children: {
+      Row: {
+        id: string;
+        parent_profile_id: string | null;
+        first_name: string;
+        gender: string;
+        birth_date: string;
+        medical_conditions: string | null;
+        notes: string | null;
+        notify_before_birthday: number | null;
+        created_at: string;
+        updated_at: string;
+      };
+      Insert: {
+        id?: string;
+        parent_profile_id?: string | null;
+        first_name: string;
+        gender: string;
+        birth_date: string;
+        medical_conditions?: string | null;
+        notes?: string | null;
+        notify_before_birthday?: number | null;
+      };
+      Update: {
+        id?: string;
+        parent_profile_id?: string | null;
+        first_name?: string;
+        gender?: string;
+        birth_date?: string;
+        medical_conditions?: string | null;
+        notes?: string | null;
+        notify_before_birthday?: number | null;
+      };
+    };
     parent_profiles: {
       Row: {
         id: string;
