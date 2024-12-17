@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,12 +41,19 @@ interface ChildFormProps {
 }
 
 const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) => {
+  console.log("Initial data for child form:", initialData);
+  
   const form = useForm<ChildFormData>({
     defaultValues: {
       notify_before_birthday: 2,
       ...initialData,
     },
   });
+
+  const handleSubmit = (data: ChildFormData) => {
+    console.log("Submitting child form with data:", data);
+    onSubmit(data);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -58,10 +64,11 @@ const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) =
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="first_name"
+              rules={{ required: "Имя обязательно" }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Имя</FormLabel>
@@ -76,6 +83,7 @@ const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) =
             <FormField
               control={form.control}
               name="gender"
+              rules={{ required: "Пол обязателен" }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Пол</FormLabel>
@@ -101,6 +109,7 @@ const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) =
             <FormField
               control={form.control}
               name="birth_date"
+              rules={{ required: "Дата рождения обязательна" }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Дата рождения</FormLabel>
