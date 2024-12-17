@@ -62,7 +62,7 @@ const ProfilePage = () => {
         .from("nanny_profiles")
         .select("*")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (nannyError && nannyError.code !== 'PGRST116') {
         console.error("Ошибка при загрузке профиля няни:", nannyError);
@@ -73,7 +73,7 @@ const ProfilePage = () => {
         .from("parent_profiles")
         .select("*")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (parentError && parentError.code !== 'PGRST116') {
         console.error("Ошибка при загрузке профиля родителя:", parentError);
