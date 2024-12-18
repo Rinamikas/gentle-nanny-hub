@@ -14,16 +14,18 @@ import {
 
 const AdminLayout = () => {
   const location = useLocation();
+  console.log("Current location:", location.pathname);
   
-  const isFormPage = location.pathname.includes('create') || 
-                     location.pathname.includes('edit') || 
-                     location.pathname.includes('nannies/create');
+  const isFormPage = location.pathname.includes('/create') || 
+                     location.pathname.includes('/edit');
 
   const handleFillValidData = () => {
+    console.log("Filling form with valid test data");
     fillFormWithTestData(true);
   };
 
   const handleFillInvalidData = () => {
+    console.log("Filling form with invalid test data");
     fillFormWithTestData(false);
   };
 
