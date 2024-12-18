@@ -35,15 +35,20 @@ const generateValidValue = (type: FieldType, placeholder?: string): string => {
 };
 
 const generateInvalidValue = (type: FieldType): string => {
-  const invalidValues = {
-    email: 'not-an-email',
-    tel: 'not-a-phone',
-    number: 'abc',
-    date: 'not-a-date',
-    time: 'not-a-time',
-    text: '',
-  };
-  return invalidValues[type] || '';
+  switch (type) {
+    case 'email':
+      return 'неправильный.email';
+    case 'tel':
+      return 'не-номер-телефона';
+    case 'number':
+      return 'не число';
+    case 'date':
+      return 'не дата';
+    case 'time':
+      return 'не время';
+    default:
+      return '';
+  }
 };
 
 export const fillFormWithTestData = (valid: boolean = true) => {
