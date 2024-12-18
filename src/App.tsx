@@ -10,15 +10,32 @@ import FamiliesPage from "./pages/families/FamiliesPage";
 import FamilyForm from "./pages/families/components/FamilyForm";
 import AppointmentsPage from "./pages/appointments/AppointmentsPage";
 import Index from "./pages/Index";
+import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error: any) => {
-        // Если ошибка связана с токеном, не пытаемся повторить запрос
-        if (error?.message?.includes('Invalid Refresh Token')) {
+        console.log("Query error:", error);
+        
+        // Проверяем наличие ошибки refresh token
+        if (error?.message?.includes('Invalid Refresh Token') || 
+            error?.message?.includes('refresh_token_not_found')) {
+          console.log("Detected refresh token error, redirecting to auth...");
+          
+          // Показываем уведомление пользователю
+          toast({
+            title: "Ошибка авторизации",
+            description: "Пожалуйста, войдите снова",
+            variant: "destructive"
+          });
+          
+          // Перенаправляем на страницу авторизации
+          window.location.href = '/auth';
           return false;
         }
+        
+        // Для других ошибок пробуем повторить запрос
         return failureCount < 3;
       },
     },
