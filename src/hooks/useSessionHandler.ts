@@ -57,8 +57,8 @@ export const useSessionHandler = () => {
       console.log("Токен успешно обновлен");
     }
     
-    if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-      console.log("Пользователь вышел или удален");
+    if (event === 'SIGNED_OUT') {
+      console.log("Пользователь вышел");
       navigate('/auth');
     }
 
