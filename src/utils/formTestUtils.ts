@@ -11,10 +11,10 @@ const formatPhoneNumber = (number: string): string => {
   return `+7${cleaned}`;
 };
 
-const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, name?: string): string => {
+const generateValidValue = (type: FieldType, name?: string): string | number => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
 
-  if (name?.includes('phone') || type === 'tel') {
+  if (name?.includes('phone')) {
     const phoneNumber = faker.string.numeric({ length: 10 });
     return formatPhoneNumber(phoneNumber);
   }
@@ -60,23 +60,12 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
       return faker.date.between({ from: minDate, to: maxDate }).toISOString().split('T')[0];
     case 'number':
       if (name?.includes('hourly_rate')) {
-        return String(faker.number.int({ min: 300, max: 1000 }));
+        return faker.number.int({ min: 300, max: 1000 });
       }
       if (name?.includes('experience_years')) {
-        return String(faker.number.int({ min: 1, max: 30 }));
+        return faker.number.int({ min: 1, max: 30 });
       }
-      return String(faker.number.int({ min: 0, max: 100 }));
-    case 'select':
-      if (input instanceof HTMLSelectElement) {
-        const options = Array.from(input.options);
-        const validOptions = options.filter(opt => opt.value && !opt.disabled);
-        if (validOptions.length > 0) {
-          const randomOption = validOptions[Math.floor(Math.random() * validOptions.length)];
-          console.log(`Выбрано значение ${randomOption.value} для селекта ${name}`);
-          return randomOption.value;
-        }
-      }
-      return '';
+      return faker.number.int({ min: 0, max: 100 });
     default:
       return '';
   }
@@ -109,27 +98,21 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
   }
 };
 
-const triggerReactHookFormEvents = (input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
-  console.log(`Эмуляция событий React Hook Form для элемента:`, input);
+let formMethods: any = null;
 
-  // Сохраняем оригинальное значение
-  const originalValue = input.value;
-  
-  // Создаем и диспатчим событие change
-  const changeEvent = new Event('change', { bubbles: true });
-  Object.defineProperty(changeEvent, 'target', { value: input });
-  input.dispatchEvent(changeEvent);
-
-  // Создаем и диспатчим событие blur
-  const blurEvent = new Event('blur', { bubbles: true });
-  Object.defineProperty(blurEvent, 'target', { value: input });
-  input.dispatchEvent(blurEvent);
-
-  console.log(`События успешно отправлены для элемента с value=${originalValue}`);
+export const setFormMethods = (methods: any) => {
+  formMethods = methods;
 };
 
 export const fillFormWithTestData = (isValid: boolean = true) => {
   console.log('Заполняем форму тестовыми данными...');
+
+  if (!formMethods) {
+    console.error('Form methods не установлены. Используйте setFormMethods для установки методов формы.');
+    return;
+  }
+
+  const { setValue } = formMethods;
 
   document.querySelectorAll('input, select, textarea').forEach((element) => {
     const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
@@ -148,20 +131,15 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       }
 
       const value = isValid 
-        ? generateValidValue(type, input, input.name)
+        ? generateValidValue(type, input.name)
         : generateInvalidValue(type, input.name);
       
-      console.log(`Заполняем поле ${input.name} значением:`, value);
-
-      if (input instanceof HTMLSelectElement) {
-        input.value = value;
-        console.log(`Установлено значение ${value} для селекта ${input.name}`);
-      } else {
-        input.value = value;
-        console.log(`Установлено значение ${value} для поля ${input.name}`);
-      }
-
-      triggerReactHookFormEvents(input);
+      console.log(`Устанавливаем значение для поля ${input.name}:`, value);
+      setValue(input.name, value, { 
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
     }
   });
 

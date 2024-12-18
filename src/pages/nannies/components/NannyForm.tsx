@@ -12,6 +12,8 @@ import WorkingHoursSection from "./sections/WorkingHoursSection";
 import { formSchema, FormValues } from "../types/form";
 import { useNannyMutation } from "../hooks/useNannyMutation";
 import { useNannyData } from "../hooks/useNannyData";
+import { setFormMethods } from "@/utils/formTestUtils";
+import { useEffect } from "react";
 
 const NannyForm = () => {
   const navigate = useNavigate();
@@ -42,6 +44,10 @@ const NannyForm = () => {
       training_stage: undefined,
     },
   });
+
+  useEffect(() => {
+    setFormMethods(form);
+  }, [form]);
 
   const { data: nanny, isLoading } = useNannyData(id);
   const mutation = useNannyMutation(() => navigate("/nannies"));
