@@ -1,5 +1,4 @@
 import { faker } from "@faker-js/faker";
-import { fakerRU } from "@faker-js/faker";
 
 type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
 
@@ -17,7 +16,7 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
 
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
-    const phoneNumber = fakerRU.string.numeric({ length: 10 });
+    const phoneNumber = faker.string.numeric({ length: 10 });
     return formatPhoneNumber(phoneNumber);
   }
 
@@ -31,30 +30,30 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
   switch (type) {
     case 'text':
       if (name?.includes('first_name')) {
-        return fakerRU.person.firstName();
+        return faker.person.firstName();
       }
       if (name?.includes('last_name')) {
-        return fakerRU.person.lastName();
+        return faker.person.lastName();
       }
       if (name?.includes('education')) {
-        return fakerRU.lorem.paragraph();
+        return faker.lorem.paragraph();
       }
       if (name?.includes('position')) {
-        return fakerRU.person.jobTitle();
+        return faker.person.jobTitle();
       }
-      return fakerRU.lorem.words(3);
+      return faker.lorem.words(3);
     case 'email':
-      return fakerRU.internet.email();
+      return faker.internet.email();
     case 'date':
-      return fakerRU.date.past().toISOString().split('T')[0];
+      return faker.date.past().toISOString().split('T')[0];
     case 'number':
       if (name?.includes('hourly_rate')) {
-        return String(fakerRU.number.int({ min: 20, max: 100 }));
+        return String(faker.number.int({ min: 20, max: 100 }));
       }
       if (name?.includes('experience_years')) {
-        return String(fakerRU.number.int({ min: 1, max: 30 }));
+        return String(faker.number.int({ min: 1, max: 30 }));
       }
-      return String(fakerRU.number.int({ min: 0, max: 100 }));
+      return String(faker.number.int({ min: 0, max: 100 }));
     case 'select':
       if (input instanceof HTMLSelectElement) {
         const options = Array.from(input.options);
@@ -79,7 +78,7 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
       if (name?.includes('phone')) {
         return 'не телефон';
       }
-      return fakerRU.number.int({ min: 1, max: 100 }).toString();
+      return faker.number.int({ min: 1, max: 100 }).toString();
     case 'email':
       return 'неправильный.емейл';
     case 'date':
@@ -95,48 +94,67 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
   }
 };
 
+const triggerReactHookFormEvents = (input: HTMLElement) => {
+  console.log(`Эмуляция событий React Hook Form для элемента:`, input);
+
+  // Создаем и диспатчим событие input
+  const inputEvent = new Event('input', { bubbles: true });
+  Object.defineProperty(inputEvent, 'target', { value: input });
+  input.dispatchEvent(inputEvent);
+  console.log('Отправлено событие input');
+
+  // Создаем и диспатчим событие change
+  const changeEvent = new Event('change', { bubbles: true });
+  Object.defineProperty(changeEvent, 'target', { value: input });
+  input.dispatchEvent(changeEvent);
+  console.log('Отправлено событие change');
+
+  // Создаем и диспатчим событие blur
+  const blurEvent = new Event('blur', { bubbles: true });
+  Object.defineProperty(blurEvent, 'target', { value: input });
+  input.dispatchEvent(blurEvent);
+  console.log('Отправлено событие blur');
+};
+
 export const fillFormWithTestData = (isValid: boolean = true) => {
   console.log('Заполняем форму тестовыми данными...');
 
   document.querySelectorAll('input, select, textarea').forEach((element) => {
     const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    
     if (input.name && !input.disabled && input.style.display !== 'none') {
+      console.log(`Обработка поля ${input.name}`);
+      
       let type: FieldType = (input as HTMLInputElement).type as FieldType;
       
       // Определяем тип поля
       if (input instanceof HTMLSelectElement) {
         type = 'select';
+        console.log(`Поле ${input.name} определено как select`);
       } else if (input instanceof HTMLTextAreaElement) {
         type = 'text';
+        console.log(`Поле ${input.name} определено как textarea`);
       }
 
       const value = isValid 
         ? generateValidValue(type, input, input.name)
         : generateInvalidValue(type, input.name);
-      console.log(`Заполнено поле ${input.name}: ${value}`);
+      
+      console.log(`Заполняем поле ${input.name} значением:`, value);
 
       // Устанавливаем значение
       if (input instanceof HTMLSelectElement) {
         input.value = value;
-        // Создаем и диспатчим событие change для React Hook Form
-        const changeEvent = new Event('change', { bubbles: true });
-        Object.defineProperty(changeEvent, 'target', { value: input });
-        input.dispatchEvent(changeEvent);
+        console.log(`Установлено значение ${value} для селекта ${input.name}`);
       } else {
         (input as HTMLInputElement).value = value;
-        // Создаем и диспатчим события для React Hook Form
-        const inputEvent = new Event('input', { bubbles: true });
-        Object.defineProperty(inputEvent, 'target', { value: input });
-        input.dispatchEvent(inputEvent);
-        
-        const changeEvent = new Event('change', { bubbles: true });
-        Object.defineProperty(changeEvent, 'target', { value: input });
-        input.dispatchEvent(changeEvent);
-        
-        const blurEvent = new Event('blur', { bubbles: true });
-        Object.defineProperty(blurEvent, 'target', { value: input });
-        input.dispatchEvent(blurEvent);
+        console.log(`Установлено значение ${value} для поля ${input.name}`);
       }
+
+      // Эмулируем события React Hook Form
+      triggerReactHookFormEvents(input);
     }
   });
+
+  console.log('Заполнение формы завершено');
 };
