@@ -112,19 +112,16 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
-  // Создаем и отправляем события в правильном порядке
-  const events = [
-    new Event('change', { bubbles: true }),
-    new Event('input', { bubbles: true }),
-    new Event('blur', { bubbles: true })
-  ];
-
-  events.forEach(event => {
+  const eventTypes = ['change', 'input', 'blur'];
+  
+  eventTypes.forEach(eventType => {
     try {
-      input.dispatchEvent(event);
-      console.log(`Отправлено событие ${event.type}`);
+      const event = new Event(eventType, { bubbles: true });
+      Object.defineProperty(event, 'target', { value: input });
+      input.dispatchEvent.call(input, event);
+      console.log(`Отправлено событие ${eventType}`);
     } catch (error) {
-      console.error(`Ошибка при отправке события ${event.type}:`, error);
+      console.error(`Ошибка при отправке события ${eventType}:`, error);
     }
   });
 
