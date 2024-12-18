@@ -119,8 +119,9 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
 
   const { setValue, getValues } = formMethods;
 
-  // Заполняем все поля input
-  document.querySelectorAll('input, textarea').forEach((input) => {
+  // Заполняем все поля input и textarea
+  document.querySelectorAll('input, textarea').forEach((element) => {
+    const input = element as HTMLInputElement | HTMLTextAreaElement;
     if (input.name && !input.disabled && input.style.display !== 'none') {
       console.log(`Обработка поля ${input.name}`);
       
