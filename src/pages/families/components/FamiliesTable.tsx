@@ -1,9 +1,16 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Star, Diamond } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import type { ParentProfile } from "@/integrations/supabase/types";
+import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
 
 interface FamiliesTableProps {
   families: ParentProfile[];
@@ -47,11 +54,15 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <StatusIcon status={family.status} />
-                  <Badge variant={family.status === "diamond" ? "default" : "secondary"}>
-                    {family.status === "diamond" 
-                      ? "Бриллиант" 
-                      : family.status === "star" 
-                      ? "Звезда" 
+                  <Badge
+                    variant={
+                      family.status === "diamond" ? "default" : "secondary"
+                    }
+                  >
+                    {family.status === "diamond"
+                      ? "Бриллиант"
+                      : family.status === "star"
+                      ? "Звезда"
                       : "Обычный"}
                   </Badge>
                 </div>
@@ -60,7 +71,9 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
                 <div className="space-y-1">
                   <div>{family.profiles?.phone}</div>
                   {family.additional_phone && (
-                    <div className="text-sm text-gray-500">{family.additional_phone}</div>
+                    <div className="text-sm text-gray-500">
+                      {family.additional_phone}
+                    </div>
                   )}
                 </div>
               </TableCell>

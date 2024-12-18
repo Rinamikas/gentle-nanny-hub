@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FormValues } from "../types/form";
 import { useToast } from "@/hooks/use-toast";
-import { DocumentType } from "@/integrations/supabase/types";
+import { DOCUMENT_TYPE } from "../types/documents";
 
 export const useNannyMutation = (onSuccess: () => void) => {
   const { toast } = useToast();
@@ -11,13 +11,16 @@ export const useNannyMutation = (onSuccess: () => void) => {
   return useMutation({
     mutationFn: async (values: FormValues) => {
       console.log("Starting nanny mutation with values:", values);
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("Session error:", sessionError);
         throw sessionError;
       }
-      
+
       if (!session?.user?.id) {
         console.error("No user session found");
         throw new Error("Пользователь не авторизован");
@@ -32,7 +35,10 @@ export const useNannyMutation = (onSuccess: () => void) => {
         .eq("user_id", session.user.id)
         .single();
 
-      console.log("Existing nanny check result:", { existingNanny, checkError });
+      console.log("Existing nanny check result:", {
+        existingNanny,
+        checkError,
+      });
 
       if (checkError && checkError.code !== "PGRST116") {
         console.error("Error checking existing nanny:", checkError);
@@ -45,15 +51,13 @@ export const useNannyMutation = (onSuccess: () => void) => {
       }
 
       // Создаем или обновляем профиль
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: session.user.id,
-          first_name: values.first_name,
-          last_name: values.last_name,
-          phone: values.phone,
-          email: values.email,
-        });
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        phone: values.phone,
+        email: values.email,
+      });
 
       if (profileError) {
         console.error("Profile update error:", profileError);
@@ -95,12 +99,21 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Nanny profile created successfully:", nannyData);
 
       // Создаем документы
-      const documents: Array<{type: DocumentType, file_url: string}> = [
-        { type: "criminal_record", file_url: values.criminal_record },
-        { type: "image_usage_consent", file_url: values.image_usage_consent },
-        { type: "medical_book", file_url: values.medical_book },
-        { type: "personal_data_consent", file_url: values.personal_data_consent },
-      ].filter(doc => doc.file_url);
+      const documents: Array<{ type: DOCUMENT_TYPE; file_url: string }> = [
+        {
+          type: DOCUMENT_TYPE.CRIMINAL_RECORD,
+          file_url: values.criminal_record,
+        },
+        {
+          type: DOCUMENT_TYPE.IMAGE_USAGE_CONSENT,
+          file_url: values.image_usage_consent,
+        },
+        { type: DOCUMENT_TYPE.MEDICAL_BOOK, file_url: values.medical_book },
+        {
+          type: DOCUMENT_TYPE.PERSONAL_DATA_CONSENT,
+          file_url: values.personal_data_consent,
+        },
+      ].filter((doc) => doc.file_url);
 
       for (const doc of documents) {
         const { error: docError } = await supabase
@@ -151,7 +164,10 @@ export const useNannyMutation = (onSuccess: () => void) => {
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: error instanceof Error ? error.message : "Не удалось сохранить данные",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Не удалось сохранить данные",
       });
     },
   });
