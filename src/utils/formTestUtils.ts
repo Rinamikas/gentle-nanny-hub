@@ -2,12 +2,17 @@ import { faker } from '@faker-js/faker/locale/ru';
 
 type FieldType = 'text' | 'email' | 'tel' | 'number' | 'date' | 'time';
 
-const generateValidValue = (type: FieldType, placeholder?: string): string => {
+const generateValidValue = (type: FieldType, placeholder?: string, name?: string): string => {
+  // Специальная обработка для полей с контактными данными
+  if (name?.includes('phone') || type === 'tel') {
+    return faker.phone.number('+7 ### ### ## ##');
+  }
+  
+  if (name?.includes('email') || type === 'email') {
+    return faker.internet.email({ provider: 'example.com' });
+  }
+
   switch (type) {
-    case 'email':
-      return faker.internet.email();
-    case 'tel':
-      return `+7${faker.string.numeric(10)}`;
     case 'number':
       return faker.number.int({ min: 1, max: 100 }).toString();
     case 'date':
@@ -49,9 +54,9 @@ const generateInvalidValue = (type: FieldType): string => {
     case 'number':
       return 'не число';
     case 'date':
-      return '2023-13-45'; // Неверный формат даты
+      return '2023-13-45';
     case 'time':
-      return '25:70'; // Неверное время
+      return '25:70';
     default:
       return '';
   }
@@ -64,17 +69,13 @@ export const fillFormWithTestData = (valid: boolean = true) => {
   
   inputs.forEach((input: HTMLElement) => {
     if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
-      // Пропускаем поля для загрузки файлов
-      if (input.type === 'file') {
-        return;
-      }
+      if (input.type === 'file') return;
 
       const type = input.type as FieldType;
       const value = valid 
-        ? generateValidValue(type, input.placeholder)
+        ? generateValidValue(type, input.placeholder, input.name)
         : generateInvalidValue(type);
       
-      // Создаем событие change
       const event = new Event('change', { bubbles: true });
       input.value = value;
       input.dispatchEvent(event);

@@ -31,7 +31,7 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen">
-      <aside className="w-64 bg-gray-100 p-4 flex flex-col gap-2">
+      <aside className="w-64 bg-[#FFD6FF] p-4 flex flex-col gap-2">
         <Link to="/">
           <Button variant="ghost" className="w-full justify-start gap-2">
             <LayoutDashboard className="h-4 w-4" />
