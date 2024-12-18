@@ -112,29 +112,32 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
-  // Создаем и диспатчим событие change с правильным значением
-  const changeEvent = new Event('change', { bubbles: true, cancelable: true });
-  Object.defineProperty(changeEvent, 'target', { value: input });
-  input.dispatchEvent(changeEvent);
-  console.log('Отправлено событие change');
+  // Создаем функцию для диспатча события с сохранением контекста
+  const dispatchEventWithContext = (eventName: string) => {
+    const event = new Event(eventName, { bubbles: true, cancelable: true });
+    const descriptor = {
+      value: input,
+      enumerable: true,
+      configurable: true
+    };
+    Object.defineProperty(event, 'target', descriptor);
+    Object.defineProperty(event, 'currentTarget', descriptor);
+    input.dispatchEvent(event);
+    console.log(`Отправлено событие ${eventName}`);
+  };
 
-  // Создаем и диспатчим событие input с правильным значением
-  const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-  Object.defineProperty(inputEvent, 'target', { value: input });
-  input.dispatchEvent(inputEvent);
-  console.log('Отправлено событие input');
-
-  // Создаем и диспатчим событие blur с правильным значением
-  const blurEvent = new Event('blur', { bubbles: true, cancelable: true });
-  Object.defineProperty(blurEvent, 'target', { value: input });
-  input.dispatchEvent(blurEvent);
-  console.log('Отправлено событие blur');
+  // Диспатчим события в правильном порядке
+  dispatchEventWithContext('change');
+  dispatchEventWithContext('input');
+  dispatchEventWithContext('blur');
 
   // Эмулируем изменение значения для React
   if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-    if (nativeInputValueSetter) {
-      nativeInputValueSetter.call(input, input.value);
+    const value = input.value;
+    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+    const setter = descriptor?.set;
+    if (setter) {
+      setter.call(input, value);
     }
   }
 };
