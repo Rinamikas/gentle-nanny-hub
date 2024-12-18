@@ -24,10 +24,8 @@ const getFieldType = (name: string): FieldType => {
 const getSelectOptions = (name: string): string[] => {
   console.log(`Получение опций для select поля ${name}`);
   
-  // Предопределенные опции для известных select полей
   const OPTIONS_MAP: Record<string, string[]> = {
     'training_stage': ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'],
-    // Добавьте другие select поля по необходимости
   };
 
   const options = OPTIONS_MAP[name] || [];
@@ -110,6 +108,49 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
   }
 };
 
+let formMethods: any = null;
+
+export const setFormMethods = (methods: any) => {
+  formMethods = methods;
+};
+
+export const fillFormWithTestData = (isValid: boolean = true) => {
+  console.log('Заполняем форму тестовыми данными...');
+
+  if (!formMethods) {
+    console.error('Form methods не установлены. Используйте setFormMethods для установки методов формы.');
+    return;
+  }
+
+  const { setValue } = formMethods;
+
+  // Используем setTimeout для установки значений после инициализации компонентов
+  setTimeout(() => {
+    document.querySelectorAll('input, select, textarea').forEach((element) => {
+      const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+      
+      if (input.name && !input.disabled && input.style.display !== 'none') {
+        console.log(`Обработка поля ${input.name}`);
+        
+        const type = getFieldType(input.name);
+        console.log(`Определен тип поля ${input.name}: ${type}`);
+
+        const value = isValid 
+          ? generateValidValue(type, input.name)
+          : generateInvalidValue(type);
+        
+        console.log(`Устанавливаем значение для поля ${input.name}:`, value);
+        setValue(input.name, value, { 
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true
+        });
+      }
+    });
+    console.log('Заполнение формы завершено');
+  }, 100); // Добавляем небольшую задержку
+};
+
 const generateInvalidValue = (type: FieldType): string => {
   console.log(`Генерация некорректного значения для поля типа ${type}`);
 
@@ -127,45 +168,4 @@ const generateInvalidValue = (type: FieldType): string => {
     default:
       return 'некорректное значение';
   }
-};
-
-let formMethods: any = null;
-
-export const setFormMethods = (methods: any) => {
-  formMethods = methods;
-};
-
-export const fillFormWithTestData = (isValid: boolean = true) => {
-  console.log('Заполняем форму тестовыми данными...');
-
-  if (!formMethods) {
-    console.error('Form methods не установлены. Используйте setFormMethods для установки методов формы.');
-    return;
-  }
-
-  const { setValue } = formMethods;
-
-  document.querySelectorAll('input, select, textarea').forEach((element) => {
-    const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-    
-    if (input.name && !input.disabled && input.style.display !== 'none') {
-      console.log(`Обработка поля ${input.name}`);
-      
-      const type = getFieldType(input.name);
-      console.log(`Определен тип поля ${input.name}: ${type}`);
-
-      const value = isValid 
-        ? generateValidValue(type, input.name)
-        : generateInvalidValue(type);
-      
-      console.log(`Устанавливаем значение для поля ${input.name}:`, value);
-      setValue(input.name, value, { 
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true
-      });
-    }
-  });
-
-  console.log('Заполнение формы завершено');
 };
