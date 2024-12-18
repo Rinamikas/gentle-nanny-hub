@@ -21,18 +21,6 @@ const getFieldType = (name: string): FieldType => {
   return 'text';
 };
 
-const getSelectOptions = (name: string): string[] => {
-  console.log(`Получение опций для select поля ${name}`);
-  
-  const OPTIONS_MAP: Record<string, string[]> = {
-    'training_stage': ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'],
-  };
-
-  const options = OPTIONS_MAP[name] || [];
-  console.log(`Найдены опции для ${name}:`, options);
-  return options;
-};
-
 const generateValidValue = (type: FieldType, name?: string): string | number => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
 
@@ -85,22 +73,9 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
       return faker.number.int({ min: 0, max: 100 });
     
     case 'select':
-      if (!name) {
-        console.log('Имя поля не указано для select');
-        return '';
+      if (name === 'training_stage') {
+        return 'stage_1';
       }
-      
-      const options = getSelectOptions(name);
-      console.log(`Доступные опции для ${name}:`, options);
-      
-      if (options.length > 0) {
-        const randomIndex = faker.number.int({ min: 0, max: options.length - 1 });
-        const selectedValue = options[randomIndex];
-        console.log(`Выбрано значение для ${name}:`, selectedValue);
-        return selectedValue;
-      }
-      
-      console.log(`Не найдены опции для select поля ${name}`);
       return '';
     
     default:
@@ -124,31 +99,51 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
 
   const { setValue } = formMethods;
 
-  // Используем setTimeout для установки значений после инициализации компонентов
-  setTimeout(() => {
-    document.querySelectorAll('input, select, textarea').forEach((element) => {
-      const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+  document.querySelectorAll('input, select').forEach((element) => {
+    const input = element as HTMLInputElement | HTMLSelectElement;
+    
+    if (input.name && !input.disabled && input.style.display !== 'none') {
+      console.log(`Обработка поля ${input.name}`);
       
-      if (input.name && !input.disabled && input.style.display !== 'none') {
-        console.log(`Обработка поля ${input.name}`);
-        
-        const type = getFieldType(input.name);
-        console.log(`Определен тип поля ${input.name}: ${type}`);
+      const type = getFieldType(input.name);
+      console.log(`Определен тип поля ${input.name}: ${type}`);
 
-        const value = isValid 
-          ? generateValidValue(type, input.name)
-          : generateInvalidValue(type);
-        
-        console.log(`Устанавливаем значение для поля ${input.name}:`, value);
+      const value = isValid 
+        ? generateValidValue(type, input.name)
+        : generateInvalidValue(type);
+      
+      console.log(`Устанавливаем значение для поля ${input.name}:`, value);
+
+      if (type === 'select') {
+        // Находим кнопку-триггер для select
+        const trigger = document.querySelector(`[aria-controls="${input.name}-radix-:r0:"]`);
+        if (trigger) {
+          // Эмулируем клик по триггеру
+          (trigger as HTMLElement).click();
+          
+          // Находим опцию и эмулируем её выбор
+          setTimeout(() => {
+            const option = document.querySelector(`[data-value="${value}"]`);
+            if (option) {
+              (option as HTMLElement).click();
+              setValue(input.name, value, { 
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            }
+          }, 100);
+        }
+      } else {
         setValue(input.name, value, { 
           shouldValidate: true,
           shouldDirty: true,
           shouldTouch: true
         });
       }
-    });
-    console.log('Заполнение формы завершено');
-  }, 100); // Добавляем небольшую задержку
+    }
+  });
+  console.log('Заполнение формы завершено');
 };
 
 const generateInvalidValue = (type: FieldType): string => {
