@@ -116,20 +116,18 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
   
   eventTypes.forEach(eventType => {
     try {
-      const event = new Event(eventType, { bubbles: true });
-      Object.defineProperty(event, 'target', { 
+      // Создаем нативное событие
+      const event = document.createEvent('Event');
+      event.initEvent(eventType, true, true);
+      
+      // Устанавливаем target напрямую
+      Object.defineProperty(event, 'target', {
         writable: false,
-        value: input 
+        value: input
       });
       
-      const handler = Object.getOwnPropertyDescriptor(
-        Object.getPrototypeOf(input), 
-        'dispatchEvent'
-      )?.value;
-      
-      if (handler) {
-        handler.call(input, event);
-      }
+      // Используем нативный dispatchEvent
+      input.dispatchEvent(event);
       
       console.log(`Отправлено событие ${eventType}`);
     } catch (error) {
