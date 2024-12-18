@@ -113,9 +113,17 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
   const dispatchCustomEvent = (eventName: string) => {
-    const event = document.createEvent('Event');
-    event.initEvent(eventName, true, true);
-    Object.defineProperty(event, 'target', { value: input });
+    const event = new CustomEvent(eventName, {
+      bubbles: true,
+      cancelable: true,
+      detail: { target: input }
+    });
+    
+    Object.defineProperty(event, 'target', {
+      value: input,
+      enumerable: true
+    });
+    
     input.dispatchEvent(event);
     console.log(`Отправлено событие ${eventName}`);
   };
