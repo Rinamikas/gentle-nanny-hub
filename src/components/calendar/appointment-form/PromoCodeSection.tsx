@@ -18,34 +18,65 @@ export function PromoCodeSection({
   const { toast } = useToast();
 
   const checkPromoCode = async () => {
-    console.log("Проверка промокода:", promoCode);
-    
-    const { data, error } = await supabase
-      .from("promo_codes")
-      .select("*")
-      .eq("code", promoCode)
-      .eq("is_active", true)
-      .gte("valid_until", new Date().toISOString())
-      .lte("valid_from", new Date().toISOString())
-      .single();
-
-    if (error || !data) {
-      console.error("Ошибка проверки промокода:", error);
+    if (!promoCode) {
       toast({
         title: "Ошибка",
-        description: "Промокод недействителен",
+        description: "Введите промокод",
         variant: "destructive",
       });
       return;
     }
 
-    console.log("Промокод применен:", data);
-    toast({
-      title: "Успешно",
-      description: `Применена скидка ${data.discount_percent}%`,
-    });
+    console.log("Проверка промокода:", promoCode);
+    
+    try {
+      const { data, error } = await supabase
+        .from("promo_codes")
+        .select("*")
+        .eq("code", promoCode)
+        .eq("is_active", true)
+        .gte("valid_until", new Date().toISOString())
+        .lte("valid_from", new Date().toISOString());
 
-    onPromoCodeCheck(data.discount_percent);
+      console.log("Результат проверки промокода:", { data, error });
+
+      if (error) {
+        console.error("Ошибка проверки промокода:", error);
+        toast({
+          title: "Ошибка",
+          description: "Не удалось проверить промокод",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log("Промокод не найден или недействителен");
+        toast({
+          title: "Ошибка",
+          description: "Промокод недействителен",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const promoCode = data[0];
+      console.log("Промокод применен:", promoCode);
+      
+      toast({
+        title: "Успешно",
+        description: `Применена скидка ${promoCode.discount_percent}%`,
+      });
+
+      onPromoCodeCheck(promoCode.discount_percent);
+    } catch (error) {
+      console.error("Ошибка при проверке промокода:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось проверить промокод",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
