@@ -6,25 +6,6 @@ const formatPhoneNumber = (number: string): string => {
   const cleaned = number.replace(/\D/g, "");
   const match = cleaned.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
   if (match) {
-    return `+7 (${match[1]}) ${match[2]}-${match[
-
-Спасибо за обратную связь! Давайте исправим оставшиеся проблемы:
-1. Ошибка "Expected number, received string" возникает из-за неправильной типизации числовых полей
-2. Email генерируется как строка вместо email
-3. Select не выбирает случайное значение
-
-<lov-code>
-Обновим файл formTestUtils.ts:
-
-<lov-write file_path="src/utils/formTestUtils.ts">
-import { faker } from "@faker-js/faker/locale/ru";
-
-type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
-
-const formatPhoneNumber = (number: string): string => {
-  const cleaned = number.replace(/\D/g, "");
-  const match = cleaned.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
-  if (match) {
     return `+7 (${match[1]}) ${match[2]}-${match[3]}-${match[4]}`;
   }
   return `+7${cleaned}`;
