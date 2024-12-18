@@ -118,7 +118,7 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
     try {
       const event = new Event(eventType, { bubbles: true });
       Object.defineProperty(event, 'target', { value: input });
-      input.dispatchEvent.call(input, event);
+      input.dispatchEvent(event);
       console.log(`Отправлено событие ${eventType}`);
     } catch (error) {
       console.error(`Ошибка при отправке события ${eventType}:`, error);
