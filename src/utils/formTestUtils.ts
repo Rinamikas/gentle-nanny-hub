@@ -11,15 +11,24 @@ const formatPhoneNumber = (number: string): string => {
   return `+7${cleaned}`;
 };
 
+const getFieldType = (name: string): FieldType => {
+  // Определяем тип поля на основе имени
+  if (name.includes('email')) return 'email';
+  if (name.includes('phone')) return 'tel';
+  if (name.includes('date')) return 'date';
+  if (name.includes('rate') || name.includes('years')) return 'number';
+  if (name === 'training_stage') return 'select';
+  return 'text';
+};
+
 const generateValidValue = (type: FieldType, name?: string): string | number => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
 
-  if (name?.includes('phone')) {
-    const phoneNumber = faker.string.numeric({ length: 10 });
-    return formatPhoneNumber(phoneNumber);
-  }
-
   switch (type) {
+    case 'tel':
+      const phoneNumber = faker.string.numeric({ length: 10 });
+      return formatPhoneNumber(phoneNumber);
+    
     case 'text':
       if (name?.includes('first_name')) {
         return faker.person.firstName();
@@ -43,14 +52,17 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
         return faker.location.streetAddress();
       }
       return faker.lorem.words(3);
+    
     case 'email':
       return faker.internet.email();
+    
     case 'date':
       const minDate = new Date();
       minDate.setFullYear(minDate.getFullYear() - 55);
       const maxDate = new Date();
       maxDate.setFullYear(maxDate.getFullYear() - 25);
       return faker.date.between({ from: minDate, to: maxDate }).toISOString().split('T')[0];
+    
     case 'number':
       if (name?.includes('hourly_rate')) {
         return faker.number.int({ min: 300, max: 1000 });
@@ -59,51 +71,32 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
         return faker.number.int({ min: 1, max: 30 });
       }
       return faker.number.int({ min: 0, max: 100 });
+    
     case 'select':
       if (name === 'training_stage') {
         const stages = ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'];
         const randomIndex = faker.number.int({ min: 0, max: stages.length - 1 });
         return stages[randomIndex];
       }
-      // Для других select полей получаем значения из DOM
-      const selectElement = document.querySelector(`select[name="${name}"]`) as HTMLSelectElement;
-      if (selectElement) {
-        const options = Array.from(selectElement.options)
-          .filter(option => option.value)
-          .map(option => option.value);
-        
-        if (options.length > 0) {
-          const randomIndex = faker.number.int({ min: 0, max: options.length - 1 });
-          console.log(`Доступные опции для ${name}:`, options);
-          return options[randomIndex];
-        }
-      }
       return '';
+    
     default:
       return '';
   }
 };
 
-const generateInvalidValue = (type: FieldType, name?: string): string => {
-  console.log(`Генерация некорректного значения для поля типа ${type}, имя: ${name}`);
+const generateInvalidValue = (type: FieldType): string => {
+  console.log(`Генерация некорректного значения для поля типа ${type}`);
 
   switch (type) {
-    case 'text':
-      if (name?.includes('phone')) {
-        return 'не телефон';
-      }
-      if (name?.includes('email')) {
-        return 'неправильный.емейл';
-      }
-      return faker.number.int({ min: 1, max: 100 }).toString();
+    case 'tel':
+      return 'не телефон';
     case 'email':
       return 'неправильный.емейл';
     case 'date':
       return 'не дата';
     case 'number':
       return 'не число';
-    case 'tel':
-      return 'не телефон';
     case 'select':
       return 'invalid_option';
     default:
@@ -133,23 +126,12 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
     if (input.name && !input.disabled && input.style.display !== 'none') {
       console.log(`Обработка поля ${input.name}`);
       
-      let type: FieldType;
-      
-      if (input instanceof HTMLSelectElement) {
-        type = 'select';
-        console.log(`Поле ${input.name} определено как select`);
-      } else if (input instanceof HTMLTextAreaElement) {
-        type = 'text';
-        console.log(`Поле ${input.name} определено как textarea`);
-      } else {
-        // Для input элементов проверяем атрибут type
-        type = (input as HTMLInputElement).type as FieldType;
-        console.log(`Поле ${input.name} определено как ${type}`);
-      }
+      const type = getFieldType(input.name);
+      console.log(`Определен тип поля ${input.name}: ${type}`);
 
       const value = isValid 
         ? generateValidValue(type, input.name)
-        : generateInvalidValue(type, input.name);
+        : generateInvalidValue(type);
       
       console.log(`Устанавливаем значение для поля ${input.name}:`, value);
       setValue(input.name, value, { 
