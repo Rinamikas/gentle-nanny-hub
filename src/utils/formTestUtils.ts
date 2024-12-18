@@ -7,7 +7,7 @@ const generateValidValue = (type: FieldType, placeholder?: string): string => {
     case 'email':
       return faker.internet.email();
     case 'tel':
-      return faker.phone.number({ format: '+7 ### ### ## ##' });
+      return faker.helpers.fromRegExp('+7[0-9]{10}');
     case 'number':
       return faker.number.int({ min: 1, max: 100 }).toString();
     case 'date':
