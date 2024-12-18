@@ -142,7 +142,7 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
     }
   });
 
-  // Обрабатываем select поля
+  // Обрабатываем select поля отдельно
   const selectFields = ['training_stage'];
   selectFields.forEach(fieldName => {
     console.log(`Обработка select поля ${fieldName}`);
@@ -154,17 +154,22 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
 
     console.log(`Устанавливаем значение для select ${fieldName}:`, value);
     
+    // Устанавливаем значение через setValue с дополнительными опциями
     setValue(fieldName, value, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true
     });
 
-    // Создаем и диспатчим кастомное событие для обновления UI
-    const event = new CustomEvent('select-value-change', {
-      detail: { field: fieldName, value }
-    });
-    document.dispatchEvent(event);
+    // Создаем и диспатчим событие изменения для select
+    const event = new Event('change', { bubbles: true });
+    const selectElement = document.querySelector(`[name="${fieldName}"]`);
+    if (selectElement) {
+      selectElement.dispatchEvent(event);
+    }
+
+    // Принудительно обновляем UI через React Hook Form
+    formMethods.trigger(fieldName);
   });
 
   console.log('Значения формы после заполнения:', getValues());

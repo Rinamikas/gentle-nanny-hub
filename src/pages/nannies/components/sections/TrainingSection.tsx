@@ -26,7 +26,11 @@ export default function TrainingSection({ form }: TrainingSectionProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Этап обучения</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select 
+              onValueChange={field.onChange} 
+              value={field.value}
+              name="training_stage"
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите этап обучения" />
