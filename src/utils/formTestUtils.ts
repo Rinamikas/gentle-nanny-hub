@@ -5,7 +5,7 @@ type FieldType = 'text' | 'email' | 'tel' | 'number' | 'date' | 'time';
 const generateValidValue = (type: FieldType, placeholder?: string, name?: string): string => {
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
-    return faker.phone.number('+7 ### ### ## ##');
+    return faker.phone.number().replace(/\D/g, '').replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '+7 $2 $3 $4 $5');
   }
   
   if (name?.includes('email') || type === 'email') {
