@@ -74,7 +74,8 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
     
     case 'select':
       if (name === 'training_stage') {
-        return 'stage_1';
+        const stages = ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'];
+        return stages[Math.floor(Math.random() * stages.length)];
       }
       return '';
     
@@ -119,62 +120,50 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
   const { setValue, getValues } = formMethods;
 
   // Заполняем все поля input
-  document.querySelectorAll('input').forEach((input) => {
+  document.querySelectorAll('input, textarea').forEach((input) => {
     if (input.name && !input.disabled && input.style.display !== 'none') {
       console.log(`Обработка поля ${input.name}`);
       
       const type = getFieldType(input.name);
-      if (type !== 'select') {
-        console.log(`Определен тип поля ${input.name}: ${type}`);
+      console.log(`Определен тип поля ${input.name}: ${type}`);
 
-        const value = isValid 
-          ? generateValidValue(type, input.name)
-          : generateInvalidValue(type);
-        
-        console.log(`Устанавливаем значение для поля ${input.name}:`, value);
-        
-        setValue(input.name, value, { 
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true
-        });
-      }
-    }
-  });
-
-  // Обрабатываем select поля через SelectTrigger
-  document.querySelectorAll('[role="combobox"]').forEach((select) => {
-    const controlsId = select.getAttribute('aria-controls');
-    if (!controlsId) return;
-
-    // Получаем имя поля из aria-controls
-    const fieldName = controlsId.split('-')[0];
-    console.log(`Обработка select поля ${fieldName}`);
-
-    const type = getFieldType(fieldName);
-    if (type === 'select') {
       const value = isValid 
-        ? generateValidValue(type, fieldName)
+        ? generateValidValue(type, input.name)
         : generateInvalidValue(type);
-
-      console.log(`Устанавливаем значение для select ${fieldName}:`, value);
       
-      // Устанавливаем значение
-      setValue(fieldName, value, {
+      console.log(`Устанавливаем значение для поля ${input.name}:`, value);
+      
+      setValue(input.name, value, { 
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true
       });
-
-      // Находим и программно выбираем опцию
-      const selectContent = document.querySelector(`[data-radix-select-content]`);
-      if (selectContent) {
-        const option = selectContent.querySelector(`[data-value="${value}"]`);
-        if (option) {
-          (option as HTMLElement).click();
-        }
-      }
     }
+  });
+
+  // Обрабатываем select поля
+  const selectFields = ['training_stage'];
+  selectFields.forEach(fieldName => {
+    console.log(`Обработка select поля ${fieldName}`);
+    
+    const type = getFieldType(fieldName);
+    const value = isValid 
+      ? generateValidValue(type, fieldName)
+      : generateInvalidValue(type);
+
+    console.log(`Устанавливаем значение для select ${fieldName}:`, value);
+    
+    setValue(fieldName, value, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true
+    });
+
+    // Создаем и диспатчим кастомное событие для обновления UI
+    const event = new CustomEvent('select-value-change', {
+      detail: { field: fieldName, value }
+    });
+    document.dispatchEvent(event);
   });
 
   console.log('Значения формы после заполнения:', getValues());
