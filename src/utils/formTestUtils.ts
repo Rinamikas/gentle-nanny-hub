@@ -10,7 +10,7 @@ const formatPhoneNumber = (phone: string): string => {
 const generateValidValue = (type: FieldType, placeholder?: string, name?: string): string => {
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
-    const phoneNumber = faker.phone.number('79#########');
+    const phoneNumber = faker.string.numeric({ length: 10 });
     return formatPhoneNumber(phoneNumber);
   }
   
