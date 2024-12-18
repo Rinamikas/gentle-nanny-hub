@@ -31,7 +31,7 @@ export default function AppointmentsCalendar() {
   const [selectedNanny, setSelectedNanny] = useState<string>();
   const [modalData, setModalData] = useState<EventModalData>({ isOpen: false, event: null });
   const { toast } = useToast();
-  const { data: events = [], isLoading } = useCalendarEvents(selectedNanny);
+  const { data: events = [], isLoading, refetch } = useCalendarEvents(selectedNanny);
 
   console.log("Текущая выбранная няня:", selectedNanny);
   console.log("События календаря:", events);
@@ -65,7 +65,24 @@ export default function AppointmentsCalendar() {
           .eq('id', event.id);
 
         if (error) throw error;
+      } else if (event.type === 'working_hours') {
+        const workDate = format(start, 'yyyy-MM-dd');
+        const startTime = format(start, 'HH:mm:ss');
+        const endTime = format(end, 'HH:mm:ss');
+
+        const { error } = await supabase
+          .from('working_hours')
+          .update({
+            work_date: workDate,
+            start_time: startTime,
+            end_time: endTime,
+          })
+          .eq('id', event.id);
+
+        if (error) throw error;
       }
+
+      await refetch();
 
       toast({
         title: "Успешно",
@@ -108,6 +125,8 @@ export default function AppointmentsCalendar() {
 
         if (error) throw error;
       }
+
+      await refetch();
 
       toast({
         title: "Успешно",
