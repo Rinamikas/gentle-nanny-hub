@@ -12,87 +12,33 @@ export const useNannyMutation = (onSuccess: () => void) => {
     mutationFn: async (values: FormValues) => {
       console.log("Starting nanny mutation with values:", values);
 
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Session error:", sessionError);
-        throw sessionError;
-      }
+      // Вызываем функцию create_nanny_with_user для создания нового пользователя и профиля няни
+      const { data: nannyData, error: createError } = await supabase
+        .rpc('create_nanny_with_user', {
+          p_email: values.email,
+          p_first_name: values.first_name,
+          p_last_name: values.last_name,
+          p_phone: values.phone,
+          p_birth_date: values.birth_date,
+          p_position: values.position,
+          p_age_group: values.age_group,
+          p_camera_phone: values.camera_phone,
+          p_camera_number: values.camera_number,
+          p_address: values.address,
+          p_relative_phone: values.relative_phone,
+          p_experience_years: values.experience_years,
+          p_education: values.education,
+          p_hourly_rate: values.hourly_rate,
+          p_photo_url: values.photo_url || ''
+        });
 
-      if (!session?.user?.id) {
-        console.error("No user session found");
-        throw new Error("Пользователь не авторизован");
-      }
-
-      console.log("User session found:", session.user.id);
-
-      // Проверяем существование профиля
-      const { data: existingNanny, error: checkError } = await supabase
-        .from("nanny_profiles")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .single();
-
-      console.log("Existing nanny check result:", {
-        existingNanny,
-        checkError,
-      });
-
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking existing nanny:", checkError);
-        throw checkError;
-      }
-
-      if (existingNanny) {
-        console.error("Nanny profile already exists");
-        throw new Error("Профиль няни уже существует для этого пользователя");
-      }
-
-      // Создаем или обновляем профиль
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: session.user.id,
-        first_name: values.first_name,
-        last_name: values.last_name,
-        phone: values.phone,
-        email: values.email,
-      });
-
-      if (profileError) {
-        console.error("Profile update error:", profileError);
-        throw profileError;
-      }
-
-      console.log("Profile updated successfully");
-
-      // Создаем профиль няни
-      const { data: nannyData, error: nannyError } = await supabase
-        .from("nanny_profiles")
-        .insert({
-          user_id: session.user.id,
-          birth_date: values.birth_date,
-          position: values.position,
-          age_group: values.age_group,
-          camera_phone: values.camera_phone,
-          camera_number: values.camera_number,
-          address: values.address,
-          relative_phone: values.relative_phone,
-          experience_years: values.experience_years,
-          education: values.education,
-          hourly_rate: values.hourly_rate,
-          photo_url: values.photo_url,
-        })
-        .select()
-        .single();
-
-      if (nannyError) {
-        console.error("Nanny profile creation error:", nannyError);
-        throw nannyError;
+      if (createError) {
+        console.error("Error creating nanny:", createError);
+        throw createError;
       }
 
       if (!nannyData) {
-        console.error("No nanny data returned after insert");
+        console.error("No nanny data returned after creation");
         throw new Error("Не удалось создать профиль няни");
       }
 
@@ -119,7 +65,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
         const { error: docError } = await supabase
           .from("nanny_documents")
           .insert({
-            nanny_id: nannyData.id,
+            nanny_id: nannyData,
             type: doc.type,
             file_url: doc.file_url,
           });
@@ -137,7 +83,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
         const { error: trainingError } = await supabase
           .from("nanny_training")
           .insert({
-            nanny_id: nannyData.id,
+            nanny_id: nannyData,
             stage: values.training_stage,
           });
 
