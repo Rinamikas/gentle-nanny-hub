@@ -2,10 +2,16 @@ import { faker } from '@faker-js/faker/locale/ru';
 
 type FieldType = 'text' | 'email' | 'tel' | 'number' | 'date' | 'time';
 
+const formatPhoneNumber = (phone: string): string => {
+  const cleaned = phone.replace(/\D/g, '').slice(-10);
+  return `+7 (${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6,8)}-${cleaned.slice(8)}`;
+};
+
 const generateValidValue = (type: FieldType, placeholder?: string, name?: string): string => {
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
-    return faker.phone.number().replace(/\D/g, '').replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '+7 $2 $3 $4 $5');
+    const phoneNumber = faker.phone.number('79#########');
+    return formatPhoneNumber(phoneNumber);
   }
   
   if (name?.includes('email') || type === 'email') {
@@ -76,9 +82,15 @@ export const fillFormWithTestData = (valid: boolean = true) => {
         ? generateValidValue(type, input.placeholder, input.name)
         : generateInvalidValue(type);
       
-      const event = new Event('change', { bubbles: true });
+      // Устанавливаем значение
       input.value = value;
-      input.dispatchEvent(event);
+      
+      // Создаем и диспатчим события для корректной работы React Hook Form
+      const events = ['input', 'change', 'blur'];
+      events.forEach(eventType => {
+        const event = new Event(eventType, { bubbles: true });
+        input.dispatchEvent(event);
+      });
       
       console.log(`Заполнено поле ${input.name || input.id}: ${value}`);
     }
