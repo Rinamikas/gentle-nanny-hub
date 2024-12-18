@@ -118,15 +118,25 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       // Устанавливаем значение
       if (input instanceof HTMLSelectElement) {
         input.value = value;
+        // Создаем и диспатчим событие change для React Hook Form
+        const changeEvent = new Event('change', { bubbles: true });
+        Object.defineProperty(changeEvent, 'target', { value: input });
+        input.dispatchEvent(changeEvent);
       } else {
         (input as HTMLInputElement).value = value;
+        // Создаем и диспатчим события для React Hook Form
+        const inputEvent = new Event('input', { bubbles: true });
+        Object.defineProperty(inputEvent, 'target', { value: input });
+        input.dispatchEvent(inputEvent);
+        
+        const changeEvent = new Event('change', { bubbles: true });
+        Object.defineProperty(changeEvent, 'target', { value: input });
+        input.dispatchEvent(changeEvent);
+        
+        const blurEvent = new Event('blur', { bubbles: true });
+        Object.defineProperty(blurEvent, 'target', { value: input });
+        input.dispatchEvent(blurEvent);
       }
-
-      // Эмулируем события для активации валидации
-      ['input', 'change', 'blur'].forEach(eventType => {
-        const event = new Event(eventType, { bubbles: true });
-        input.dispatchEvent(event);
-      });
     }
   });
 };
