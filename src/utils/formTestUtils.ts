@@ -1,4 +1,4 @@
-import { faker } from "@faker-js/faker";
+import { faker } from "@faker-js/faker/locale/ru";
 
 type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
 
@@ -14,7 +14,6 @@ const formatPhoneNumber = (number: string): string => {
 const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, name?: string): string => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
 
-  // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
     const phoneNumber = faker.string.numeric({ length: 10 });
     return formatPhoneNumber(phoneNumber);
@@ -54,7 +53,6 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
     case 'email':
       return faker.internet.email();
     case 'date':
-      // Генерируем дату рождения для человека от 25 до 55 лет
       const minDate = new Date();
       minDate.setFullYear(minDate.getFullYear() - 55);
       const maxDate = new Date();
@@ -114,23 +112,31 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
-  // Создаем и диспатчим событие input
-  const inputEvent = new Event('input', { bubbles: true });
-  Object.defineProperty(inputEvent, 'target', { value: input });
-  input.dispatchEvent(inputEvent);
-  console.log('Отправлено событие input');
-
-  // Создаем и диспатчим событие change
-  const changeEvent = new Event('change', { bubbles: true });
+  // Создаем и диспатчим событие change с правильным значением
+  const changeEvent = new Event('change', { bubbles: true, cancelable: true });
   Object.defineProperty(changeEvent, 'target', { value: input });
   input.dispatchEvent(changeEvent);
   console.log('Отправлено событие change');
 
-  // Создаем и диспатчим событие blur
-  const blurEvent = new Event('blur', { bubbles: true });
+  // Создаем и диспатчим событие input с правильным значением
+  const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+  Object.defineProperty(inputEvent, 'target', { value: input });
+  input.dispatchEvent(inputEvent);
+  console.log('Отправлено событие input');
+
+  // Создаем и диспатчим событие blur с правильным значением
+  const blurEvent = new Event('blur', { bubbles: true, cancelable: true });
   Object.defineProperty(blurEvent, 'target', { value: input });
   input.dispatchEvent(blurEvent);
   console.log('Отправлено событие blur');
+
+  // Эмулируем изменение значения для React
+  if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    if (nativeInputValueSetter) {
+      nativeInputValueSetter.call(input, input.value);
+    }
+  }
 };
 
 export const fillFormWithTestData = (isValid: boolean = true) => {
@@ -144,7 +150,6 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       
       let type: FieldType = (input as HTMLInputElement).type as FieldType;
       
-      // Определяем тип поля
       if (input instanceof HTMLSelectElement) {
         type = 'select';
         console.log(`Поле ${input.name} определено как select`);
@@ -159,16 +164,14 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       
       console.log(`Заполняем поле ${input.name} значением:`, value);
 
-      // Устанавливаем значение
       if (input instanceof HTMLSelectElement) {
         input.value = value;
         console.log(`Установлено значение ${value} для селекта ${input.name}`);
       } else {
-        (input as HTMLInputElement).value = value;
+        input.value = value;
         console.log(`Установлено значение ${value} для поля ${input.name}`);
       }
 
-      // Эмулируем события React Hook Form
       triggerReactHookFormEvents(input);
     }
   });
