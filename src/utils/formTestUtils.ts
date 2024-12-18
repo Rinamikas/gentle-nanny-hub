@@ -154,19 +154,11 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
 
     console.log(`Устанавливаем значение для select ${fieldName}:`, value);
     
-    // Устанавливаем значение через setValue с дополнительными опциями
     setValue(fieldName, value, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true
     });
-
-    // Создаем и диспатчим событие изменения для select
-    const event = new Event('change', { bubbles: true });
-    const selectElement = document.querySelector(`[name="${fieldName}"]`);
-    if (selectElement) {
-      selectElement.dispatchEvent(event);
-    }
 
     // Принудительно обновляем UI через React Hook Form
     formMethods.trigger(fieldName);

@@ -27,8 +27,11 @@ export default function TrainingSection({ form }: TrainingSectionProps) {
           <FormItem>
             <FormLabel>Этап обучения</FormLabel>
             <Select 
-              onValueChange={field.onChange} 
-              value={field.value}
+              onValueChange={(value) => {
+                console.log("Select value changed:", value);
+                field.onChange(value);
+              }} 
+              value={field.value || undefined}
               name="training_stage"
             >
               <FormControl>
