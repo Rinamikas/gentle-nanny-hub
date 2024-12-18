@@ -11,7 +11,19 @@ import FamilyForm from "./pages/families/components/FamilyForm";
 import AppointmentsPage from "./pages/appointments/AppointmentsPage";
 import Index from "./pages/Index";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Если ошибка связана с токеном, не пытаемся повторить запрос
+        if (error?.message?.includes('Invalid Refresh Token')) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 function App() {
   return (
