@@ -11,7 +11,7 @@ const formatPhoneNumber = (number: string): string => {
   return `+7${cleaned}`;
 };
 
-const generateValidValue = (type: FieldType, placeholder?: string, name?: string): string => {
+const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, name?: string): string => {
   console.log(`Генерация значения для поля типа ${type}, имя: ${name}`);
 
   // Специальная обработка для полей с контактными данными
@@ -56,9 +56,8 @@ const generateValidValue = (type: FieldType, placeholder?: string, name?: string
       return String(faker.number.int({ min: 0, max: 100 }));
     case 'select':
       // Находим все option элементы внутри select
-      const select = document.querySelector(`select[name="${name}"]`) as HTMLSelectElement;
-      if (select) {
-        const options = Array.from(select.options);
+      if (input instanceof HTMLSelectElement) {
+        const options = Array.from(input.options);
         // Фильтруем пустые значения и placeholder
         const validOptions = options.filter(opt => opt.value && !opt.disabled);
         if (validOptions.length > 0) {
@@ -73,7 +72,7 @@ const generateValidValue = (type: FieldType, placeholder?: string, name?: string
   }
 };
 
-export const fillFormWithValidData = () => {
+export const fillFormWithTestData = (isValid: boolean = true) => {
   console.log('Заполняем форму тестовыми данными...');
 
   document.querySelectorAll('input, select, textarea').forEach((element) => {
@@ -88,7 +87,7 @@ export const fillFormWithValidData = () => {
         type = 'text';
       }
 
-      const value = generateValidValue(type, input.placeholder, input.name);
+      const value = generateValidValue(type, input, input.name);
       console.log(`Заполнено поле ${input.name}: ${value}`);
 
       // Устанавливаем значение
