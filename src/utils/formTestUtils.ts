@@ -1,5 +1,4 @@
 import { faker } from "@faker-js/faker";
-import { ru } from "@faker-js/faker/locale/ru";
 
 type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
 
@@ -14,7 +13,7 @@ const formatPhoneNumber = (number: string): string => {
 
 const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, name?: string): string => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
-  faker.setLocale('ru');
+  faker.locale = "ru";
 
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
@@ -74,7 +73,7 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
 
 const generateInvalidValue = (type: FieldType, name?: string): string => {
   console.log(`Генерация некорректного значения для поля типа ${type}, имя: ${name}`);
-  faker.setLocale('ru');
+  faker.locale = "ru";
 
   switch (type) {
     case 'text':
