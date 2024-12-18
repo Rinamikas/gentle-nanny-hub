@@ -12,7 +12,7 @@ const formatPhoneNumber = (number: string): string => {
 };
 
 const getFieldType = (name: string): FieldType => {
-  // Определяем тип поля на основе имени
+  console.log(`Определение типа поля для ${name}`);
   if (name.includes('email')) return 'email';
   if (name.includes('phone')) return 'tel';
   if (name.includes('date')) return 'date';
@@ -30,7 +30,9 @@ const getSelectOptions = (name: string): string[] => {
     // Добавьте другие select поля по необходимости
   };
 
-  return OPTIONS_MAP[name] || [];
+  const options = OPTIONS_MAP[name] || [];
+  console.log(`Найдены опции для ${name}:`, options);
+  return options;
 };
 
 const generateValidValue = (type: FieldType, name?: string): string | number => {
@@ -85,7 +87,10 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
       return faker.number.int({ min: 0, max: 100 });
     
     case 'select':
-      if (!name) return '';
+      if (!name) {
+        console.log('Имя поля не указано для select');
+        return '';
+      }
       
       const options = getSelectOptions(name);
       console.log(`Доступные опции для ${name}:`, options);
@@ -96,6 +101,8 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
         console.log(`Выбрано значение для ${name}:`, selectedValue);
         return selectedValue;
       }
+      
+      console.log(`Не найдены опции для select поля ${name}`);
       return '';
     
     default:
