@@ -109,7 +109,7 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
   }
 };
 
-const triggerReactHookFormEvents = (input: HTMLElement) => {
+const triggerReactHookFormEvents = (input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
   
   const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
