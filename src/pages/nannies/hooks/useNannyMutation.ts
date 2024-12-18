@@ -13,28 +13,28 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Starting nanny mutation with values:", values);
 
       try {
-        // Проверяем существование email
-        const { data: existingProfile, error: checkError } = await supabase
+        // Проверяем существование пользователя по email
+        const { data: existingUser, error: userError } = await supabase
           .from('profiles')
           .select('id')
           .eq('email', values.email)
           .maybeSingle();
 
-        if (checkError) {
-          console.error("Error checking existing profile:", checkError);
-          throw new Error("Ошибка при проверке email");
+        if (userError) {
+          console.error("Error checking existing user:", userError);
+          throw new Error("Ошибка при проверке пользователя");
         }
 
         let userId: string;
 
-        if (existingProfile) {
-          console.log("Found existing profile:", existingProfile);
-          userId = existingProfile.id;
+        if (existingUser) {
+          console.log("Found existing user:", existingUser);
+          userId = existingUser.id;
         } else {
           // Создаем нового пользователя через Auth API
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: values.email,
-            password: Math.random().toString(36).slice(-8), // Временный пароль
+            password: Math.random().toString(36).slice(-8),
             options: {
               data: {
                 first_name: values.first_name,
@@ -54,6 +54,9 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
           console.log("Auth user created successfully:", authData.user);
           userId = authData.user.id;
+
+          // Ждем создания профиля через триггер
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         // Создаем профиль няни
