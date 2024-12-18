@@ -97,44 +97,23 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
     return;
   }
 
-  const { setValue } = formMethods;
+  const { setValue, getValues } = formMethods;
 
-  document.querySelectorAll('input, select').forEach((element) => {
-    const input = element as HTMLInputElement | HTMLSelectElement;
-    
+  // Сначала заполняем все поля, кроме select
+  document.querySelectorAll('input').forEach((input) => {
     if (input.name && !input.disabled && input.style.display !== 'none') {
       console.log(`Обработка поля ${input.name}`);
       
       const type = getFieldType(input.name);
-      console.log(`Определен тип поля ${input.name}: ${type}`);
+      if (type !== 'select') {
+        console.log(`Определен тип поля ${input.name}: ${type}`);
 
-      const value = isValid 
-        ? generateValidValue(type, input.name)
-        : generateInvalidValue(type);
-      
-      console.log(`Устанавливаем значение для поля ${input.name}:`, value);
-
-      if (type === 'select') {
-        // Находим кнопку-триггер для select
-        const trigger = document.querySelector(`[aria-controls="${input.name}-radix-:r0:"]`);
-        if (trigger) {
-          // Эмулируем клик по триггеру
-          (trigger as HTMLElement).click();
-          
-          // Находим опцию и эмулируем её выбор
-          setTimeout(() => {
-            const option = document.querySelector(`[data-value="${value}"]`);
-            if (option) {
-              (option as HTMLElement).click();
-              setValue(input.name, value, { 
-                shouldValidate: true,
-                shouldDirty: true,
-                shouldTouch: true
-              });
-            }
-          }, 100);
-        }
-      } else {
+        const value = isValid 
+          ? generateValidValue(type, input.name)
+          : generateInvalidValue(type);
+        
+        console.log(`Устанавливаем значение для поля ${input.name}:`, value);
+        
         setValue(input.name, value, { 
           shouldValidate: true,
           shouldDirty: true,
@@ -143,6 +122,39 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       }
     }
   });
+
+  // Затем обрабатываем select поля
+  document.querySelectorAll('[role="combobox"]').forEach((select) => {
+    // Получаем имя поля из aria-controls, убирая суффикс
+    const controlsId = select.getAttribute('aria-controls');
+    if (!controlsId) return;
+
+    const fieldName = controlsId.replace(/-radix-:r[0-9]+:$/, '');
+    console.log(`Обработка select поля ${fieldName}`);
+
+    const type = getFieldType(fieldName);
+    if (type === 'select') {
+      const value = isValid 
+        ? generateValidValue(type, fieldName)
+        : generateInvalidValue(type);
+
+      console.log(`Устанавливаем значение для select ${fieldName}:`, value);
+      
+      // Устанавливаем значение через setValue
+      setValue(fieldName, value, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
+
+      // Программно обновляем состояние select
+      const event = new Event('change', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: { value } });
+      select.dispatchEvent(event);
+    }
+  });
+
+  console.log('Значения формы после заполнения:', getValues());
   console.log('Заполнение формы завершено');
 };
 
