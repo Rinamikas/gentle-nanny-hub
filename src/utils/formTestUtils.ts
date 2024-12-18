@@ -111,36 +111,21 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 
 const triggerReactHookFormEvents = (input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
+
+  // Сохраняем оригинальное значение
+  const originalValue = input.value;
   
-  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    "value"
-  )?.set;
+  // Создаем и диспатчим событие change
+  const changeEvent = new Event('change', { bubbles: true });
+  Object.defineProperty(changeEvent, 'target', { value: input });
+  input.dispatchEvent(changeEvent);
 
-  const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(
-    window.HTMLTextAreaElement.prototype,
-    "value"
-  )?.set;
+  // Создаем и диспатчим событие blur
+  const blurEvent = new Event('blur', { bubbles: true });
+  Object.defineProperty(blurEvent, 'target', { value: input });
+  input.dispatchEvent(blurEvent);
 
-  const nativeSelectValueSetter = Object.getOwnPropertyDescriptor(
-    window.HTMLSelectElement.prototype,
-    "value"
-  )?.set;
-
-  if (input instanceof HTMLInputElement && nativeInputValueSetter) {
-    nativeInputValueSetter.call(input, input.value);
-  } else if (input instanceof HTMLTextAreaElement && nativeTextAreaValueSetter) {
-    nativeTextAreaValueSetter.call(input, input.value);
-  } else if (input instanceof HTMLSelectElement && nativeSelectValueSetter) {
-    nativeSelectValueSetter.call(input, input.value);
-  }
-
-  ['input', 'change', 'blur'].forEach(eventName => {
-    const event = new Event(eventName, { bubbles: true });
-    input.dispatchEvent(event);
-  });
-
-  console.log(`События успешно отправлены для элемента с value=${input.value}`);
+  console.log(`События успешно отправлены для элемента с value=${originalValue}`);
 };
 
 export const fillFormWithTestData = (isValid: boolean = true) => {
