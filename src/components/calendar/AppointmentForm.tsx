@@ -31,6 +31,24 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const { toast } = useToast();
 
+  // Загрузка профиля родителя
+  const { data: parentProfile } = useQuery({
+    queryKey: ["parent-profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not found");
+
+      const { data, error } = await supabase
+        .from("parent_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Загрузка услуг
   const { data: services } = useQuery({
     queryKey: ["services"],
@@ -121,7 +139,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
   };
 
   const handleSubmit = async () => {
-    if (!selectedService || !dates.length || !selectedNanny) {
+    if (!selectedService || !dates.length || !selectedNanny || !parentProfile?.id) {
       toast({
         title: "Ошибка",
         description: "Заполните все обязательные поля",
@@ -165,6 +183,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
           .from("appointments")
           .insert({
             nanny_id: selectedNanny,
+            parent_id: parentProfile.id, // Добавляем parent_id из профиля
             start_time: startDateTime.toISOString(),
             end_time: endDateTime.toISOString(),
             service_id: selectedService,
