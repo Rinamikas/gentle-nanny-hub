@@ -16,7 +16,8 @@ const AdminLayout = () => {
   const location = useLocation();
   
   const isFormPage = location.pathname.includes('create') || 
-                     location.pathname.includes('edit');
+                     location.pathname.includes('edit') || 
+                     location.pathname.includes('nannies/create');
 
   const handleFillValidData = () => {
     fillFormWithTestData(true);
