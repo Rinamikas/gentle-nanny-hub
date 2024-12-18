@@ -112,26 +112,14 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
-  const dispatchCustomEvent = (eventName: string) => {
-    const event = new CustomEvent(eventName, {
-      bubbles: true,
-      cancelable: true,
-      detail: { target: input }
-    });
-    
-    Object.defineProperty(event, 'target', {
-      value: input,
-      enumerable: true
-    });
-    
-    input.dispatchEvent(event);
+  const events = ['change', 'input', 'blur'];
+  
+  events.forEach(eventName => {
+    const event = new Event(eventName, { bubbles: true });
+    const dispatchEventFn = input.dispatchEvent.bind(input);
+    dispatchEventFn(event);
     console.log(`Отправлено событие ${eventName}`);
-  };
-
-  // Отправляем события в правильном порядке
-  dispatchCustomEvent('change');
-  dispatchCustomEvent('input');
-  dispatchCustomEvent('blur');
+  });
 
   // Эмулируем изменение значения для React
   if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
