@@ -60,19 +60,10 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
       }
       return faker.number.int({ min: 0, max: 100 });
     case 'select':
-      // Получаем все доступные опции из select
-      const select = document.querySelector(`select[name="${name}"]`) as HTMLSelectElement;
-      if (select) {
-        const options = Array.from(select.options)
-          .filter(option => option.value) // Исключаем пустые значения
-          .map(option => option.value);
-        
-        if (options.length > 0) {
-          const randomIndex = faker.number.int({ min: 0, max: options.length - 1 });
-          console.log(`Доступные опции для ${name}:`, options);
-          console.log(`Выбрано значение: ${options[randomIndex]}`);
-          return options[randomIndex];
-        }
+      if (name === 'training_stage') {
+        const stages = ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'];
+        const randomIndex = faker.number.int({ min: 0, max: stages.length - 1 });
+        return stages[randomIndex];
       }
       return '';
     default:
@@ -137,7 +128,7 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       } else if (input instanceof HTMLTextAreaElement) {
         type = 'text';
         console.log(`Поле ${input.name} определено как textarea`);
-      } else if (input.type === 'email') {
+      } else if ((input as HTMLInputElement).type === 'email') {
         type = 'email';
         console.log(`Поле ${input.name} определено как email`);
       }
