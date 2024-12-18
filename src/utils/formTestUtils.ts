@@ -83,6 +83,25 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
   }
 };
 
+const generateInvalidValue = (type: FieldType): string => {
+  console.log(`Генерация некорректного значения для поля типа ${type}`);
+
+  switch (type) {
+    case 'tel':
+      return 'не телефон';
+    case 'email':
+      return 'неправильный.емейл';
+    case 'date':
+      return 'не дата';
+    case 'number':
+      return 'не число';
+    case 'select':
+      return 'invalid_option';
+    default:
+      return 'некорректное значение';
+  }
+};
+
 let formMethods: any = null;
 
 export const setFormMethods = (methods: any) => {
@@ -99,7 +118,7 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
 
   const { setValue, getValues } = formMethods;
 
-  // Сначала заполняем все поля, кроме select
+  // Заполняем все поля input
   document.querySelectorAll('input').forEach((input) => {
     if (input.name && !input.disabled && input.style.display !== 'none') {
       console.log(`Обработка поля ${input.name}`);
@@ -123,13 +142,13 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
     }
   });
 
-  // Затем обрабатываем select поля
+  // Обрабатываем select поля через SelectTrigger
   document.querySelectorAll('[role="combobox"]').forEach((select) => {
-    // Получаем имя поля из aria-controls, убирая суффикс
     const controlsId = select.getAttribute('aria-controls');
     if (!controlsId) return;
 
-    const fieldName = controlsId.replace(/-radix-:r[0-9]+:$/, '');
+    // Получаем имя поля из aria-controls
+    const fieldName = controlsId.split('-')[0];
     console.log(`Обработка select поля ${fieldName}`);
 
     const type = getFieldType(fieldName);
@@ -140,39 +159,24 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
 
       console.log(`Устанавливаем значение для select ${fieldName}:`, value);
       
-      // Устанавливаем значение через setValue
+      // Устанавливаем значение
       setValue(fieldName, value, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true
       });
 
-      // Программно обновляем состояние select
-      const event = new Event('change', { bubbles: true });
-      Object.defineProperty(event, 'target', { value: { value } });
-      select.dispatchEvent(event);
+      // Находим и программно выбираем опцию
+      const selectContent = document.querySelector(`[data-radix-select-content]`);
+      if (selectContent) {
+        const option = selectContent.querySelector(`[data-value="${value}"]`);
+        if (option) {
+          (option as HTMLElement).click();
+        }
+      }
     }
   });
 
   console.log('Значения формы после заполнения:', getValues());
   console.log('Заполнение формы завершено');
-};
-
-const generateInvalidValue = (type: FieldType): string => {
-  console.log(`Генерация некорректного значения для поля типа ${type}`);
-
-  switch (type) {
-    case 'tel':
-      return 'не телефон';
-    case 'email':
-      return 'неправильный.емейл';
-    case 'date':
-      return 'не дата';
-    case 'number':
-      return 'не число';
-    case 'select':
-      return 'invalid_option';
-    default:
-      return 'некорректное значение';
-  }
 };
