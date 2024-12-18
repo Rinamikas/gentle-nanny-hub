@@ -13,19 +13,26 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Starting nanny mutation with values:", values);
 
       try {
-        // Сначала проверяем, существует ли уже пользователь с таким email
-        const { data: existingUser } = await supabase
+        // Проверяем существование email с использованием maybeSingle
+        const { data: existingUser, error: emailCheckError } = await supabase
           .from('profiles')
           .select('id')
           .eq('email', values.email)
-          .single();
+          .maybeSingle();
+
+        if (emailCheckError) {
+          console.error("Error checking email existence:", emailCheckError);
+          throw new Error("Ошибка при проверке email");
+        }
 
         if (existingUser) {
-          console.error("User with this email already exists");
+          console.error("User with this email already exists:", values.email);
           throw new Error("Пользователь с таким email уже существует");
         }
 
-        // Вызываем функцию create_nanny_with_user для создания нового пользователя и профиля няни
+        console.log("Email check passed, creating new nanny...");
+
+        // Создаем нового пользователя и профиль няни
         const { data: nannyData, error: createError } = await supabase
           .rpc('create_nanny_with_user', {
             p_email: values.email,
@@ -47,6 +54,9 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         if (createError) {
           console.error("Error creating nanny:", createError);
+          if (createError.code === '23505') {
+            throw new Error("Пользователь с таким email уже существует");
+          }
           throw createError;
         }
 
@@ -58,7 +68,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
         console.log("Nanny profile created successfully:", nannyData);
 
         // Создаем документы
-        const documents: Array<{ type: DOCUMENT_TYPE; file_url: string }> = [
+        const documents = [
           {
             type: DOCUMENT_TYPE.CRIMINAL_RECORD,
             file_url: values.criminal_record,
