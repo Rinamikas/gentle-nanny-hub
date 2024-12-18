@@ -7,7 +7,7 @@ const generateValidValue = (type: FieldType, placeholder?: string): string => {
     case 'email':
       return faker.internet.email();
     case 'tel':
-      return faker.helpers.fromRegExp('+7[0-9]{10}');
+      return `+7${faker.string.numeric(10)}`;
     case 'number':
       return faker.number.int({ min: 1, max: 100 }).toString();
     case 'date':
@@ -30,7 +30,13 @@ const generateValidValue = (type: FieldType, placeholder?: string): string => {
       if (placeholder?.toLowerCase().includes('адрес')) {
         return faker.location.streetAddress();
       }
-      return faker.word.words({ count: { min: 2, max: 5 } });
+      if (placeholder?.toLowerCase().includes('должность')) {
+        return faker.person.jobTitle();
+      }
+      if (placeholder?.toLowerCase().includes('возраст')) {
+        return `${faker.number.int({ min: 1, max: 12 })} лет`;
+      }
+      return faker.lorem.words({ min: 2, max: 5 });
   }
 };
 
@@ -43,9 +49,9 @@ const generateInvalidValue = (type: FieldType): string => {
     case 'number':
       return 'не число';
     case 'date':
-      return 'не дата';
+      return '2023-13-45'; // Неверный формат даты
     case 'time':
-      return 'не время';
+      return '25:70'; // Неверное время
     default:
       return '';
   }
