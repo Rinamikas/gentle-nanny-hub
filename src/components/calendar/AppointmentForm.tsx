@@ -3,16 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { ru } from "date-fns/locale";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { CalendarIcon, Clock } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DateTimeSection } from "./appointment-form/DateTimeSection";
+import { ServiceSection } from "./appointment-form/ServiceSection";
+import { PromoCodeSection } from "./appointment-form/PromoCodeSection";
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -22,6 +18,8 @@ interface AppointmentFormProps {
 }
 
 export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }: AppointmentFormProps) {
+  console.log("AppointmentForm render:", { isOpen, selectedDate, selectedNanny });
+
   const [dates, setDates] = useState<Date[]>([]);
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("11:00");
@@ -35,6 +33,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
   const { data: parentProfile } = useQuery({
     queryKey: ["parent-profile"],
     queryFn: async () => {
+      console.log("Загрузка профиля родителя...");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
@@ -44,20 +43,11 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
         .eq("user_id", user.id)
         .single();
       
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Загрузка услуг
-  const { data: services } = useQuery({
-    queryKey: ["services"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("services")
-        .select("*");
-      
-      if (error) throw error;
+      if (error) {
+        console.error("Ошибка загрузки профиля родителя:", error);
+        throw error;
+      }
+      console.log("Загруженный профиль родителя:", data);
       return data;
     },
   });
@@ -68,6 +58,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
     queryFn: async () => {
       if (!dates.length) return [];
 
+      console.log("Загрузка доступных нянь...");
       const { data, error } = await supabase
         .from("nanny_profiles")
         .select(`
@@ -78,40 +69,15 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
         `)
         .not("is_deleted", "eq", true);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Ошибка загрузки нянь:", error);
+        throw error;
+      }
+      console.log("Загруженные няни:", data);
       return data;
     },
     enabled: dates.length > 0 && !!startTime && !!endTime,
   });
-
-  // Проверка промокода
-  const checkPromoCode = async () => {
-    const { data, error } = await supabase
-      .from("promo_codes")
-      .select("*")
-      .eq("code", promoCode)
-      .eq("is_active", true)
-      .gte("valid_until", new Date().toISOString())
-      .lte("valid_from", new Date().toISOString())
-      .single();
-
-    if (error || !data) {
-      toast({
-        title: "Ошибка",
-        description: "Промокод недействителен",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Успешно",
-      description: `Применена скидка ${data.discount_percent}%`,
-    });
-
-    // Пересчитываем стоимость
-    calculateTotalPrice(data.discount_percent);
-  };
 
   const calculateTotalPrice = (discountPercent = 0) => {
     if (!selectedService || !services) return;
@@ -128,6 +94,14 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
     const basePrice = service.price_per_hour * hoursPerDay * totalDays;
     const discount = basePrice * (discountPercent / 100);
     
+    console.log("Расчет стоимости:", {
+      hoursPerDay,
+      totalDays,
+      basePrice,
+      discount,
+      finalPrice: basePrice - discount
+    });
+    
     setTotalPrice(basePrice - discount);
   };
 
@@ -135,10 +109,20 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log("Загружено фото:", file.name);
     setPhotoFile(file);
   };
 
   const handleSubmit = async () => {
+    console.log("Отправка формы:", {
+      selectedService,
+      dates,
+      selectedNanny,
+      parentProfile,
+      totalPrice,
+      photoFile
+    });
+
     if (!selectedService || !dates.length || !selectedNanny || !parentProfile?.id) {
       toast({
         title: "Ошибка",
@@ -153,6 +137,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
       
       // Загружаем фото, если оно есть
       if (photoFile) {
+        console.log("Загрузка фото в storage...");
         const fileExt = photoFile.name.split('.').pop();
         const filePath = `${Math.random()}.${fileExt}`;
 
@@ -167,9 +152,11 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
           .getPublicUrl(filePath);
 
         photoUrl = publicUrl;
+        console.log("Фото загружено:", photoUrl);
       }
 
       // Создаем заявки для каждого выбранного дня
+      console.log("Создание заявок...");
       for (const date of dates) {
         const startDateTime = new Date(date);
         const [startHours, startMinutes] = startTime.split(":");
@@ -179,11 +166,17 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
         const [endHours, endMinutes] = endTime.split(":");
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
 
+        console.log("Создание заявки на дату:", {
+          date,
+          startDateTime,
+          endDateTime
+        });
+
         const { error } = await supabase
           .from("appointments")
           .insert({
             nanny_id: selectedNanny,
-            parent_id: parentProfile.id, // Добавляем parent_id из профиля
+            parent_id: parentProfile.id,
             start_time: startDateTime.toISOString(),
             end_time: endDateTime.toISOString(),
             service_id: selectedService,
@@ -195,6 +188,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
         if (error) throw error;
       }
 
+      console.log("Заявки успешно созданы");
       toast({
         title: "Успешно",
         description: "Заявки созданы. У вас есть 15 минут на оплату.",
@@ -202,7 +196,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
 
       onClose();
     } catch (error) {
-      console.error("Error creating appointments:", error);
+      console.error("Ошибка создания заявок:", error);
       toast({
         title: "Ошибка",
         description: "Не удалось создать заявки",
@@ -219,71 +213,25 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label>Выберите дни</Label>
-            <Calendar
-              mode="multiple"
-              selected={dates}
-              onSelect={setDates}
-              locale={ru}
-              className="rounded-md border"
-              initialFocus
-            />
-          </div>
+          <DateTimeSection
+            dates={dates}
+            setDates={setDates}
+            startTime={startTime}
+            setStartTime={setStartTime}
+            endTime={endTime}
+            setEndTime={setEndTime}
+          />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Время начала</Label>
-              <Input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                min="09:00"
-                max="21:00"
-              />
-            </div>
+          <ServiceSection
+            selectedService={selectedService}
+            setSelectedService={setSelectedService}
+          />
 
-            <div className="grid gap-2">
-              <Label>Время окончания</Label>
-              <Input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                min="09:00"
-                max="21:00"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Услуга</Label>
-            <Select value={selectedService} onValueChange={setSelectedService}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите услугу" />
-              </SelectTrigger>
-              <SelectContent>
-                {services?.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
-                    {service.name} - {service.price_per_hour} ₽/час
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Промокод</Label>
-            <div className="flex gap-2">
-              <Input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                placeholder="Введите промокод"
-              />
-              <Button onClick={checkPromoCode} type="button">
-                Применить
-              </Button>
-            </div>
-          </div>
+          <PromoCodeSection
+            promoCode={promoCode}
+            setPromoCode={setPromoCode}
+            onPromoCodeCheck={calculateTotalPrice}
+          />
 
           <div className="grid gap-2">
             <Label>Фото</Label>
