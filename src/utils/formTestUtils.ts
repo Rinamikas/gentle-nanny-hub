@@ -116,20 +116,15 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
   
   eventTypes.forEach(eventType => {
     try {
-      // Создаем нативное событие
-      const event = document.createEvent('Event');
-      event.initEvent(eventType, true, true);
-      
-      // Устанавливаем target напрямую
-      Object.defineProperty(event, 'target', {
-        writable: false,
-        value: input
+      const customEvent = new CustomEvent(eventType, {
+        bubbles: true,
+        cancelable: true,
+        detail: { target: input }
       });
       
-      // Используем нативный dispatchEvent
-      input.dispatchEvent(event);
+      console.log(`Отправка события ${eventType} для элемента`, input);
+      input.dispatchEvent(customEvent);
       
-      console.log(`Отправлено событие ${eventType}`);
     } catch (error) {
       console.error(`Ошибка при отправке события ${eventType}:`, error);
     }
@@ -137,9 +132,12 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
 
   // Эмулируем изменение значения для React
   if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-    if (nativeInputValueSetter) {
-      nativeInputValueSetter.call(input, input.value);
+    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+    const setter = descriptor?.set;
+    
+    if (setter) {
+      setter.call(input, input.value);
+      console.log(`Установлено значение ${input.value} для элемента`, input);
     }
   }
 };
