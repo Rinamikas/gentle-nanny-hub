@@ -112,32 +112,34 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
-  // Создаем функцию для диспатча события с сохранением контекста
-  const dispatchEventWithContext = (eventName: string) => {
-    const event = new Event(eventName, { bubbles: true, cancelable: true });
-    const descriptor = {
-      value: input,
-      enumerable: true,
-      configurable: true
-    };
-    Object.defineProperty(event, 'target', descriptor);
-    Object.defineProperty(event, 'currentTarget', descriptor);
-    input.dispatchEvent(event);
-    console.log(`Отправлено событие ${eventName}`);
+  const createEvent = (eventName: string) => {
+    const event = new Event(eventName, { bubbles: true });
+    Object.defineProperty(event, 'target', {
+      writable: false,
+      value: input
+    });
+    return event;
   };
 
-  // Диспатчим события в правильном порядке
-  dispatchEventWithContext('change');
-  dispatchEventWithContext('input');
-  dispatchEventWithContext('blur');
+  // Сохраняем оригинальный метод dispatchEvent
+  const originalDispatchEvent = input.dispatchEvent.bind(input);
+
+  // Отправляем события в правильном порядке
+  originalDispatchEvent(createEvent('change'));
+  console.log('Отправлено событие change');
+  
+  originalDispatchEvent(createEvent('input'));
+  console.log('Отправлено событие input');
+  
+  originalDispatchEvent(createEvent('blur'));
+  console.log('Отправлено событие blur');
 
   // Эмулируем изменение значения для React
   if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
-    const value = input.value;
     const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
     const setter = descriptor?.set;
     if (setter) {
-      setter.call(input, value);
+      setter.call(input, input.value);
     }
   }
 };
