@@ -15,6 +15,10 @@ export interface CalendarEvent {
   parentId?: string;
   notes?: string;
   color?: string;
+  serviceId?: string;
+  totalPrice?: number;
+  photoUrl?: string;
+  bookingExpiresAt?: Date;
 }
 
 export interface EventModalData {

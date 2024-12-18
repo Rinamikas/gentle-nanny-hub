@@ -11,36 +11,51 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          booking_expires_at: string | null
           created_at: string
           end_time: string
           id: string
           nanny_id: string
           notes: string | null
           parent_id: string
+          photo_url: string | null
+          promo_code_id: string | null
+          service_id: string | null
           start_time: string
           status: Database["public"]["Enums"]["appointment_status"]
+          total_price: number | null
           updated_at: string
         }
         Insert: {
+          booking_expires_at?: string | null
           created_at?: string
           end_time: string
           id?: string
           nanny_id: string
           notes?: string | null
           parent_id: string
+          photo_url?: string | null
+          promo_code_id?: string | null
+          service_id?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          total_price?: number | null
           updated_at?: string
         }
         Update: {
+          booking_expires_at?: string | null
           created_at?: string
           end_time?: string
           id?: string
           nanny_id?: string
           notes?: string | null
           parent_id?: string
+          photo_url?: string | null
+          promo_code_id?: string | null
+          service_id?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          total_price?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -56,6 +71,20 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "parent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
@@ -372,6 +401,39 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          discount_percent: number
+          id: string
+          is_active: boolean | null
+          updated_at: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_percent: number
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+          valid_from: string
+          valid_until: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
       schedule_events: {
         Row: {
           created_at: string
@@ -412,6 +474,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      services: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price_per_hour: number
+          type: Database["public"]["Enums"]["service_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price_per_hour: number
+          type: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price_per_hour?: number
+          type?: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -565,6 +657,7 @@ export type Database = {
         | "personal_data_consent"
       parent_status: "default" | "star" | "diamond"
       schedule_event_type: "sick_leave" | "vacation" | "busy" | "break"
+      service_type: "one_child" | "two_children" | "additional"
       training_stage: "stage_1" | "stage_2" | "stage_3" | "stage_4" | "stage_5"
       user_role: "nanny" | "owner" | "admin" | "parent"
       verification_status: "pending" | "verified" | "expired" | "failed"

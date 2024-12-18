@@ -8,6 +8,7 @@ import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarEvent, EventModalData } from "@/types/calendar";
 import { EventModal } from "./EventModal";
+import { AppointmentForm } from "./AppointmentForm";
 import { useToast } from "@/hooks/use-toast";
 import { dateToISOString } from "@/utils/dateUtils";
 import { CalendarHeader } from "./CalendarHeader";
@@ -30,6 +31,7 @@ const DragAndDropCalendar = withDragAndDrop(Calendar);
 export default function AppointmentsCalendar() {
   const [selectedNanny, setSelectedNanny] = useState<string>();
   const [modalData, setModalData] = useState<EventModalData>({ isOpen: false, event: null });
+  const [appointmentForm, setAppointmentForm] = useState({ isOpen: false, selectedDate: undefined as Date | undefined });
   const { toast } = useToast();
   const { data: events = [], isLoading, refetch } = useCalendarEvents(selectedNanny);
 
@@ -39,6 +41,10 @@ export default function AppointmentsCalendar() {
   const handleEventClick = (event: CalendarEvent) => {
     console.log("Клик по событию:", event);
     setModalData({ isOpen: true, event });
+  };
+
+  const handleSelectSlot = ({ start }: { start: Date }) => {
+    setAppointmentForm({ isOpen: true, selectedDate: start });
   };
 
   const handleEventDrop = async ({ event, start, end }: any) => {
@@ -161,7 +167,9 @@ export default function AppointmentsCalendar() {
           endAccessor={(event: CalendarEvent) => event.end}
           style={{ height: "100%" }}
           onSelectEvent={handleEventClick}
+          onSelectSlot={handleSelectSlot}
           onEventDrop={handleEventDrop}
+          selectable
           draggableAccessor={() => true}
           eventPropGetter={(event: CalendarEvent) => ({
             style: {
@@ -188,6 +196,13 @@ export default function AppointmentsCalendar() {
           onClose={() => setModalData({ isOpen: false, event: null })}
           event={modalData.event}
           onSave={handleEventSave}
+        />
+
+        <AppointmentForm
+          isOpen={appointmentForm.isOpen}
+          onClose={() => setAppointmentForm({ isOpen: false, selectedDate: undefined })}
+          selectedDate={appointmentForm.selectedDate}
+          selectedNanny={selectedNanny}
         />
       </div>
     </div>
