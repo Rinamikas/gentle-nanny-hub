@@ -112,18 +112,27 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
 const triggerReactHookFormEvents = (input: HTMLElement) => {
   console.log(`Эмуляция событий React Hook Form для элемента:`, input);
 
-  ['change', 'input', 'blur'].forEach(eventName => {
-    const event = new Event(eventName, { bubbles: true });
-    input.dispatchEvent(event);
-    console.log(`Отправлено событие ${eventName}`);
+  // Создаем и отправляем события в правильном порядке
+  const events = [
+    new Event('change', { bubbles: true }),
+    new Event('input', { bubbles: true }),
+    new Event('blur', { bubbles: true })
+  ];
+
+  events.forEach(event => {
+    try {
+      input.dispatchEvent(event);
+      console.log(`Отправлено событие ${event.type}`);
+    } catch (error) {
+      console.error(`Ошибка при отправке события ${event.type}:`, error);
+    }
   });
 
   // Эмулируем изменение значения для React
   if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
-    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
-    const setter = descriptor?.set;
-    if (setter) {
-      setter.call(input, input.value);
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    if (nativeInputValueSetter) {
+      nativeInputValueSetter.call(input, input.value);
     }
   }
 };
