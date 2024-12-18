@@ -1,98 +1,108 @@
-import { faker } from '@faker-js/faker/locale/ru';
+import { faker } from "@faker-js/faker";
 
-type FieldType = 'text' | 'email' | 'tel' | 'number' | 'date' | 'time';
+type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
 
-const formatPhoneNumber = (phone: string): string => {
-  const cleaned = phone.replace(/\D/g, '').slice(-10);
-  return `+7 (${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6,8)}-${cleaned.slice(8)}`;
+const formatPhoneNumber = (number: string): string => {
+  const cleaned = number.replace(/\D/g, "");
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
+  if (match) {
+    return `+7 (${match[1]}) ${match[2]}-${match[3]}-${match[4]}`;
+  }
+  return `+7${cleaned}`;
 };
 
 const generateValidValue = (type: FieldType, placeholder?: string, name?: string): string => {
+  console.log(`Генерация значения для поля типа ${type}, имя: ${name}`);
+
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
     const phoneNumber = faker.string.numeric({ length: 10 });
     return formatPhoneNumber(phoneNumber);
   }
-  
-  if (name?.includes('email') || type === 'email') {
-    return faker.internet.email({ provider: 'example.com' });
+
+  if (name === 'training_stage') {
+    const stages = ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'];
+    const randomStage = stages[Math.floor(Math.random() * stages.length)];
+    console.log('Выбран этап обучения:', randomStage);
+    return randomStage;
   }
 
   switch (type) {
-    case 'number':
-      return faker.number.int({ min: 1, max: 100 }).toString();
-    case 'date':
-      return faker.date.between({ 
-        from: '1960-01-01', 
-        to: '2000-12-31' 
-      }).toISOString().split('T')[0];
-    case 'time':
-      return faker.date.soon().toLocaleTimeString('ru-RU', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-    default:
-      if (placeholder?.toLowerCase().includes('имя')) {
+    case 'text':
+      if (name?.includes('first_name')) {
         return faker.person.firstName();
       }
-      if (placeholder?.toLowerCase().includes('фамилия')) {
+      if (name?.includes('last_name')) {
         return faker.person.lastName();
       }
-      if (placeholder?.toLowerCase().includes('адрес')) {
-        return faker.location.streetAddress();
+      if (name?.includes('education')) {
+        return faker.lorem.paragraph();
       }
-      if (placeholder?.toLowerCase().includes('должность')) {
+      if (name?.includes('position')) {
         return faker.person.jobTitle();
       }
-      if (placeholder?.toLowerCase().includes('возраст')) {
-        return `${faker.number.int({ min: 1, max: 12 })} лет`;
-      }
-      return faker.lorem.words({ min: 2, max: 5 });
-  }
-};
-
-const generateInvalidValue = (type: FieldType): string => {
-  switch (type) {
+      return faker.lorem.words(3);
     case 'email':
-      return 'неправильный.email';
-    case 'tel':
-      return 'не-номер-телефона';
-    case 'number':
-      return 'не число';
+      return faker.internet.email();
     case 'date':
-      return '2023-13-45';
-    case 'time':
-      return '25:70';
+      return faker.date.past().toISOString().split('T')[0];
+    case 'number':
+      if (name?.includes('hourly_rate')) {
+        return String(faker.number.int({ min: 20, max: 100 }));
+      }
+      if (name?.includes('experience_years')) {
+        return String(faker.number.int({ min: 1, max: 30 }));
+      }
+      return String(faker.number.int({ min: 0, max: 100 }));
+    case 'select':
+      // Находим все option элементы внутри select
+      const select = document.querySelector(`select[name="${name}"]`) as HTMLSelectElement;
+      if (select) {
+        const options = Array.from(select.options);
+        // Фильтруем пустые значения и placeholder
+        const validOptions = options.filter(opt => opt.value && !opt.disabled);
+        if (validOptions.length > 0) {
+          const randomOption = validOptions[Math.floor(Math.random() * validOptions.length)];
+          console.log(`Выбрано значение ${randomOption.value} для селекта ${name}`);
+          return randomOption.value;
+        }
+      }
+      return '';
     default:
       return '';
   }
 };
 
-export const fillFormWithTestData = (valid: boolean = true) => {
+export const fillFormWithValidData = () => {
   console.log('Заполняем форму тестовыми данными...');
-  
-  const inputs = document.querySelectorAll('input, textarea, select');
-  
-  inputs.forEach((input: HTMLElement) => {
-    if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
-      if (input.type === 'file') return;
 
-      const type = input.type as FieldType;
-      const value = valid 
-        ? generateValidValue(type, input.placeholder, input.name)
-        : generateInvalidValue(type);
+  document.querySelectorAll('input, select, textarea').forEach((element) => {
+    const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    if (input.name && !input.disabled && input.style.display !== 'none') {
+      let type: FieldType = (input as HTMLInputElement).type as FieldType;
       
+      // Определяем тип поля
+      if (input instanceof HTMLSelectElement) {
+        type = 'select';
+      } else if (input instanceof HTMLTextAreaElement) {
+        type = 'text';
+      }
+
+      const value = generateValidValue(type, input.placeholder, input.name);
+      console.log(`Заполнено поле ${input.name}: ${value}`);
+
       // Устанавливаем значение
-      input.value = value;
-      
-      // Создаем и диспатчим события для корректной работы React Hook Form
-      const events = ['input', 'change', 'blur'];
-      events.forEach(eventType => {
+      if (input instanceof HTMLSelectElement) {
+        input.value = value;
+      } else {
+        (input as HTMLInputElement).value = value;
+      }
+
+      // Эмулируем события для активации валидации
+      ['input', 'change', 'blur'].forEach(eventType => {
         const event = new Event(eventType, { bubbles: true });
         input.dispatchEvent(event);
       });
-      
-      console.log(`Заполнено поле ${input.name || input.id}: ${value}`);
     }
   });
 };
