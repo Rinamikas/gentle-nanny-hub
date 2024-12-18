@@ -21,6 +21,18 @@ const getFieldType = (name: string): FieldType => {
   return 'text';
 };
 
+const getSelectOptions = (name: string): string[] => {
+  console.log(`Получение опций для select поля ${name}`);
+  
+  // Предопределенные опции для известных select полей
+  const OPTIONS_MAP: Record<string, string[]> = {
+    'training_stage': ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'],
+    // Добавьте другие select поля по необходимости
+  };
+
+  return OPTIONS_MAP[name] || [];
+};
+
 const generateValidValue = (type: FieldType, name?: string): string | number => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
 
@@ -73,10 +85,16 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
       return faker.number.int({ min: 0, max: 100 });
     
     case 'select':
-      if (name === 'training_stage') {
-        const stages = ['stage_1', 'stage_2', 'stage_3', 'stage_4', 'stage_5'];
-        const randomIndex = faker.number.int({ min: 0, max: stages.length - 1 });
-        return stages[randomIndex];
+      if (!name) return '';
+      
+      const options = getSelectOptions(name);
+      console.log(`Доступные опции для ${name}:`, options);
+      
+      if (options.length > 0) {
+        const randomIndex = faker.number.int({ min: 0, max: options.length - 1 });
+        const selectedValue = options[randomIndex];
+        console.log(`Выбрано значение для ${name}:`, selectedValue);
+        return selectedValue;
       }
       return '';
     
