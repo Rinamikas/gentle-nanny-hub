@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { ru } from '@faker-js/faker/locale/ru';
 
 type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
 
@@ -12,7 +13,8 @@ const formatPhoneNumber = (number: string): string => {
 };
 
 const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, name?: string): string => {
-  console.log(`Генерация значения для поля типа ${type}, имя: ${name}`);
+  console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
+  faker.setLocale('ru');
 
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
@@ -55,10 +57,8 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
       }
       return String(faker.number.int({ min: 0, max: 100 }));
     case 'select':
-      // Находим все option элементы внутри select
       if (input instanceof HTMLSelectElement) {
         const options = Array.from(input.options);
-        // Фильтруем пустые значения и placeholder
         const validOptions = options.filter(opt => opt.value && !opt.disabled);
         if (validOptions.length > 0) {
           const randomOption = validOptions[Math.floor(Math.random() * validOptions.length)];
@@ -69,6 +69,31 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
       return '';
     default:
       return '';
+  }
+};
+
+const generateInvalidValue = (type: FieldType, name?: string): string => {
+  console.log(`Генерация некорректного значения для поля типа ${type}, имя: ${name}`);
+  faker.setLocale('ru');
+
+  switch (type) {
+    case 'text':
+      if (name?.includes('phone')) {
+        return 'не телефон';
+      }
+      return faker.number.int({ min: 1, max: 100 }).toString();
+    case 'email':
+      return 'неправильный.емейл';
+    case 'date':
+      return 'не дата';
+    case 'number':
+      return 'не число';
+    case 'tel':
+      return 'не телефон';
+    case 'select':
+      return 'invalid_option';
+    default:
+      return 'некорректное значение';
   }
 };
 
@@ -87,7 +112,9 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
         type = 'text';
       }
 
-      const value = generateValidValue(type, input, input.name);
+      const value = isValid 
+        ? generateValidValue(type, input, input.name)
+        : generateInvalidValue(type, input.name);
       console.log(`Заполнено поле ${input.name}: ${value}`);
 
       // Устанавливаем значение
