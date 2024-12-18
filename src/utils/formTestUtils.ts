@@ -41,14 +41,28 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
       if (name?.includes('position')) {
         return faker.person.jobTitle();
       }
+      if (name?.includes('camera_number')) {
+        return faker.string.numeric(6);
+      }
+      if (name?.includes('age_group')) {
+        return `${faker.number.int({ min: 1, max: 3 })}-${faker.number.int({ min: 4, max: 7 })} лет`;
+      }
+      if (name?.includes('address')) {
+        return faker.location.streetAddress();
+      }
       return faker.lorem.words(3);
     case 'email':
       return faker.internet.email();
     case 'date':
-      return faker.date.past().toISOString().split('T')[0];
+      // Генерируем дату рождения для человека от 25 до 55 лет
+      const minDate = new Date();
+      minDate.setFullYear(minDate.getFullYear() - 55);
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() - 25);
+      return faker.date.between({ from: minDate, to: maxDate }).toISOString().split('T')[0];
     case 'number':
       if (name?.includes('hourly_rate')) {
-        return String(faker.number.int({ min: 20, max: 100 }));
+        return String(faker.number.int({ min: 300, max: 1000 }));
       }
       if (name?.includes('experience_years')) {
         return String(faker.number.int({ min: 1, max: 30 }));
@@ -77,6 +91,9 @@ const generateInvalidValue = (type: FieldType, name?: string): string => {
     case 'text':
       if (name?.includes('phone')) {
         return 'не телефон';
+      }
+      if (name?.includes('email')) {
+        return 'неправильный.емейл';
       }
       return faker.number.int({ min: 1, max: 100 }).toString();
     case 'email':
