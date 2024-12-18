@@ -182,12 +182,10 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           education: string | null
-          email: string | null
           experience_years: number | null
           hourly_rate: number | null
           id: string
           is_deleted: boolean | null
-          phone: string | null
           photo_url: string | null
           position: string | null
           relative_phone: string | null
@@ -205,12 +203,10 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           education?: string | null
-          email?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
           is_deleted?: boolean | null
-          phone?: string | null
           photo_url?: string | null
           position?: string | null
           relative_phone?: string | null
@@ -228,12 +224,10 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           education?: string | null
-          email?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
           is_deleted?: boolean | null
-          phone?: string | null
           photo_url?: string | null
           position?: string | null
           relative_phone?: string | null

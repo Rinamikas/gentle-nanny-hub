@@ -7,7 +7,7 @@ export const useNannyData = (id?: string) => {
     queryFn: async () => {
       if (!id) return null;
       
-      console.log("Making Supabase query for nanny ID:", id);
+      console.log("Fetching nanny data for ID:", id);
       const { data, error } = await supabase
         .from("nanny_profiles")
         .select(`
