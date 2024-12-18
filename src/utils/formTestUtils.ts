@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { fakerRU } from "@faker-js/faker";
 
 type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
 
@@ -13,11 +14,10 @@ const formatPhoneNumber = (number: string): string => {
 
 const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, name?: string): string => {
   console.log(`Генерация корректного значения для поля типа ${type}, имя: ${name}`);
-  faker.locale = "ru";
 
   // Специальная обработка для полей с контактными данными
   if (name?.includes('phone') || type === 'tel') {
-    const phoneNumber = faker.string.numeric({ length: 10 });
+    const phoneNumber = fakerRU.string.numeric({ length: 10 });
     return formatPhoneNumber(phoneNumber);
   }
 
@@ -31,30 +31,30 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
   switch (type) {
     case 'text':
       if (name?.includes('first_name')) {
-        return faker.person.firstName();
+        return fakerRU.person.firstName();
       }
       if (name?.includes('last_name')) {
-        return faker.person.lastName();
+        return fakerRU.person.lastName();
       }
       if (name?.includes('education')) {
-        return faker.lorem.paragraph();
+        return fakerRU.lorem.paragraph();
       }
       if (name?.includes('position')) {
-        return faker.person.jobTitle();
+        return fakerRU.person.jobTitle();
       }
-      return faker.lorem.words(3);
+      return fakerRU.lorem.words(3);
     case 'email':
-      return faker.internet.email();
+      return fakerRU.internet.email();
     case 'date':
-      return faker.date.past().toISOString().split('T')[0];
+      return fakerRU.date.past().toISOString().split('T')[0];
     case 'number':
       if (name?.includes('hourly_rate')) {
-        return String(faker.number.int({ min: 20, max: 100 }));
+        return String(fakerRU.number.int({ min: 20, max: 100 }));
       }
       if (name?.includes('experience_years')) {
-        return String(faker.number.int({ min: 1, max: 30 }));
+        return String(fakerRU.number.int({ min: 1, max: 30 }));
       }
-      return String(faker.number.int({ min: 0, max: 100 }));
+      return String(fakerRU.number.int({ min: 0, max: 100 }));
     case 'select':
       if (input instanceof HTMLSelectElement) {
         const options = Array.from(input.options);
@@ -73,14 +73,13 @@ const generateValidValue = (type: FieldType, input: HTMLInputElement | HTMLSelec
 
 const generateInvalidValue = (type: FieldType, name?: string): string => {
   console.log(`Генерация некорректного значения для поля типа ${type}, имя: ${name}`);
-  faker.locale = "ru";
 
   switch (type) {
     case 'text':
       if (name?.includes('phone')) {
         return 'не телефон';
       }
-      return faker.number.int({ min: 1, max: 100 }).toString();
+      return fakerRU.number.int({ min: 1, max: 100 }).toString();
     case 'email':
       return 'неправильный.емейл';
     case 'date':
