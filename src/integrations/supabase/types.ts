@@ -628,6 +628,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_nanny_with_user: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_birth_date: string
+          p_position: string
+          p_age_group: string
+          p_camera_phone: string
+          p_camera_number: string
+          p_address: string
+          p_relative_phone: string
+          p_experience_years: number
+          p_education: string
+          p_hourly_rate: number
+          p_photo_url: string
+        }
+        Returns: string
+      }
       current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string

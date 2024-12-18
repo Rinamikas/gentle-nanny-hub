@@ -1,24 +1,18 @@
-import { cn } from "@/lib/utils";
-
-type AvailabilityStatus = "available" | "partially" | "unavailable";
-
 interface NannyAvailabilityIndicatorProps {
-  status: AvailabilityStatus;
-  className?: string;
+  status: "available" | "partially" | "unavailable";
 }
 
-export function NannyAvailabilityIndicator({ status, className }: NannyAvailabilityIndicatorProps) {
+export function NannyAvailabilityIndicator({ status }: NannyAvailabilityIndicatorProps) {
+  const colors = {
+    available: "bg-green-500",
+    partially: "bg-yellow-500",
+    unavailable: "bg-red-500",
+  };
+
   return (
-    <div
-      className={cn(
-        "w-2 h-2 rounded-full",
-        {
-          "bg-green-500": status === "available",
-          "bg-yellow-500": status === "partially",
-          "bg-red-500": status === "unavailable",
-        },
-        className
-      )}
+    <div 
+      className={`w-2 h-2 rounded-full ${colors[status]}`} 
+      title={status === "available" ? "Доступна" : status === "partially" ? "Частично доступна" : "Недоступна"}
     />
   );
 }
