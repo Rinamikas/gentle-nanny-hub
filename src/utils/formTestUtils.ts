@@ -53,6 +53,11 @@ export const fillFormWithTestData = (valid: boolean = true) => {
   
   inputs.forEach((input: HTMLElement) => {
     if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
+      // Пропускаем поля для загрузки файлов
+      if (input.type === 'file') {
+        return;
+      }
+
       const type = input.type as FieldType;
       const value = valid 
         ? generateValidValue(type, input.placeholder)
