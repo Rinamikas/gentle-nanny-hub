@@ -65,6 +65,19 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
         const randomIndex = faker.number.int({ min: 0, max: stages.length - 1 });
         return stages[randomIndex];
       }
+      // Для других select полей получаем значения из DOM
+      const selectElement = document.querySelector(`select[name="${name}"]`) as HTMLSelectElement;
+      if (selectElement) {
+        const options = Array.from(selectElement.options)
+          .filter(option => option.value)
+          .map(option => option.value);
+        
+        if (options.length > 0) {
+          const randomIndex = faker.number.int({ min: 0, max: options.length - 1 });
+          console.log(`Доступные опции для ${name}:`, options);
+          return options[randomIndex];
+        }
+      }
       return '';
     default:
       return '';
@@ -120,7 +133,7 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
     if (input.name && !input.disabled && input.style.display !== 'none') {
       console.log(`Обработка поля ${input.name}`);
       
-      let type: FieldType = (input as HTMLInputElement).type as FieldType;
+      let type: FieldType;
       
       if (input instanceof HTMLSelectElement) {
         type = 'select';
@@ -128,9 +141,10 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
       } else if (input instanceof HTMLTextAreaElement) {
         type = 'text';
         console.log(`Поле ${input.name} определено как textarea`);
-      } else if ((input as HTMLInputElement).type === 'email') {
-        type = 'email';
-        console.log(`Поле ${input.name} определено как email`);
+      } else {
+        // Для input элементов проверяем атрибут type
+        type = (input as HTMLInputElement).type as FieldType;
+        console.log(`Поле ${input.name} определено как ${type}`);
       }
 
       const value = isValid 
