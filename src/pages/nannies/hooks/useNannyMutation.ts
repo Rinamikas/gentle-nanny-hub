@@ -13,26 +13,33 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Starting nanny mutation with values:", values);
 
       try {
-        // Проверяем существование email с использованием maybeSingle
-        const { data: existingUser, error: emailCheckError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', values.email)
-          .maybeSingle();
+        // Создаем нового пользователя через Auth API
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: values.email,
+          password: Math.random().toString(36).slice(-8), // Временный пароль
+          options: {
+            data: {
+              first_name: values.first_name,
+              last_name: values.last_name,
+            }
+          }
+        });
 
-        if (emailCheckError) {
-          console.error("Error checking email existence:", emailCheckError);
-          throw new Error("Ошибка при проверке email");
+        if (authError) {
+          console.error("Error creating auth user:", authError);
+          if (authError.message.includes("User already registered")) {
+            throw new Error("Пользователь с таким email уже существует");
+          }
+          throw authError;
         }
 
-        if (existingUser) {
-          console.error("User with this email already exists:", values.email);
-          throw new Error("Пользователь с таким email уже существует");
+        if (!authData.user) {
+          throw new Error("Не удалось создать пользователя");
         }
 
-        console.log("Email check passed, creating new nanny...");
+        console.log("Auth user created successfully:", authData.user);
 
-        // Создаем нового пользователя и профиль няни
+        // Создаем профиль няни
         const { data: nannyData, error: createError } = await supabase
           .rpc('create_nanny_with_user', {
             p_email: values.email,
@@ -54,14 +61,14 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         if (createError) {
           console.error("Error creating nanny:", createError);
-          if (createError.code === '23505') {
-            throw new Error("Пользователь с таким email уже существует");
-          }
+          // Удаляем созданного пользователя в случае ошибки
+          await supabase.auth.admin.deleteUser(authData.user.id);
           throw createError;
         }
 
         if (!nannyData) {
           console.error("No nanny data returned after creation");
+          await supabase.auth.admin.deleteUser(authData.user.id);
           throw new Error("Не удалось создать профиль няни");
         }
 
