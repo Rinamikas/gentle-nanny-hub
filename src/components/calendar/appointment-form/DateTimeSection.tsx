@@ -2,63 +2,125 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ru } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+
+interface DateTimeEntry {
+  date: Date;
+  startTime: string;
+  endTime: string;
+}
 
 interface DateTimeSectionProps {
-  dates: Date[];
-  setDates: (dates: Date[]) => void;
-  startTime: string;
-  setStartTime: (time: string) => void;
-  endTime: string;
-  setEndTime: (time: string) => void;
+  entries: DateTimeEntry[];
+  onEntriesChange: (entries: DateTimeEntry[]) => void;
 }
 
 export function DateTimeSection({
-  dates,
-  setDates,
-  startTime,
-  setStartTime,
-  endTime,
-  setEndTime,
+  entries,
+  onEntriesChange,
 }: DateTimeSectionProps) {
-  console.log("DateTimeSection render:", { dates, startTime, endTime });
-  
+  console.log("DateTimeSection render:", { entries });
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+
+    const existingEntry = entries.find(
+      (entry) => entry.date.toDateString() === date.toDateString()
+    );
+
+    if (!existingEntry) {
+      onEntriesChange([
+        ...entries,
+        { date, startTime: "09:00", endTime: "11:00" },
+      ]);
+    }
+  };
+
+  const handleTimeChange = (
+    index: number,
+    field: "startTime" | "endTime",
+    value: string
+  ) => {
+    const newEntries = [...entries];
+    newEntries[index] = {
+      ...newEntries[index],
+      [field]: value,
+    };
+    onEntriesChange(newEntries);
+  };
+
+  const handleRemoveEntry = (index: number) => {
+    const newEntries = entries.filter((_, i) => i !== index);
+    onEntriesChange(newEntries);
+  };
+
   return (
-    <>
-      <div className="grid gap-2">
+    <div className="space-y-4">
+      <div>
         <Label>Выберите дни</Label>
         <Calendar
           mode="multiple"
-          selected={dates}
-          onSelect={setDates}
+          selected={entries.map((entry) => entry.date)}
+          onSelect={(dates) => {
+            if (!dates) return;
+            if (Array.isArray(dates)) {
+              const lastDate = dates[dates.length - 1];
+              if (lastDate) {
+                handleDateSelect(lastDate);
+              }
+            } else {
+              handleDateSelect(dates);
+            }
+          }}
           locale={ru}
           className="rounded-md border"
-          initialFocus
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label>Время начала</Label>
-          <Input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            min="09:00"
-            max="21:00"
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label>Время окончания</Label>
-          <Input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            min="09:00"
-            max="21:00"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label>Время для каждого дня</Label>
+        {entries.map((entry, index) => (
+          <div key={entry.date.toISOString()} className="flex items-center gap-2">
+            <div className="flex-1">
+              <div className="text-sm text-gray-500 mb-1">
+                {entry.date.toLocaleDateString("ru-RU")}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Input
+                    type="time"
+                    value={entry.startTime}
+                    onChange={(e) =>
+                      handleTimeChange(index, "startTime", e.target.value)
+                    }
+                    min="09:00"
+                    max="21:00"
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="time"
+                    value={entry.endTime}
+                    onChange={(e) =>
+                      handleTimeChange(index, "endTime", e.target.value)
+                    }
+                    min="09:00"
+                    max="21:00"
+                  />
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleRemoveEntry(index)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   );
 }

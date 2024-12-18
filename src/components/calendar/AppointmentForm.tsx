@@ -9,6 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { DateTimeSection } from "./appointment-form/DateTimeSection";
 import { ServiceSection } from "./appointment-form/ServiceSection";
 import { PromoCodeSection } from "./appointment-form/PromoCodeSection";
+import { NannySelect } from "./appointment-form/NannySelect";
+
+interface DateTimeEntry {
+  date: Date;
+  startTime: string;
+  endTime: string;
+}
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -17,12 +24,11 @@ interface AppointmentFormProps {
   selectedNanny?: string;
 }
 
-export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }: AppointmentFormProps) {
-  console.log("AppointmentForm render:", { isOpen, selectedDate, selectedNanny });
+export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny: initialNanny }: AppointmentFormProps) {
+  console.log("AppointmentForm render:", { isOpen, selectedDate, initialNanny });
 
-  const [dates, setDates] = useState<Date[]>([]);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("11:00");
+  const [dateTimeEntries, setDateTimeEntries] = useState<DateTimeEntry[]>([]);
+  const [selectedNanny, setSelectedNanny] = useState<string>();
   const [selectedService, setSelectedService] = useState<string>();
   const [promoCode, setPromoCode] = useState("");
   const [totalPrice, setTotalPrice] = useState(0);
@@ -52,80 +58,6 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
     },
   });
 
-  // Загрузка доступных нянь
-  const { data: availableNannies } = useQuery({
-    queryKey: ["available-nannies", dates, startTime, endTime],
-    queryFn: async () => {
-      if (!dates.length) return [];
-
-      console.log("Загрузка доступных нянь...");
-      const { data, error } = await supabase
-        .from("nanny_profiles")
-        .select(`
-          id,
-          profiles (
-            first_name,
-            last_name,
-            photo_url
-          )
-        `)
-        .not("is_deleted", "eq", true);
-      
-      if (error) {
-        console.error("Ошибка загрузки нянь:", error);
-        throw error;
-      }
-      console.log("Загруженные няни:", data);
-      return data;
-    },
-    enabled: dates.length > 0 && !!startTime && !!endTime,
-  });
-
-  // Загрузка услуг
-  const { data: services } = useQuery({
-    queryKey: ["services"],
-    queryFn: async () => {
-      console.log("Загрузка услуг...");
-      const { data, error } = await supabase
-        .from("services")
-        .select("*")
-        .order("price_per_hour");
-
-      if (error) {
-        console.error("Ошибка загрузки услуг:", error);
-        throw error;
-      }
-      console.log("Загруженные услуги:", data);
-      return data;
-    },
-  });
-
-  const calculateTotalPrice = (discountPercent = 0) => {
-    if (!selectedService || !services) return;
-
-    const service = services.find(s => s.id === selectedService);
-    if (!service) return;
-
-    const hoursPerDay = (
-      parseInt(endTime.split(":")[0]) - 
-      parseInt(startTime.split(":")[0])
-    );
-    
-    const totalDays = dates.length;
-    const basePrice = service.price_per_hour * hoursPerDay * totalDays;
-    const discount = basePrice * (discountPercent / 100);
-    
-    console.log("Расчет стоимости:", {
-      hoursPerDay,
-      totalDays,
-      basePrice,
-      discount,
-      finalPrice: basePrice - discount
-    });
-    
-    setTotalPrice(basePrice - discount);
-  };
-
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -137,14 +69,14 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
   const handleSubmit = async () => {
     console.log("Отправка формы:", {
       selectedService,
-      dates,
+      dateTimeEntries,
       selectedNanny,
       parentProfile,
       totalPrice,
       photoFile
     });
 
-    if (!selectedService || !dates.length || !selectedNanny || !parentProfile?.id) {
+    if (!selectedService || !dateTimeEntries.length || !selectedNanny || !parentProfile?.id) {
       toast({
         title: "Ошибка",
         description: "Заполните все обязательные поля",
@@ -178,17 +110,17 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
 
       // Создаем заявки для каждого выбранного дня
       console.log("Создание заявок...");
-      for (const date of dates) {
-        const startDateTime = new Date(date);
-        const [startHours, startMinutes] = startTime.split(":");
+      for (const entry of dateTimeEntries) {
+        const startDateTime = new Date(entry.date);
+        const [startHours, startMinutes] = entry.startTime.split(":");
         startDateTime.setHours(parseInt(startHours), parseInt(startMinutes));
 
-        const endDateTime = new Date(date);
-        const [endHours, endMinutes] = endTime.split(":");
+        const endDateTime = new Date(entry.date);
+        const [endHours, endMinutes] = entry.endTime.split(":");
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
 
         console.log("Создание заявки на дату:", {
-          date,
+          date: entry.date,
           startDateTime,
           endDateTime
         });
@@ -201,7 +133,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
             start_time: startDateTime.toISOString(),
             end_time: endDateTime.toISOString(),
             service_id: selectedService,
-            total_price: totalPrice / dates.length,
+            total_price: totalPrice / dateTimeEntries.length,
             photo_url: photoUrl,
             booking_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
           });
@@ -227,7 +159,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
   };
 
   // Проверяем, можно ли создать заявку
-  const canSubmit = selectedService && dates.length > 0 && selectedNanny && parentProfile?.id && availableNannies?.length > 0;
+  const canSubmit = selectedService && dateTimeEntries.length > 0 && selectedNanny && parentProfile?.id;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -238,13 +170,18 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
 
         <div className="grid gap-4 py-4">
           <DateTimeSection
-            dates={dates}
-            setDates={setDates}
-            startTime={startTime}
-            setStartTime={setStartTime}
-            endTime={endTime}
-            setEndTime={setEndTime}
+            entries={dateTimeEntries}
+            onEntriesChange={setDateTimeEntries}
           />
+
+          <div className="grid gap-2">
+            <Label>Няня</Label>
+            <NannySelect
+              value={selectedNanny}
+              onSelect={setSelectedNanny}
+              selectedDates={dateTimeEntries}
+            />
+          </div>
 
           <ServiceSection
             selectedService={selectedService}
@@ -254,7 +191,10 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
           <PromoCodeSection
             promoCode={promoCode}
             setPromoCode={setPromoCode}
-            onPromoCodeCheck={calculateTotalPrice}
+            onPromoCodeCheck={(discountPercent) => {
+              // Пересчитываем стоимость с учетом скидки
+              // TODO: Implement price calculation
+            }}
           />
 
           <div className="grid gap-2">
@@ -265,12 +205,6 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
               onChange={handlePhotoUpload}
             />
           </div>
-
-          {availableNannies?.length === 0 && dates.length > 0 && (
-            <div className="text-red-500">
-              На выбранное время нет доступных нянь. Пожалуйста, выберите другое время или свяжитесь с администратором.
-            </div>
-          )}
 
           <div className="text-lg font-semibold">
             Итоговая стоимость: {totalPrice} ₽
