@@ -63,9 +63,11 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
         .from("nanny_profiles")
         .select(`
           id,
-          first_name,
-          last_name,
-          photo_url
+          profiles (
+            first_name,
+            last_name,
+            photo_url
+          )
         `)
         .not("is_deleted", "eq", true);
       
@@ -77,6 +79,25 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
       return data;
     },
     enabled: dates.length > 0 && !!startTime && !!endTime,
+  });
+
+  // Загрузка услуг
+  const { data: services } = useQuery({
+    queryKey: ["services"],
+    queryFn: async () => {
+      console.log("Загрузка услуг...");
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .order("price_per_hour");
+
+      if (error) {
+        console.error("Ошибка загрузки услуг:", error);
+        throw error;
+      }
+      console.log("Загруженные услуги:", data);
+      return data;
+    },
   });
 
   const calculateTotalPrice = (discountPercent = 0) => {
