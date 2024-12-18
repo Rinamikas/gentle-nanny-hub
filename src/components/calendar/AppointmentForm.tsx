@@ -226,6 +226,9 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
     }
   };
 
+  // Проверяем, можно ли создать заявку
+  const canSubmit = selectedService && dates.length > 0 && selectedNanny && parentProfile?.id && availableNannies?.length > 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
@@ -263,9 +266,9 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
             />
           </div>
 
-          {availableNannies?.length === 0 && (
+          {availableNannies?.length === 0 && dates.length > 0 && (
             <div className="text-red-500">
-              На выбранное время нет доступных нянь. Пожалуйста, свяжитесь с администратором.
+              На выбранное время нет доступных нянь. Пожалуйста, выберите другое время или свяжитесь с администратором.
             </div>
           )}
 
@@ -280,7 +283,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny }
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!selectedService || !dates.length || !selectedNanny || !availableNannies?.length}
+            disabled={!canSubmit}
           >
             Создать заявку
           </Button>

@@ -10,10 +10,10 @@ interface PromoCodeSectionProps {
   onPromoCodeCheck: (discountPercent: number) => void;
 }
 
-export function PromoCodeSection({ 
-  promoCode, 
-  setPromoCode, 
-  onPromoCodeCheck 
+export function PromoCodeSection({
+  promoCode,
+  setPromoCode,
+  onPromoCodeCheck,
 }: PromoCodeSectionProps) {
   const { toast } = useToast();
 
@@ -60,15 +60,15 @@ export function PromoCodeSection({
         return;
       }
 
-      const promoCode = data[0];
-      console.log("Промокод применен:", promoCode);
+      const validPromoCode = data[0];
+      console.log("Промокод применен:", validPromoCode);
       
       toast({
         title: "Успешно",
-        description: `Применена скидка ${promoCode.discount_percent}%`,
+        description: `Применена скидка ${validPromoCode.discount_percent}%`,
       });
 
-      onPromoCodeCheck(promoCode.discount_percent);
+      onPromoCodeCheck(validPromoCode.discount_percent);
     } catch (error) {
       console.error("Ошибка при проверке промокода:", error);
       toast({
@@ -85,10 +85,10 @@ export function PromoCodeSection({
       <div className="flex gap-2">
         <Input
           value={promoCode}
-          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+          onChange={(e) => setPromoCode(e.target.value)}
           placeholder="Введите промокод"
         />
-        <Button onClick={checkPromoCode} type="button">
+        <Button onClick={checkPromoCode}>
           Применить
         </Button>
       </div>
