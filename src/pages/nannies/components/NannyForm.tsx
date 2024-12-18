@@ -50,6 +50,35 @@ const NannyForm = () => {
   }, [form]);
 
   const { data: nanny, isLoading } = useNannyData(id);
+
+  useEffect(() => {
+    if (nanny) {
+      console.log("Setting form values with nanny data:", nanny);
+      form.reset({
+        first_name: nanny.profiles?.first_name || "",
+        last_name: nanny.profiles?.last_name || "",
+        birth_date: nanny.birth_date || "",
+        phone: nanny.profiles?.phone || "",
+        email: nanny.profiles?.email || "",
+        photo_url: nanny.photo_url || "",
+        position: nanny.position || "",
+        hourly_rate: nanny.hourly_rate || 0,
+        age_group: nanny.age_group || "",
+        camera_phone: nanny.camera_phone || "",
+        camera_number: nanny.camera_number || "",
+        address: nanny.address || "",
+        education: nanny.education || "",
+        experience_years: nanny.experience_years || 0,
+        relative_phone: nanny.relative_phone || "",
+        criminal_record: nanny.nanny_documents?.find(doc => doc.type === "criminal_record")?.file_url || "",
+        image_usage_consent: nanny.nanny_documents?.find(doc => doc.type === "image_usage_consent")?.file_url || "",
+        medical_book: nanny.nanny_documents?.find(doc => doc.type === "medical_book")?.file_url || "",
+        personal_data_consent: nanny.nanny_documents?.find(doc => doc.type === "personal_data_consent")?.file_url || "",
+        training_stage: nanny.nanny_training?.stage,
+      });
+    }
+  }, [nanny, form]);
+
   const mutation = useNannyMutation(() => navigate("/nannies"));
 
   const onSubmit = (data: FormValues) => {
