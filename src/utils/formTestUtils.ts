@@ -116,15 +116,28 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
   
   eventTypes.forEach(eventType => {
     try {
-      const customEvent = new CustomEvent(eventType, {
-        bubbles: true,
-        cancelable: true,
-        detail: { target: input }
+      const event = document.createEvent('Event');
+      event.initEvent(eventType, true, true);
+      
+      // Сохраняем оригинальный target
+      const originalTarget = Object.getOwnPropertyDescriptor(event, 'target');
+      
+      // Устанавливаем новый target с сохранением контекста
+      Object.defineProperty(event, 'target', {
+        configurable: true,
+        value: input
       });
       
-      console.log(`Отправка события ${eventType} для элемента`, input);
-      input.dispatchEvent(customEvent);
+      // Вызываем dispatchEvent с правильным контекстом
+      const dispatchEvent = HTMLElement.prototype.dispatchEvent;
+      dispatchEvent.call(input, event);
       
+      // Восстанавливаем оригинальный target если он был
+      if (originalTarget) {
+        Object.defineProperty(event, 'target', originalTarget);
+      }
+      
+      console.log(`Успешно отправлено событие ${eventType} для элемента`, input);
     } catch (error) {
       console.error(`Ошибка при отправке события ${eventType}:`, error);
     }
@@ -132,11 +145,10 @@ const triggerReactHookFormEvents = (input: HTMLElement) => {
 
   // Эмулируем изменение значения для React
   if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
-    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
-    const setter = descriptor?.set;
-    
-    if (setter) {
-      setter.call(input, input.value);
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (descriptor && descriptor.set) {
+      const valueSetter = descriptor.set;
+      valueSetter.call(input, input.value);
       console.log(`Установлено значение ${input.value} для элемента`, input);
     }
   }
