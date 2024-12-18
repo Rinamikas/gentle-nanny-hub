@@ -13,6 +13,18 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Starting nanny mutation with values:", values);
 
       try {
+        // Сначала проверяем, существует ли уже пользователь с таким email
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', values.email)
+          .single();
+
+        if (existingUser) {
+          console.error("User with this email already exists");
+          throw new Error("Пользователь с таким email уже существует");
+        }
+
         // Вызываем функцию create_nanny_with_user для создания нового пользователя и профиля няни
         const { data: nannyData, error: createError } = await supabase
           .rpc('create_nanny_with_user', {
