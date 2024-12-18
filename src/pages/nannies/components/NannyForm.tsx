@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Beaker, AlertTriangle } from "lucide-react";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProfessionalInfoSection from "./sections/ProfessionalInfoSection";
 import DocumentsSection from "./sections/DocumentsSection";
@@ -12,6 +12,7 @@ import WorkingHoursSection from "./sections/WorkingHoursSection";
 import { formSchema, FormValues } from "../types/form";
 import { useNannyMutation } from "../hooks/useNannyMutation";
 import { useNannyData } from "../hooks/useNannyData";
+import { fillFormWithTestData } from "@/utils/formTestUtils";
 
 const NannyForm = () => {
   const navigate = useNavigate();
@@ -55,6 +56,16 @@ const NannyForm = () => {
     navigate("/nannies");
   };
 
+  const handleFillValidData = () => {
+    console.log("Filling form with valid test data");
+    fillFormWithTestData(true);
+  };
+
+  const handleFillInvalidData = () => {
+    console.log("Filling form with invalid test data");
+    fillFormWithTestData(false);
+  };
+
   if (isLoading) {
     return <div>Загрузка...</div>;
   }
@@ -75,6 +86,26 @@ const NannyForm = () => {
       <h1 className="text-2xl font-bold mt-6 mb-6">
         {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
       </h1>
+
+      <div className="flex gap-4 mb-6">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={handleFillValidData}
+        >
+          <Beaker className="h-4 w-4" />
+          Тестовые данные
+        </Button>
+        
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 text-destructive"
+          onClick={handleFillInvalidData}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Ошибочные данные
+        </Button>
+      </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
