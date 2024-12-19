@@ -51,7 +51,13 @@ serve(async (req) => {
       console.log("User exists, updating password")
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         users[0].id,
-        { password }
+        { 
+          password,
+          email_confirm: true,
+          user_metadata: {
+            email_confirmed: true
+          }
+        }
       )
       if (updateError) {
         console.error("Error updating user:", updateError)
@@ -59,13 +65,20 @@ serve(async (req) => {
       }
       console.log("User updated successfully:", data?.user?.id)
       userId = users[0].id
+
+      // Добавляем задержку после обновления
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
     } else {
       // Если пользователь не существует, создаем нового
       console.log("User doesn't exist, creating new user")
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true
+        email_confirm: true,
+        user_metadata: {
+          email_confirmed: true
+        }
       })
 
       if (createError) {
@@ -78,7 +91,12 @@ serve(async (req) => {
       
       console.log("User created successfully:", data.user.id)
       userId = data.user.id
+
+      // Добавляем задержку после создания
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+
+    console.log("Operation successful, returning user id:", userId)
 
     return new Response(
       JSON.stringify({ 

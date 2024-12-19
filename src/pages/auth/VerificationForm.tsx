@@ -56,6 +56,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("3. User created/updated successfully");
       console.log("Password from response:", data.password);
       
+      // Добавляем небольшую задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // 4. Входим с созданными учетными данными
       console.log("4. Signing in with created credentials");
       const { error: signInError } = await supabase.auth.signInWithPassword({
