@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import DateTimeSection from "./appointment-form/DateTimeSection";
-import NannySelect from "./appointment-form/NannySelect";
-import ServiceSection from "./appointment-form/ServiceSection";
-import PromoCodeSection from "./appointment-form/PromoCodeSection";
-import NannyAvailabilityIndicator from "./appointment-form/NannyAvailabilityIndicator";
+import { DateTimeSection } from "./appointment-form/DateTimeSection";
+import { NannySelect } from "./appointment-form/NannySelect";
+import { ServiceSection } from "./appointment-form/ServiceSection";
+import { PromoCodeSection } from "./appointment-form/PromoCodeSection";
+import { NannyAvailabilityIndicator } from "./appointment-form/NannyAvailabilityIndicator";
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -25,9 +25,16 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny: 
   const { toast } = useToast();
   const form = useForm();
 
-  // Получаем текущего пользователя
-  const { data: session } = await supabase.auth.getSession();
-  const userId = session?.session?.user?.id;
+  // Получаем текущего пользователя через useQuery
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      console.log("Загрузка сессии...");
+      return await supabase.auth.getSession();
+    }
+  });
+
+  const userId = session?.data?.session?.user?.id;
 
   // Загружаем профиль родителя
   const { data: parentProfile } = useQuery({
