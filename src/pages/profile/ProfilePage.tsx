@@ -6,25 +6,32 @@ import NannyForm from "../nannies/components/NannyForm";
 import ProfileHeader from "./components/ProfileHeader";
 import ContactInfo from "./components/ContactInfo";
 import type { Profile } from "./types";
+import { useEffect } from "react";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+
+  // Проверяем сессию при монтировании
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("Нет активной сессии в ProfilePage");
+        navigate("/auth");
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Начинаем загрузку профиля...");
       
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (sessionError) {
-        console.error("Ошибка при получении сессии:", sessionError);
-        throw sessionError;
-      }
-
       if (!session) {
-        console.log("Сессия не найдена, перенаправляем на /auth");
-        navigate("/auth");
+        console.log("Сессия не найдена в queryFn");
         throw new Error("Не авторизован");
       }
 

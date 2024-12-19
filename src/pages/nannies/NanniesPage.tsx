@@ -1,21 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import NanniesTable from "./components/NanniesTable";
 import NanniesHeader from "./components/NanniesHeader";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const NanniesPage = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: nannies, isLoading: isLoadingNannies } = useQuery({
+  // Проверяем сессию при монтировании
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("Нет активной сессии в NanniesPage");
+        navigate("/auth");
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
+  const { data: nannies, isLoading: isLoadingNannies, error } = useQuery({
     queryKey: ["nannies", showDeleted],
     queryFn: async () => {
       console.log("Fetching nannies, showDeleted:", showDeleted);
       
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("Сессия не найдена при загрузке нянь");
+        throw new Error("Не авторизован");
+      }
+
       const { data, error } = await supabase
         .from("nanny_profiles")
         .select(`
@@ -36,7 +56,7 @@ const NanniesPage = () => {
           title: "Ошибка",
           description: "Не удалось загрузить список нянь",
         });
-        return [];
+        throw error;
       }
 
       return data;
@@ -136,7 +156,11 @@ const NanniesPage = () => {
   };
 
   if (isLoadingNannies) {
-    return <div>Загрузка...</div>;
+    return <LoadingScreen />;
+  }
+
+  if (error) {
+    return <div className="p-6">Ошибка: {(error as Error).message}</div>;
   }
 
   return (
