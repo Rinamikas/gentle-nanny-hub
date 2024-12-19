@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -133,8 +133,11 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <h2 className="text-lg font-semibold">Создание новой заявки</h2>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogTitle>Создание новой заявки</DialogTitle>
+        <DialogDescription>
+          Заполните форму для создания новой заявки на услуги няни
+        </DialogDescription>
         <AppointmentFormContent
           dateTimeEntries={dateTimeEntries}
           onDateTimeEntriesChange={setDateTimeEntries}
