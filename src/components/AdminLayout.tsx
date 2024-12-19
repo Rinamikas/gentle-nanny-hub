@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { fillFormWithTestData } from "@/utils/formTestUtils";
+import { useSessionHandler } from "@/hooks/useSessionHandler";
 import {
   LayoutDashboard,
   Users,
@@ -9,11 +10,14 @@ import {
   Users2,
   Calendar,
   Beaker,
-  AlertTriangle
+  AlertTriangle,
+  LogOut
 } from "lucide-react";
 
 const AdminLayout = () => {
   const location = useLocation();
+  const { handleLogout, isLoading } = useSessionHandler();
+  
   console.log("Current location:", location.pathname);
   
   const isFormPage = location.pathname.includes('/create') || 
@@ -31,72 +35,84 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen">
-      <aside className="w-64 bg-[#FFD6FF] p-4 flex flex-col gap-2">
-        <Link to="/">
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Главная
-          </Button>
-        </Link>
-        
-        <Link to="/users">
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <Users className="h-4 w-4" />
-            Пользователи
-          </Button>
-        </Link>
-        
-        <Link to="/nannies">
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <Baby className="h-4 w-4" />
-            Няни
-          </Button>
-        </Link>
-        
-        <Link to="/profile">
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <UserCircle className="h-4 w-4" />
-            Профиль
-          </Button>
-        </Link>
-        
-        <Link to="/families">
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <Users2 className="h-4 w-4" />
-            Семьи
-          </Button>
-        </Link>
-        
-        <Link to="/appointments">
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <Calendar className="h-4 w-4" />
-            Записи
-          </Button>
-        </Link>
+      <aside className="w-64 bg-[#FFD6FF] p-4 flex flex-col">
+        <div className="flex-1 flex flex-col gap-2">
+          <Link to="/">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              Главная
+            </Button>
+          </Link>
+          
+          <Link to="/users">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <Users className="h-4 w-4" />
+              Пользователи
+            </Button>
+          </Link>
+          
+          <Link to="/nannies">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <Baby className="h-4 w-4" />
+              Няни
+            </Button>
+          </Link>
+          
+          <Link to="/profile">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <UserCircle className="h-4 w-4" />
+              Профиль
+            </Button>
+          </Link>
+          
+          <Link to="/families">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <Users2 className="h-4 w-4" />
+              Семьи
+            </Button>
+          </Link>
+          
+          <Link to="/appointments">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <Calendar className="h-4 w-4" />
+              Записи
+            </Button>
+          </Link>
 
-        {isFormPage && (
-          <>
-            <div className="h-px bg-gray-200 my-2" />
-            
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={handleFillValidData}
-            >
-              <Beaker className="h-4 w-4" />
-              Тестовые данные
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 text-destructive"
-              onClick={handleFillInvalidData}
-            >
-              <AlertTriangle className="h-4 w-4" />
-              Ошибочные данные
-            </Button>
-          </>
-        )}
+          {isFormPage && (
+            <>
+              <div className="h-px bg-gray-200 my-2" />
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={handleFillValidData}
+              >
+                <Beaker className="h-4 w-4" />
+                Тестовые данные
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2 text-destructive"
+                onClick={handleFillInvalidData}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Ошибочные данные
+              </Button>
+            </>
+          )}
+        </div>
+
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 mt-4"
+          onClick={handleLogout}
+          disabled={isLoading}
+        >
+          <LogOut className="h-4 w-4" />
+          {isLoading ? "Выход..." : "Выйти"}
+        </Button>
       </aside>
       
       <main className="flex-1 overflow-auto">

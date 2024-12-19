@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -13,7 +12,24 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    // Устанавливаем фокус на первый слот при монтировании
+    const firstInput = document.querySelector('input[id^="otp-"]') as HTMLInputElement;
+    if (firstInput) {
+      firstInput.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Автоматически отправляем форму при заполнении всех слотов
+    if (otp.length === 6) {
+      handleVerification();
+    }
+  }, [otp]);
+
   const handleVerification = async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     console.log("=== Starting verification process ===");
     console.log("Email:", email);
@@ -133,13 +149,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           </InputOTPGroup>
         </InputOTP>
       </div>
-      <Button
-        onClick={handleVerification}
-        className="w-full"
-        disabled={isLoading || otp.length !== 6}
-      >
-        {isLoading ? "Проверка..." : "Подтвердить"}
-      </Button>
     </div>
   );
 };
