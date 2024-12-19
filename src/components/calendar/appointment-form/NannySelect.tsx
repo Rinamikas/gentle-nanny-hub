@@ -44,15 +44,15 @@ export function NannySelect({ value, onSelect, selectedDates }: NannySelectProps
             const formattedDate = format(date, 'yyyy-MM-dd');
             console.log(`Проверка доступности няни ${nanny.id} на дату ${formattedDate} с ${startTime} до ${endTime}`);
 
-            const { data: workingHours, error } = await supabase
+            const { data: workingHours, error: workingHoursError } = await supabase
               .from("working_hours")
               .select("*")
               .eq("nanny_id", nanny.id)
               .eq("work_date", formattedDate)
               .maybeSingle();
 
-            if (error) {
-              console.error(`Ошибка при проверке рабочих часов для няни ${nanny.id}:`, error);
+            if (workingHoursError) {
+              console.error(`Ошибка при проверке рабочих часов для няни ${nanny.id}:`, workingHoursError);
               return false;
             }
 
@@ -67,7 +67,7 @@ export function NannySelect({ value, onSelect, selectedDates }: NannySelectProps
 
             console.log(`Рабочие часы няни ${nanny.id} на ${formattedDate}: ${workingHours.start_time}-${workingHours.end_time}`);
             console.log(`Запрошенное время: ${startTime}-${endTime}`);
-            console.log(`Доступность: ${isWithinWorkingHours ? 'да' : 'нет'}`);
+            console.log(`В рабочих часах: ${isWithinWorkingHours ? 'да' : 'нет'}`);
 
             if (!isWithinWorkingHours) {
               return false;
@@ -92,18 +92,33 @@ export function NannySelect({ value, onSelect, selectedDates }: NannySelectProps
               const requestedStart = new Date(`${formattedDate}T${startTime}`);
               const requestedEnd = new Date(`${formattedDate}T${endTime}`);
 
-              return (
+              const conflict = (
                 (requestedStart >= appointmentStart && requestedStart < appointmentEnd) ||
                 (requestedEnd > appointmentStart && requestedEnd <= appointmentEnd) ||
                 (requestedStart <= appointmentStart && requestedEnd >= appointmentEnd)
               );
+
+              if (conflict) {
+                console.log(`Найден конфликт с заявкой для няни ${nanny.id} на ${formattedDate}`);
+                console.log('Существующая заявка:', {
+                  start: appointmentStart,
+                  end: appointmentEnd
+                });
+                console.log('Запрашиваемое время:', {
+                  start: requestedStart,
+                  end: requestedEnd
+                });
+              }
+
+              return conflict;
             });
 
             if (hasConflict) {
-              console.log(`Найден конфликт с существующими заявками для няни ${nanny.id} на ${formattedDate}`);
+              console.log(`Есть конфликты с существующими заявками для няни ${nanny.id} на ${formattedDate}`);
               return false;
             }
 
+            console.log(`Няня ${nanny.id} доступна на ${formattedDate}`);
             return true;
           })
         );
