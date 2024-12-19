@@ -76,17 +76,19 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     try {
       // Создаем заявки для каждого выбранного времени
       for (const entry of dateTimeEntries) {
-        const startTime = new Date(entry.date);
-        startTime.setHours(parseInt(entry.startTime.split(':')[0]), parseInt(entry.startTime.split(':')[1]));
+        const startDateTime = new Date(entry.date);
+        const [startHours, startMinutes] = entry.startTime.split(':').map(Number);
+        startDateTime.setHours(startHours, startMinutes, 0, 0);
 
-        const endTime = new Date(entry.date);
-        endTime.setHours(parseInt(entry.endTime.split(':')[0]), parseInt(entry.endTime.split(':')[1]));
+        const endDateTime = new Date(entry.date);
+        const [endHours, endMinutes] = entry.endTime.split(':').map(Number);
+        endDateTime.setHours(endHours, endMinutes, 0, 0);
 
         console.log("Создание заявки:", {
           nanny_id: selectedNanny,
           parent_id: selectedParent,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
+          start_time: startDateTime.toISOString(),
+          end_time: endDateTime.toISOString(),
           service_id: selectedService,
         });
 
@@ -95,8 +97,8 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
           .insert({
             nanny_id: selectedNanny,
             parent_id: selectedParent,
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
+            start_time: startDateTime.toISOString(),
+            end_time: endDateTime.toISOString(),
             service_id: selectedService,
             status: 'pending'
           });
@@ -117,7 +119,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       console.error("Ошибка при сохранении заявки:", error);
       toast({
         title: "Ошибка",
-        description: "Не удалось создать заявку",
+        description: error instanceof Error ? error.message : "Не удалось создать заявку",
         variant: "destructive",
       });
     }
