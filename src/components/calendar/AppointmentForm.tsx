@@ -77,26 +77,25 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     try {
       // Создаем заявки для каждого выбранного времени
       for (const entry of dateTimeEntries) {
-        // Создаем дату начала в UTC
         const [startHours, startMinutes] = entry.startTime.split(':').map(Number);
+        const [endHours, endMinutes] = entry.endTime.split(':').map(Number);
+
+        // Создаем дату начала в UTC
         const startDateTime = new Date(Date.UTC(
           entry.date.getFullYear(),
           entry.date.getMonth(),
           entry.date.getDate(),
-          startHours,
-          startMinutes,
-          0
+          startHours - 3, // Компенсируем часовой пояс Москвы (UTC+3)
+          startMinutes
         ));
 
         // Создаем дату окончания в UTC
-        const [endHours, endMinutes] = entry.endTime.split(':').map(Number);
         const endDateTime = new Date(Date.UTC(
           entry.date.getFullYear(),
           entry.date.getMonth(),
           entry.date.getDate(),
-          endHours,
-          endMinutes,
-          0
+          endHours - 3, // Компенсируем часовой пояс Москвы (UTC+3)
+          endMinutes
         ));
 
         console.log("Создание заявки:", {
