@@ -37,19 +37,15 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 2. Создаем/обновляем пользователя через Edge Function
       console.log("2. Creating/updating user through Edge Function");
-      const response = await fetch(`${window.location.origin}/functions/v1/create-auth-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
+      const { data, error } = await supabase.functions.invoke('create-auth-user', {
+        body: { email }
       });
 
-      const data = await response.json();
+      console.log("Edge function response:", data);
       
-      if (!response.ok || !data.success) {
-        console.error("Error creating/updating user:", data);
-        throw new Error(data.error || "Failed to create/update user");
+      if (error || !data.success) {
+        console.error("Error creating/updating user:", error || data.error);
+        throw new Error(error?.message || data.error || "Failed to create/update user");
       }
 
       console.log("3. User created/updated successfully");
