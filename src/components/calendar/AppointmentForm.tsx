@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,17 @@ interface AppointmentFormProps {
   selectedNanny?: string;
 }
 
-export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny: initialNanny }: AppointmentFormProps) {
-  console.log("AppointmentForm render:", { isOpen, selectedDate, initialNanny });
+export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, selectedNanny: initialNanny }: AppointmentFormProps) {
+  console.log("AppointmentForm render:", { isOpen, initialDate, initialNanny });
   
+  // Состояния формы
   const [selectedNanny, setSelectedNanny] = useState(initialNanny);
+  const [selectedService, setSelectedService] = useState<string>();
+  const [promoCode, setPromoCode] = useState("");
+  const [dateTimeEntries, setDateTimeEntries] = useState<Array<{ date: Date; startTime: string; endTime: string; }>>([
+    { date: initialDate || new Date(), startTime: "09:00", endTime: "11:00" }
+  ]);
+  
   const { toast } = useToast();
   const form = useForm();
 
@@ -65,16 +72,40 @@ export function AppointmentForm({ isOpen, onClose, selectedDate, selectedNanny: 
     // Handle appointment submission logic here
   };
 
+  const handlePromoCodeCheck = (discountPercent: number) => {
+    console.log("Проверка промокода, скидка:", discountPercent);
+    toast({
+      title: "Промокод применен",
+      description: `Скидка ${discountPercent}% будет применена к заказу`,
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <h2 className="text-lg font-semibold">Создание новой заявки</h2>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <DateTimeSection selectedDate={selectedDate} />
-          <NannySelect selectedNanny={selectedNanny} onNannyChange={setSelectedNanny} />
-          <ServiceSection />
-          <PromoCodeSection />
-          <NannyAvailabilityIndicator selectedNanny={selectedNanny} />
+          <DateTimeSection 
+            entries={dateTimeEntries}
+            onEntriesChange={setDateTimeEntries}
+          />
+          <NannySelect 
+            value={selectedNanny} 
+            onSelect={setSelectedNanny}
+            selectedDates={dateTimeEntries}
+          />
+          <ServiceSection 
+            selectedService={selectedService}
+            setSelectedService={setSelectedService}
+          />
+          <PromoCodeSection 
+            promoCode={promoCode}
+            setPromoCode={setPromoCode}
+            onPromoCodeCheck={handlePromoCodeCheck}
+          />
+          <NannyAvailabilityIndicator 
+            status={selectedNanny ? "available" : "unavailable"}
+          />
           <div className="flex justify-end">
             <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
             <Button type="submit">Сохранить</Button>
