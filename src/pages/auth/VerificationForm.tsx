@@ -54,8 +54,22 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       console.log("User created/updated successfully:", createUserData);
 
-      // 3. Обновляем статус кода в БД
-      console.log("3. Updating verification code status");
+      // 3. Создаем сессию через OTP
+      console.log("3. Creating session with OTP");
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false // Пользователь уже создан
+        }
+      });
+
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        throw signInError;
+      }
+
+      // 4. Обновляем статус кода в БД
+      console.log("4. Updating verification code status");
       const { error: codeUpdateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
