@@ -29,7 +29,7 @@ serve(async (req) => {
     const password = Math.random().toString(36).slice(-8)
 
     // Проверяем существует ли пользователь
-    const { data: existingUsers, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
+    const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
         email: email
       }
@@ -42,19 +42,22 @@ serve(async (req) => {
 
     let userId
 
-    if (existingUsers.users.length > 0) {
+    if (users && users.length > 0) {
       // Если пользователь существует, обновляем пароль
       console.log("User exists, updating password")
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        existingUsers.users[0].id,
-        { password }
+        users[0].id,
+        { 
+          password,
+          email_confirm: true
+        }
       )
       if (updateError) throw updateError
-      userId = existingUsers.users[0].id
+      userId = users[0].id
     } else {
       // Если пользователь не существует, создаем нового
       console.log("User doesn't exist, creating new user")
-      const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true
@@ -64,17 +67,21 @@ serve(async (req) => {
         console.error("Error creating user:", createError)
         throw createError
       }
-      if (!user) {
+      if (!data.user) {
         throw new Error('Failed to create user')
       }
       
-      userId = user.id
+      userId = data.user.id
     }
 
     console.log("Operation successful, returning user id and password")
 
     return new Response(
-      JSON.stringify({ id: userId, password }),
+      JSON.stringify({ 
+        id: userId, 
+        password,
+        success: true 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
@@ -84,7 +91,10 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in create-user function:", error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 

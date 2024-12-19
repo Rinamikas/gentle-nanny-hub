@@ -45,21 +45,20 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         body: JSON.stringify({ email })
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create/update user");
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        console.error("Error creating/updating user:", data);
+        throw new Error(data.error || "Failed to create/update user");
       }
 
-      const { password } = await response.json();
+      console.log("3. User created/updated successfully");
       
-      // Добавляем задержку перед входом
-      console.log("3. Waiting for user creation/update to complete");
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       // 4. Входим с созданными учетными данными
       console.log("4. Signing in with created credentials");
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password: data.password
       });
 
       if (signInError) {
