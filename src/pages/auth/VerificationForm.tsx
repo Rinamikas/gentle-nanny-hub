@@ -37,11 +37,13 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 2. Создаем/обновляем пользователя через Edge Function
       console.log("2. Creating/updating user through Edge Function");
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
       const response = await fetch(`${window.location.origin}/functions/v1/create-auth-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session?.access_token || ''}`
         },
         body: JSON.stringify({ email })
       });
