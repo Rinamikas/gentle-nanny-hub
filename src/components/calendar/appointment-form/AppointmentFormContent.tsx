@@ -4,6 +4,7 @@ import { ServiceSection } from "./ServiceSection";
 import { PromoCodeSection } from "./PromoCodeSection";
 import { ParentSelect } from "./ParentSelect";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface AppointmentFormContentProps {
   dateTimeEntries: Array<{ date: Date; startTime: string; endTime: string }>;
@@ -19,6 +20,7 @@ interface AppointmentFormContentProps {
   onPromoCodeCheck: (discountPercent: number) => void;
   onCancel: () => void;
   onSubmit: () => void;
+  isSubmitting: boolean;
 }
 
 export function AppointmentFormContent({
@@ -35,6 +37,7 @@ export function AppointmentFormContent({
   onPromoCodeCheck,
   onCancel,
   onSubmit,
+  isSubmitting,
 }: AppointmentFormContentProps) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
@@ -62,8 +65,13 @@ export function AppointmentFormContent({
         onPromoCodeCheck={onPromoCodeCheck}
       />
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>Отмена</Button>
-        <Button type="submit">Сохранить</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Отмена
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Сохранить
+        </Button>
       </div>
     </form>
   );

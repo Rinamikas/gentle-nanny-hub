@@ -22,6 +22,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
   const [dateTimeEntries, setDateTimeEntries] = useState<Array<{ date: Date; startTime: string; endTime: string; }>>([
     { date: initialDate || new Date(), startTime: "09:00", endTime: "11:00" }
   ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { toast } = useToast();
 
@@ -71,6 +72,8 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       // Создаем заявки для каждого выбранного времени
       for (const entry of dateTimeEntries) {
@@ -105,7 +108,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
 
         if (error) {
           console.error("Ошибка создания заявки:", error);
-          throw error;
+          throw new Error(error.message);
         }
       }
 
@@ -122,6 +125,8 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
         description: error instanceof Error ? error.message : "Не удалось создать заявку",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -154,6 +159,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
           onPromoCodeCheck={handlePromoCodeCheck}
           onCancel={onClose}
           onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
         />
       </DialogContent>
     </Dialog>
