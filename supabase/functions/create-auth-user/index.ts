@@ -23,10 +23,9 @@ serve(async (req) => {
       throw new Error('Email and code are required')
     }
 
-    console.log("Creating/updating user with email:", email)
-    console.log("Using verification code as password:", code)
-
-    // Проверяем существует ли пользователь
+    console.log("Checking existing user for email:", email)
+    
+    // Проверяем существующего пользователя
     const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
         email: email
@@ -41,50 +40,45 @@ serve(async (req) => {
     let userId
 
     if (users && users.length > 0) {
-      // Если пользователь существует, обновляем пароль
-      console.log("User exists, updating password")
+      // Обновляем существующего пользователя
+      console.log("Updating existing user with id:", users[0].id)
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         users[0].id,
         { 
           password: code,
-          email_confirm: true,
-          user_metadata: {
-            email_confirmed: true
-          }
+          email_confirm: true
         }
       )
+      
       if (updateError) {
         console.error("Error updating user:", updateError)
         throw updateError
       }
-      console.log("User updated successfully:", data?.user?.id)
+      
       userId = users[0].id
+      console.log("User updated successfully:", userId)
       
     } else {
-      // Если пользователь не существует, создаем нового
-      console.log("User doesn't exist, creating new user")
+      // Создаем нового пользователя
+      console.log("Creating new user with email:", email)
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: code,
-        email_confirm: true,
-        user_metadata: {
-          email_confirmed: true
-        }
+        email_confirm: true
       })
 
       if (createError) {
         console.error("Error creating user:", createError)
         throw createError
       }
+
       if (!data.user) {
         throw new Error('Failed to create user')
       }
-      
-      console.log("User created successfully:", data.user.id)
-      userId = data.user.id
-    }
 
-    console.log("Operation successful, returning user id:", userId)
+      userId = data.user.id
+      console.log("User created successfully:", userId)
+    }
 
     return new Response(
       JSON.stringify({ 

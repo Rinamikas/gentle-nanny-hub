@@ -58,9 +58,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       console.log("3. User created/updated successfully");
       
-      // Добавляем небольшую задержку перед входом
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // 4. Входим с созданными учетными данными
       console.log("4. Attempting sign in with password:", {
         email,
