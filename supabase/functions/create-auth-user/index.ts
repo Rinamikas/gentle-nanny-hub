@@ -80,6 +80,9 @@ serve(async (req) => {
       console.log("User created successfully:", userId)
     }
 
+    // Добавляем задержку для синхронизации
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     return new Response(
       JSON.stringify({ 
         id: userId,

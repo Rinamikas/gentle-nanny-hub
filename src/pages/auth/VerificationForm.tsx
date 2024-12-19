@@ -37,22 +37,25 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 2. Создаем/обновляем пользователя через Edge Function
       console.log("2. Creating/updating user through Edge Function");
-      const { data, error: functionError } = await supabase.functions.invoke('create-auth-user', {
-        body: JSON.stringify({ 
-          email,
-          code: otp
-        })
-      });
+      const { data: userData, error: functionError } = await supabase.functions.invoke(
+        'create-auth-user',
+        {
+          body: JSON.stringify({ 
+            email,
+            code: otp
+          })
+        }
+      );
 
-      console.log("Edge function response:", data);
+      console.log("Edge function response:", userData);
       
       if (functionError) {
         console.error("Error from edge function:", functionError);
         throw functionError;
       }
 
-      if (!data?.password) {
-        console.error("Invalid response from edge function:", data);
+      if (!userData?.password) {
+        console.error("Invalid response from edge function:", userData);
         throw new Error("Не получен пароль от сервера");
       }
 
@@ -61,12 +64,12 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       // 4. Входим с созданными учетными данными
       console.log("4. Attempting sign in with password:", {
         email,
-        password: data.password
+        password: userData.password
       });
-      
+
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: data.password
+        password: userData.password
       });
 
       console.log("Sign in response:", signInData);
