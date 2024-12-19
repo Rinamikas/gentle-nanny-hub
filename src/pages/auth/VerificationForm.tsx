@@ -38,39 +38,56 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем пользователя и сессию
-      console.log("2. Creating user and session");
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: otp, // Используем код как начальный пароль
-        options: {
-          data: {
-            email: email
-          }
+      // 2. Проверяем существование пользователя
+      console.log("2. Checking if user exists");
+      const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers({
+        filter: {
+          email: email
         }
       });
 
-      if (signUpError) {
-        // Если пользователь уже существует, пробуем войти
-        if (signUpError.message.includes('User already registered')) {
-          console.log("User exists, trying to sign in");
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password: otp
-          });
+      if (getUserError) {
+        console.error("Error checking user existence:", getUserError);
+        throw getUserError;
+      }
 
-          if (signInError) {
-            console.error("Sign in error:", signInError);
-            throw signInError;
+      let sessionData;
+      
+      if (users && users.length > 0) {
+        // Пользователь существует - входим
+        console.log("User exists, signing in");
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: otp
+        });
+
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          throw signInError;
+        }
+
+        sessionData = data;
+        console.log("Sign in successful:", data);
+      } else {
+        // Создаем нового пользователя
+        console.log("Creating new user");
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: otp,
+          options: {
+            data: {
+              email: email
+            }
           }
+        });
 
-          console.log("Sign in successful:", signInData);
-        } else {
+        if (signUpError) {
           console.error("Sign up error:", signUpError);
           throw signUpError;
         }
-      } else {
-        console.log("Sign up successful:", signUpData);
+
+        sessionData = data;
+        console.log("Sign up successful:", data);
       }
 
       // 3. Обновляем статус кода в БД
