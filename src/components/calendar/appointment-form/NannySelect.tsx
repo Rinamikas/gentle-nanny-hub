@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NannyAvailabilityIndicator } from "./NannyAvailabilityIndicator";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 interface NannySelectProps {
   value?: string;
@@ -61,9 +61,15 @@ export function NannySelect({ value, onSelect, selectedDates }: NannySelectProps
               return false;
             }
 
+            // Преобразуем строки времени в объекты Date для корректного сравнения
+            const workStart = parse(workingHours.start_time, 'HH:mm:ss', new Date());
+            const workEnd = parse(workingHours.end_time, 'HH:mm:ss', new Date());
+            const requestStart = parse(startTime, 'HH:mm', new Date());
+            const requestEnd = parse(endTime, 'HH:mm', new Date());
+
             const isWithinWorkingHours = 
-              workingHours.start_time <= startTime && 
-              workingHours.end_time >= endTime;
+              requestStart >= workStart && 
+              requestEnd <= workEnd;
 
             console.log(`Рабочие часы няни ${nanny.id} на ${formattedDate}: ${workingHours.start_time}-${workingHours.end_time}`);
             console.log(`Запрошенное время: ${startTime}-${endTime}`);
