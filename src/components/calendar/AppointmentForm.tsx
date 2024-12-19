@@ -15,7 +15,6 @@ interface AppointmentFormProps {
 export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, selectedNanny: initialNanny }: AppointmentFormProps) {
   console.log("AppointmentForm render:", { isOpen, initialDate, initialNanny });
   
-  // Состояния формы
   const [selectedNanny, setSelectedNanny] = useState(initialNanny);
   const [selectedParent, setSelectedParent] = useState<string>();
   const [selectedService, setSelectedService] = useState<string>();
@@ -26,7 +25,6 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
   
   const { toast } = useToast();
 
-  // Получаем текущего пользователя через useQuery
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -76,13 +74,14 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     try {
       // Создаем заявки для каждого выбранного времени
       for (const entry of dateTimeEntries) {
+        // Создаем дату в UTC
         const startDateTime = new Date(entry.date);
         const [startHours, startMinutes] = entry.startTime.split(':').map(Number);
-        startDateTime.setHours(startHours, startMinutes, 0, 0);
+        startDateTime.setUTCHours(startHours, startMinutes, 0, 0);
 
         const endDateTime = new Date(entry.date);
         const [endHours, endMinutes] = entry.endTime.split(':').map(Number);
-        endDateTime.setHours(endHours, endMinutes, 0, 0);
+        endDateTime.setUTCHours(endHours, endMinutes, 0, 0);
 
         console.log("Создание заявки:", {
           nanny_id: selectedNanny,
