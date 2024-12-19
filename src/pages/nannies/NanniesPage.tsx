@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -12,18 +12,6 @@ const NanniesPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Проверяем сессию при монтировании
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("Нет активной сессии в NanniesPage");
-        navigate("/auth");
-      }
-    };
-    checkSession();
-  }, [navigate]);
-
   const { data: nannies, isLoading: isLoadingNannies, error } = useQuery({
     queryKey: ["nannies", showDeleted],
     queryFn: async () => {
@@ -33,7 +21,8 @@ const NanniesPage = () => {
       
       if (!session) {
         console.log("Сессия не найдена при загрузке нянь");
-        throw new Error("Не авторизован");
+        navigate("/auth");
+        return [];
       }
 
       const { data, error } = await supabase
@@ -51,6 +40,10 @@ const NanniesPage = () => {
 
       if (error) {
         console.error("Error fetching nannies:", error);
+        if (error.message.includes('JWT')) {
+          navigate("/auth");
+          return [];
+        }
         toast({
           variant: "destructive",
           title: "Ошибка",
@@ -59,6 +52,7 @@ const NanniesPage = () => {
         throw error;
       }
 
+      console.log("Загруженные няни:", data);
       return data;
     },
   });
