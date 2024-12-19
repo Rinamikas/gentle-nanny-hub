@@ -1,14 +1,9 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { DateTimeSection } from "./appointment-form/DateTimeSection";
-import { NannySelect } from "./appointment-form/NannySelect";
-import { ServiceSection } from "./appointment-form/ServiceSection";
-import { PromoCodeSection } from "./appointment-form/PromoCodeSection";
+import { AppointmentFormContent } from "./appointment-form/AppointmentFormContent";
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -22,6 +17,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
   
   // Состояния формы
   const [selectedNanny, setSelectedNanny] = useState(initialNanny);
+  const [selectedParent, setSelectedParent] = useState<string>();
   const [selectedService, setSelectedService] = useState<string>();
   const [promoCode, setPromoCode] = useState("");
   const [dateTimeEntries, setDateTimeEntries] = useState<Array<{ date: Date; startTime: string; endTime: string; }>>([
@@ -29,7 +25,6 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
   ]);
   
   const { toast } = useToast();
-  const form = useForm();
 
   // Получаем текущего пользователя через useQuery
   const { data: session } = useQuery({
@@ -42,38 +37,13 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
 
   const userId = session?.data?.session?.user?.id;
 
-  // Загружаем профиль родителя
-  const { data: parentProfile } = useQuery({
-    queryKey: ["parent-profile", userId],
-    queryFn: async () => {
-      console.log("Загрузка профиля родителя...");
-      
-      if (!userId) return null;
-
-      const { data, error } = await supabase
-        .from("parent_profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Ошибка загрузки профиля родителя:", error);
-        throw error;
-      }
-
-      console.log("Загруженный профиль родителя:", data);
-      return data;
-    },
-    enabled: !!userId
-  });
-
   const handleSubmit = async () => {
     console.log("Submitting appointment with data:", {
       selectedNanny,
+      selectedParent,
       selectedService,
       promoCode,
-      dateTimeEntries,
-      parentProfile
+      dateTimeEntries
     });
 
     if (!selectedNanny) {
@@ -85,19 +55,19 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       return;
     }
 
-    if (!selectedService) {
+    if (!selectedParent) {
       toast({
-        title: "Ошибка", 
-        description: "Выберите услугу",
+        title: "Ошибка",
+        description: "Выберите семью",
         variant: "destructive",
       });
       return;
     }
 
-    if (!parentProfile) {
+    if (!selectedService) {
       toast({
-        title: "Ошибка",
-        description: "Профиль родителя не найден. Пожалуйста, заполните профиль.",
+        title: "Ошибка", 
+        description: "Выберите услугу",
         variant: "destructive",
       });
       return;
@@ -114,7 +84,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
 
         console.log("Создание заявки:", {
           nanny_id: selectedNanny,
-          parent_id: parentProfile.id,
+          parent_id: selectedParent,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           service_id: selectedService,
@@ -124,7 +94,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
           .from('appointments')
           .insert({
             nanny_id: selectedNanny,
-            parent_id: parentProfile.id,
+            parent_id: selectedParent,
             start_time: startTime.toISOString(),
             end_time: endTime.toISOString(),
             service_id: selectedService,
@@ -165,31 +135,21 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <h2 className="text-lg font-semibold">Создание новой заявки</h2>
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4">
-          <DateTimeSection 
-            entries={dateTimeEntries}
-            onEntriesChange={setDateTimeEntries}
-            selectedNanny={selectedNanny}
-          />
-          <NannySelect 
-            value={selectedNanny} 
-            onSelect={setSelectedNanny}
-            selectedDates={dateTimeEntries}
-          />
-          <ServiceSection 
-            selectedService={selectedService}
-            setSelectedService={setSelectedService}
-          />
-          <PromoCodeSection 
-            promoCode={promoCode}
-            setPromoCode={setPromoCode}
-            onPromoCodeCheck={handlePromoCodeCheck}
-          />
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
-            <Button type="submit">Сохранить</Button>
-          </div>
-        </form>
+        <AppointmentFormContent
+          dateTimeEntries={dateTimeEntries}
+          onDateTimeEntriesChange={setDateTimeEntries}
+          selectedNanny={selectedNanny}
+          onNannySelect={setSelectedNanny}
+          selectedParent={selectedParent}
+          onParentSelect={setSelectedParent}
+          selectedService={selectedService}
+          onServiceSelect={setSelectedService}
+          promoCode={promoCode}
+          onPromoCodeChange={setPromoCode}
+          onPromoCodeCheck={handlePromoCodeCheck}
+          onCancel={onClose}
+          onSubmit={handleSubmit}
+        />
       </DialogContent>
     </Dialog>
   );
