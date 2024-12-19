@@ -67,6 +67,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         password: userData.password
       });
 
+      // Добавляем задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: userData.password

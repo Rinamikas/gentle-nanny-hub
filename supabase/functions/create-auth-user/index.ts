@@ -46,7 +46,7 @@ serve(async (req) => {
         users[0].id,
         { 
           password: code,
-          email_confirm: true
+          email_confirmed: true
         }
       )
       
@@ -64,7 +64,7 @@ serve(async (req) => {
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: code,
-        email_confirm: true
+        email_confirmed: true
       })
 
       if (createError) {
@@ -81,7 +81,7 @@ serve(async (req) => {
     }
 
     // Добавляем задержку для синхронизации
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     return new Response(
       JSON.stringify({ 
