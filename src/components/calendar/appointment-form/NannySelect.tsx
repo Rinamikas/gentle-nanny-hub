@@ -44,12 +44,17 @@ export function NannySelect({ value, onSelect, selectedDates }: NannySelectProps
             const formattedDate = format(date, 'yyyy-MM-dd');
             console.log(`Проверка доступности няни ${nanny.id} на дату ${formattedDate} с ${startTime} до ${endTime}`);
 
-            const { data: workingHours } = await supabase
+            const { data: workingHours, error } = await supabase
               .from("working_hours")
               .select("*")
               .eq("nanny_id", nanny.id)
               .eq("work_date", formattedDate)
-              .single();
+              .maybeSingle();
+
+            if (error) {
+              console.error(`Ошибка при проверке рабочих часов для няни ${nanny.id}:`, error);
+              return false;
+            }
 
             if (!workingHours) {
               console.log(`Нет рабочих часов для няни ${nanny.id} на дату ${formattedDate}`);
@@ -69,12 +74,17 @@ export function NannySelect({ value, onSelect, selectedDates }: NannySelectProps
             }
 
             // Проверяем существующие заявки
-            const { data: appointments } = await supabase
+            const { data: appointments, error: appointmentsError } = await supabase
               .from("appointments")
               .select("*")
               .eq("nanny_id", nanny.id)
               .eq("status", "confirmed")
               .neq("status", "cancelled");
+
+            if (appointmentsError) {
+              console.error(`Ошибка при проверке заявок для няни ${nanny.id}:`, appointmentsError);
+              return false;
+            }
 
             const hasConflict = appointments?.some(appointment => {
               const appointmentStart = new Date(appointment.start_time);
