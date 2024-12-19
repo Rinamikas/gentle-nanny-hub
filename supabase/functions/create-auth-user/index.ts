@@ -17,7 +17,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Получаем email из тела запроса
     const { email } = await req.json()
 
     if (!email) {
@@ -25,10 +24,6 @@ serve(async (req) => {
     }
 
     console.log("Creating/updating user with email:", email)
-
-    // Генерируем пароль
-    const password = Math.random().toString(36).slice(-8)
-    console.log("Generated password:", password)
 
     // Проверяем существует ли пользователь
     const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
@@ -47,12 +42,11 @@ serve(async (req) => {
     let userId
 
     if (users && users.length > 0) {
-      // Если пользователь существует, обновляем пароль
-      console.log("User exists, updating password")
+      // Если пользователь существует, обновляем его метаданные
+      console.log("User exists, updating metadata")
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         users[0].id,
         { 
-          password,
           email_confirm: true,
           user_metadata: {
             email_confirmed: true
@@ -65,16 +59,12 @@ serve(async (req) => {
       }
       console.log("User updated successfully:", data?.user?.id)
       userId = users[0].id
-
-      // Добавляем задержку после обновления
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
     } else {
       // Если пользователь не существует, создаем нового
       console.log("User doesn't exist, creating new user")
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password,
         email_confirm: true,
         user_metadata: {
           email_confirmed: true
@@ -91,16 +81,12 @@ serve(async (req) => {
       
       console.log("User created successfully:", data.user.id)
       userId = data.user.id
-
-      // Добавляем задержку после создания
-      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     console.log("Operation successful, returning user id:", userId)
 
     return new Response(
       JSON.stringify({ 
-        password,
         id: userId
       }),
       { 
@@ -112,9 +98,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in create-user function:", error)
     return new Response(
-      JSON.stringify({ 
-        error: error.message
-      }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 
