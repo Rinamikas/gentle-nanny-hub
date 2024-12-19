@@ -5,7 +5,10 @@ export const useNannyData = (id?: string) => {
   return useQuery({
     queryKey: ["nanny", id],
     queryFn: async () => {
-      if (!id) return null;
+      if (!id || id === ":id") {
+        console.log("Invalid nanny ID:", id);
+        return null;
+      }
       
       console.log("Fetching nanny data for ID:", id);
       const { data, error } = await supabase
@@ -27,7 +30,7 @@ export const useNannyData = (id?: string) => {
           )
         `)
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching nanny data:", error);
@@ -37,6 +40,6 @@ export const useNannyData = (id?: string) => {
       console.log("Received nanny data:", data);
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && id !== ":id",
   });
 };
