@@ -81,30 +81,22 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Срок действия кода истек");
       }
 
-      // 2. Создаем сессию
-      console.log("2. Создаем сессию с помощью signInWithPassword");
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // 2. Создаем сессию через signInWithOtp
+      console.log("2. Создаем сессию с помощью signInWithOtp");
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password: otp
+        token: otp,
+        options: {
+          shouldCreateUser: false
+        }
       });
 
       if (signInError) {
         console.error("Ошибка при создании сессии:", signInError);
-        
-        // 3. Если пользователя нет, создаем его
-        console.log("3. Пробуем создать пользователя");
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: otp
-        });
-
-        if (signUpError) {
-          console.error("Ошибка при создании пользователя:", signUpError);
-          throw new Error("Не удалось создать пользователя");
-        }
+        throw new Error("Не удалось создать сессию");
       }
 
-      // 4. Обновляем статус кода
+      // 3. Обновляем статус кода
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
