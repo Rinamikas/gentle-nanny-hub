@@ -38,24 +38,25 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем или обновляем пользователя через Edge Function
-      console.log("2. Creating/updating user through Edge Function");
-      const { data: userData, error: createError } = await supabase.functions.invoke(
-        'create-user',
-        {
-          body: JSON.stringify({
-            email
-          })
+      // 2. Создаем сессию через signInWithOtp
+      console.log("2. Creating session with OTP");
+      const { data: sessionData, error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        token: otp,
+        options: {
+          shouldCreateUser: true
         }
-      );
+      });
 
-      if (createError) {
-        console.error("3. User creation error:", createError);
-        throw createError;
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        throw signInError;
       }
 
-      // 4. Обновляем статус кода в БД
-      console.log("4. Updating verification code status");
+      console.log("Session created:", sessionData);
+
+      // 3. Обновляем статус кода в БД
+      console.log("3. Updating verification code status");
       const { error: codeUpdateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -63,7 +64,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp);
 
       if (codeUpdateError) {
-        console.error("5. Status update error:", codeUpdateError);
+        console.error("Status update error:", codeUpdateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
