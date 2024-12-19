@@ -17,6 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Получаем email из тела запроса
     const { email } = await req.json()
 
     if (!email) {
@@ -50,13 +51,7 @@ serve(async (req) => {
       console.log("User exists, updating password")
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         users[0].id,
-        { 
-          password,
-          email_confirm: true,
-          user_metadata: {
-            email_confirmed: true
-          }
-        }
+        { password }
       )
       if (updateError) {
         console.error("Error updating user:", updateError)
@@ -70,10 +65,7 @@ serve(async (req) => {
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
-        user_metadata: {
-          email_confirmed: true
-        }
+        email_confirm: true
       })
 
       if (createError) {
@@ -88,13 +80,10 @@ serve(async (req) => {
       userId = data.user.id
     }
 
-    console.log("Operation successful, returning user id:", userId)
-
     return new Response(
       JSON.stringify({ 
-        id: userId, 
         password,
-        success: true 
+        id: userId
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,8 +95,7 @@ serve(async (req) => {
     console.error("Error in create-user function:", error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        success: false
+        error: error.message
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
