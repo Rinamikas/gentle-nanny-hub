@@ -50,6 +50,10 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       }
 
       const { password } = await response.json();
+      
+      // Добавляем задержку перед входом
+      console.log("3. Waiting for user creation/update to complete");
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 4. Входим с созданными учетными данными
       console.log("4. Signing in with created credentials");
