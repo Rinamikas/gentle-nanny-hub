@@ -37,30 +37,30 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 2. Создаем/обновляем пользователя через Edge Function
       console.log("2. Creating/updating user through Edge Function");
-      const { data, error: functionError } = await supabase.functions.invoke('create-auth-user', {
+      const response = await supabase.functions.invoke('create-auth-user', {
         body: JSON.stringify({ email })
       });
 
-      console.log("Edge function response:", data);
+      console.log("Edge function response:", response);
       
-      if (functionError) {
-        console.error("Error from edge function:", functionError);
-        throw functionError;
+      if (response.error) {
+        console.error("Error from edge function:", response.error);
+        throw response.error;
       }
 
-      if (!data || !data.password) {
-        console.error("Invalid response from edge function:", data);
+      if (!response.data?.password) {
+        console.error("Invalid response from edge function:", response.data);
         throw new Error("Не получен пароль от сервера");
       }
 
       console.log("3. User created/updated successfully");
-      console.log("Password from response:", data.password);
+      console.log("Password from response:", response.data.password);
       
       // 4. Входим с созданными учетными данными
       console.log("4. Signing in with created credentials");
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: data.password
+        password: response.data.password
       });
 
       if (signInError) {
