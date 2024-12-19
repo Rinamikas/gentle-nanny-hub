@@ -9,7 +9,6 @@ import { DateTimeSection } from "./appointment-form/DateTimeSection";
 import { NannySelect } from "./appointment-form/NannySelect";
 import { ServiceSection } from "./appointment-form/ServiceSection";
 import { PromoCodeSection } from "./appointment-form/PromoCodeSection";
-import { NannyAvailabilityIndicator } from "./appointment-form/NannyAvailabilityIndicator";
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -62,6 +61,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
         throw error;
       }
 
+      console.log("Загруженный профиль родителя:", data);
       return data;
     },
     enabled: !!userId
@@ -85,10 +85,19 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       return;
     }
 
+    if (!selectedService) {
+      toast({
+        title: "Ошибка", 
+        description: "Выберите услугу",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!parentProfile) {
       toast({
         title: "Ошибка",
-        description: "Профиль родителя не найден",
+        description: "Профиль родителя не найден. Пожалуйста, заполните профиль.",
         variant: "destructive",
       });
       return;
@@ -102,6 +111,14 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
 
         const endTime = new Date(entry.date);
         endTime.setHours(parseInt(entry.endTime.split(':')[0]), parseInt(entry.endTime.split(':')[1]));
+
+        console.log("Создание заявки:", {
+          nanny_id: selectedNanny,
+          parent_id: parentProfile.id,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          service_id: selectedService,
+        });
 
         const { error } = await supabase
           .from('appointments')
@@ -167,9 +184,6 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
             promoCode={promoCode}
             setPromoCode={setPromoCode}
             onPromoCodeCheck={handlePromoCodeCheck}
-          />
-          <NannyAvailabilityIndicator 
-            status={selectedNanny ? "available" : "unavailable"}
           />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
