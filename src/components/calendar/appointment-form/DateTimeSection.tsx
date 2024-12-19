@@ -22,19 +22,29 @@ export function DateTimeSection({
 }: DateTimeSectionProps) {
   console.log("DateTimeSection render:", { entries });
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
+  const handleDateSelect = (dates: Date[] | undefined) => {
+    if (!dates) return;
 
-    const existingEntry = entries.find(
-      (entry) => entry.date.toDateString() === date.toDateString()
-    );
+    // Создаем новый массив записей на основе выбранных дат
+    const newEntries = dates.map(date => {
+      // Ищем существующую запись для этой даты
+      const existingEntry = entries.find(
+        entry => entry.date.toDateString() === date.toDateString()
+      );
 
-    if (!existingEntry) {
-      onEntriesChange([
-        ...entries,
-        { date, startTime: "09:00", endTime: "11:00" },
-      ]);
-    }
+      // Если запись существует, используем её, иначе создаем новую
+      return existingEntry || {
+        date,
+        startTime: "09:00",
+        endTime: "11:00",
+      };
+    });
+
+    // Сортируем записи по дате в порядке убывания
+    const sortedEntries = newEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
+    
+    console.log("Отсортированные записи:", sortedEntries);
+    onEntriesChange(sortedEntries);
   };
 
   const handleTimeChange = (
@@ -63,13 +73,7 @@ export function DateTimeSection({
           mode="multiple"
           selected={entries.map((entry) => entry.date)}
           onSelect={(dates) => {
-            if (!dates) return;
             if (Array.isArray(dates)) {
-              const lastDate = dates[dates.length - 1];
-              if (lastDate) {
-                handleDateSelect(lastDate);
-              }
-            } else {
               handleDateSelect(dates);
             }
           }}
