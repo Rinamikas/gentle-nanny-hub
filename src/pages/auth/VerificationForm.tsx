@@ -38,8 +38,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем сессию через signIn
-      console.log("2. Creating session");
+      // 2. Создаем сессию через signInWithPassword
+      console.log("2. Creating session with password");
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: otp // Используем код как временный пароль
@@ -50,7 +50,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw signInError;
       }
 
-      console.log("Session created:", signInData);
+      console.log("Session created successfully:", signInData);
 
       // 3. Обновляем статус кода в БД
       console.log("3. Updating verification code status");
