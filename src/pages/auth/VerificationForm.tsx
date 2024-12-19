@@ -52,6 +52,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       
       // 4. Входим с созданными учетными данными
       console.log("4. Signing in with created credentials");
+      console.log("Using password from response:", data.password);
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: data.password

@@ -27,6 +27,7 @@ serve(async (req) => {
 
     // Генерируем пароль
     const password = Math.random().toString(36).slice(-8)
+    console.log("Generated password:", password)
 
     // Проверяем существует ли пользователь
     const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
@@ -40,6 +41,8 @@ serve(async (req) => {
       throw searchError
     }
 
+    console.log("Found users:", users?.length)
+
     let userId
 
     if (users && users.length > 0) {
@@ -49,10 +52,17 @@ serve(async (req) => {
         users[0].id,
         { 
           password,
-          email_confirm: true
+          email_confirm: true,
+          user_metadata: {
+            email_confirmed: true
+          }
         }
       )
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error("Error updating user:", updateError)
+        throw updateError
+      }
+      console.log("User updated successfully:", data?.user?.id)
       userId = users[0].id
     } else {
       // Если пользователь не существует, создаем нового
@@ -60,7 +70,10 @@ serve(async (req) => {
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true
+        email_confirm: true,
+        user_metadata: {
+          email_confirmed: true
+        }
       })
 
       if (createError) {
@@ -71,10 +84,11 @@ serve(async (req) => {
         throw new Error('Failed to create user')
       }
       
+      console.log("User created successfully:", data.user.id)
       userId = data.user.id
     }
 
-    console.log("Operation successful, returning user id and password")
+    console.log("Operation successful, returning user id:", userId)
 
     return new Response(
       JSON.stringify({ 
