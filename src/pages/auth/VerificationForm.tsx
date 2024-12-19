@@ -20,64 +20,99 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("OTP:", otp);
 
     try {
-      // 1. Проверяем код в базе данных через RPC
-      console.log("1. Checking verification code through RPC");
-      const { data: hasValidCode, error: rpcError } = await supabase
-        .rpc('check_verification_code', {
-          p_email: email,
-          p_code: otp
-        });
+      // 1. Проверяем код в базе данных
+      console.log("1. Выполняем тестовый запрос к таблице verification_codes");
+      const { data: testData, error: testError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .limit(1);
+      
+      console.log("Результат тестового запроса:", { testData, testError });
 
-      if (rpcError) {
-        console.error("RPC error:", rpcError);
+      console.log("Проверяем активные коды для email:", email);
+      const { data: activeCodes, error: activeCodesError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', email)
+        .eq('status', 'pending');
+
+      console.log("Результат проверки активных кодов:", { 
+        data: activeCodes, 
+        error: activeCodesError,
+        sql: "SELECT * FROM verification_codes WHERE email = '" + email + "' AND status = 'pending'"
+      });
+
+      if (activeCodesError) {
+        throw new Error("Ошибка при проверке активных кодов");
+      }
+
+      console.log("Проверяем конкретный код:", otp);
+      const { data: codes, error: selectError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', email)
+        .eq('code', otp)
+        .eq('status', 'pending');
+
+      console.log("Результат проверки кода:", { 
+        codes, 
+        selectError,
+        sql: "SELECT * FROM verification_codes WHERE email = '" + email + "' AND code = '" + otp + "' AND status = 'pending'"
+      });
+
+      if (selectError) {
         throw new Error("Ошибка при проверке кода");
       }
 
-      console.log("Verification code check result:", hasValidCode);
-      if (!hasValidCode) {
+      if (!codes || codes.length === 0) {
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем/обновляем пользователя через Edge Function
-      console.log("2. Creating/updating user through Edge Function");
-      const { data: createUserData, error: createUserError } = await supabase.functions.invoke(
-        'create-auth-user',
-        {
-          body: { email }
-        }
-      );
+      const now = new Date();
+      const expiresAt = new Date(codes[0].expires_at);
 
-      if (createUserError) {
-        console.error("Error creating/updating user:", createUserError);
-        throw createUserError;
+      console.log("Проверка срока действия:", {
+        now: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        isExpired: now > expiresAt
+      });
+
+      if (now > expiresAt) {
+        throw new Error("Срок действия кода истек");
       }
 
-      console.log("User created/updated successfully:", createUserData);
-
-      // 3. Создаем сессию через OTP
-      console.log("3. Creating session with OTP");
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // 2. Создаем сессию
+      console.log("2. Создаем сессию с помощью signInWithPassword");
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          shouldCreateUser: false // Пользователь уже создан
-        }
+        password: otp
       });
 
       if (signInError) {
-        console.error("Sign in error:", signInError);
-        throw signInError;
+        console.error("Ошибка при создании сессии:", signInError);
+        
+        // 3. Если пользователя нет, создаем его
+        console.log("3. Пробуем создать пользователя");
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: otp
+        });
+
+        if (signUpError) {
+          console.error("Ошибка при создании пользователя:", signUpError);
+          throw new Error("Не удалось создать пользователя");
+        }
       }
 
-      // 4. Обновляем статус кода в БД
-      console.log("4. Updating verification code status");
-      const { error: codeUpdateError } = await supabase
-        .from("verification_codes")
+      // 4. Обновляем статус кода
+      const { error: updateError } = await supabase
+        .from('verification_codes')
         .update({ status: 'verified' })
-        .eq("email", email)
-        .eq("code", otp);
+        .eq('email', email)
+        .eq('code', otp);
 
-      if (codeUpdateError) {
-        console.error("Status update error:", codeUpdateError);
+      if (updateError) {
+        console.error("Ошибка при обновлении статуса кода:", updateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
