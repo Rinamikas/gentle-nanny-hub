@@ -23,29 +23,44 @@ serve(async (req) => {
       throw new Error('Email and code are required')
     }
 
-    console.log("Checking existing user for email:", email)
+    console.log("Creating/updating user with email:", email)
+    
+    // Генерируем случайный пароль
+    const generatePassword = () => {
+      const length = 8;
+      const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+      let password = "";
+      for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset[randomIndex];
+      }
+      return password;
+    };
+
+    const password = generatePassword();
+    console.log("Generated password:", password);
     
     // Проверяем существующего пользователя
-    const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
-    })
+    const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers()
 
     if (searchError) {
       console.error("Error searching for user:", searchError)
       throw searchError
     }
 
+    console.log("Found users:", users.length)
+
+    const existingUser = users.find(u => u.email === email)
     let userId
 
-    if (users && users.length > 0) {
+    if (existingUser) {
+      console.log("User exists, updating password")
+      
       // Обновляем существующего пользователя
-      console.log("Updating existing user with id:", users[0].id)
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        users[0].id,
+        existingUser.id,
         { 
-          password: code,
+          password,
           email_confirmed: true
         }
       )
@@ -54,16 +69,17 @@ serve(async (req) => {
         console.error("Error updating user:", updateError)
         throw updateError
       }
-      
-      userId = users[0].id
-      console.log("User updated successfully:", userId)
+
+      console.log("User updated successfully:", existingUser.id)
+      userId = existingUser.id
       
     } else {
+      console.log("Creating new user")
+      
       // Создаем нового пользователя
-      console.log("Creating new user with email:", email)
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password: code,
+        password,
         email_confirmed: true
       })
 
@@ -76,9 +92,11 @@ serve(async (req) => {
         throw new Error('Failed to create user')
       }
 
+      console.log("User created successfully:", data.user.id)
       userId = data.user.id
-      console.log("User created successfully:", userId)
     }
+
+    console.log("Operation successful, returning user id:", userId)
 
     // Добавляем задержку для синхронизации
     await new Promise(resolve => setTimeout(resolve, 2000))
@@ -86,7 +104,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         id: userId,
-        password: code
+        password
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
