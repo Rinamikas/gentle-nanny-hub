@@ -20,85 +20,51 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
     console.log("OTP:", otp);
 
     try {
-      // 1. Проверяем код в базе данных
-      console.log("1. Выполняем тестовый запрос к таблице verification_codes");
-      const { data: testData, error: testError } = await supabase
-        .from('verification_codes')
-        .select('*')
-        .limit(1);
+      // 1. Проверяем код в базе данных через RPC
+      console.log("1. Checking verification code through RPC");
+      const { data: hasValidCode, error: rpcError } = await supabase
+        .rpc('check_verification_code', {
+          p_email: email,
+          p_code: otp
+        });
       
-      console.log("Результат тестового запроса:", { testData, testError });
-
-      console.log("Проверяем активные коды для email:", email);
-      const { data: activeCodes, error: activeCodesError } = await supabase
-        .from('verification_codes')
-        .select('*')
-        .eq('email', email)
-        .eq('status', 'pending');
-
-      console.log("Результат проверки активных кодов:", { 
-        data: activeCodes, 
-        error: activeCodesError,
-        sql: "SELECT * FROM verification_codes WHERE email = '" + email + "' AND status = 'pending'"
-      });
-
-      if (activeCodesError) {
-        throw new Error("Ошибка при проверке активных кодов");
-      }
-
-      console.log("Проверяем конкретный код:", otp);
-      const { data: codes, error: selectError } = await supabase
-        .from('verification_codes')
-        .select('*')
-        .eq('email', email)
-        .eq('code', otp)
-        .eq('status', 'pending');
-
-      console.log("Результат проверки кода:", { 
-        codes, 
-        selectError,
-        sql: "SELECT * FROM verification_codes WHERE email = '" + email + "' AND code = '" + otp + "' AND status = 'pending'"
-      });
-
-      if (selectError) {
-        throw new Error("Ошибка при проверке кода");
-      }
-
-      if (!codes || codes.length === 0) {
+      console.log("Verification code check result:", hasValidCode);
+      if (rpcError) throw rpcError;
+      
+      if (!hasValidCode) {
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      const now = new Date();
-      const expiresAt = new Date(codes[0].expires_at);
-
-      console.log("Проверка срока действия:", {
-        now: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        isExpired: now > expiresAt
+      // 2. Создаем/обновляем пользователя через Edge Function
+      console.log("2. Creating/updating user through Edge Function");
+      const response = await fetch(`${window.location.origin}/functions/v1/create-auth-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ email })
       });
 
-      if (now > expiresAt) {
-        throw new Error("Срок действия кода истек");
+      if (!response.ok) {
+        throw new Error("Failed to create/update user");
       }
 
-      // 2. Создаем сессию через signInWithOtp
-      console.log("2. Создаем сессию с помощью signInWithOtp");
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      const { password } = await response.json();
+
+      // 4. Входим с созданными учетными данными
+      console.log("4. Signing in with created credentials");
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          data: {
-            code: otp
-          },
-          shouldCreateUser: false
-        }
+        password
       });
 
       if (signInError) {
-        console.error("Ошибка при создании сессии:", signInError);
-        throw new Error("Не удалось создать сессию");
+        console.error("5. Sign in error:", signInError);
+        throw signInError;
       }
 
-      // 3. Обновляем статус кода
+      // 5. Обновляем статус кода верификации
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
@@ -106,11 +72,9 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq('code', otp);
 
       if (updateError) {
-        console.error("Ошибка при обновлении статуса кода:", updateError);
-        throw new Error("Ошибка при обновлении статуса кода");
+        console.error("Error updating verification code status:", updateError);
       }
 
-      console.log("=== Verification completed successfully ===");
       toast({
         title: "Успешно!",
         description: "Вы успешно авторизовались",
