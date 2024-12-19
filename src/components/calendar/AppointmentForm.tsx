@@ -77,15 +77,27 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     try {
       // Создаем заявки для каждого выбранного времени
       for (const entry of dateTimeEntries) {
-        // Создаем дату начала
-        const startDateTime = new Date(entry.date);
+        // Создаем дату начала в UTC
         const [startHours, startMinutes] = entry.startTime.split(':').map(Number);
-        startDateTime.setHours(startHours, startMinutes, 0, 0);
+        const startDateTime = new Date(Date.UTC(
+          entry.date.getFullYear(),
+          entry.date.getMonth(),
+          entry.date.getDate(),
+          startHours,
+          startMinutes,
+          0
+        ));
 
-        // Создаем дату окончания
-        const endDateTime = new Date(entry.date);
+        // Создаем дату окончания в UTC
         const [endHours, endMinutes] = entry.endTime.split(':').map(Number);
-        endDateTime.setHours(endHours, endMinutes, 0, 0);
+        const endDateTime = new Date(Date.UTC(
+          entry.date.getFullYear(),
+          entry.date.getMonth(),
+          entry.date.getDate(),
+          endHours,
+          endMinutes,
+          0
+        ));
 
         console.log("Создание заявки:", {
           nanny_id: selectedNanny,
