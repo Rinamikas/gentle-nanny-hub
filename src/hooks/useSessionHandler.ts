@@ -12,7 +12,18 @@ export const useSessionHandler = () => {
       setIsLoading(true);
       console.log("Начинаем процесс выхода...");
       
-      await supabase.auth.signOut();
+      // Очищаем localStorage
+      localStorage.clear();
+      console.log("Локальное хранилище очищено");
+      
+      try {
+        // Пробуем выйти через Supabase
+        await supabase.auth.signOut();
+        console.log("Выход через Supabase выполнен");
+      } catch (error) {
+        // Даже если выход через Supabase не удался, продолжаем
+        console.warn("Ошибка при выходе через Supabase:", error);
+      }
       
       console.log("Выход успешно выполнен");
       toast({
@@ -20,6 +31,7 @@ export const useSessionHandler = () => {
         description: "Вы вышли из системы",
       });
       
+      // В любом случае перенаправляем на страницу входа
       navigate("/auth");
     } catch (error) {
       console.error("Неожиданная ошибка при выходе:", error);
