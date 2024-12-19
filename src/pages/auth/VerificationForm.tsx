@@ -62,7 +62,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
       console.log("3. User created/updated successfully");
       
       // 4. Входим с созданными учетными данными
-      console.log("4. Attempting sign in with generated password");
+      console.log("4. Attempting sign in with verification code as password");
 
       // Добавляем задержку перед входом
       await new Promise(resolve => setTimeout(resolve, 2000));

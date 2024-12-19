@@ -24,21 +24,7 @@ serve(async (req) => {
     }
 
     console.log("Creating/updating user with email:", email)
-    
-    // Генерируем случайный пароль
-    const generatePassword = () => {
-      const length = 8;
-      const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
-      let password = "";
-      for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * charset.length);
-        password += charset[randomIndex];
-      }
-      return password;
-    };
-
-    const password = generatePassword();
-    console.log("Generated password:", password);
+    console.log("Using verification code as password:", code)
     
     // Проверяем существующего пользователя
     const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers()
@@ -47,8 +33,6 @@ serve(async (req) => {
       console.error("Error searching for user:", searchError)
       throw searchError
     }
-
-    console.log("Found users:", users.length)
 
     const existingUser = users.find(u => u.email === email)
     let userId
@@ -60,7 +44,7 @@ serve(async (req) => {
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         existingUser.id,
         { 
-          password,
+          password: code,
           email_confirmed: true
         }
       )
@@ -79,7 +63,7 @@ serve(async (req) => {
       // Создаем нового пользователя
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password,
+        password: code,
         email_confirmed: true
       })
 
@@ -104,7 +88,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         id: userId,
-        password
+        password: code
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
