@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/select";
 
 interface NannySelectProps {
-  value?: string;
-  onSelect: (nannyId: string | undefined) => void;
+  value: string;
+  onSelect: (nannyId: string) => void;
 }
 
 export function NannySelect({ value, onSelect }: NannySelectProps) {

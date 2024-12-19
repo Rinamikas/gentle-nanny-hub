@@ -10,7 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 interface ParentSelectProps {
-  value?: string;
+  value: string;
   onSelect: (parentId: string) => void;
 }
 

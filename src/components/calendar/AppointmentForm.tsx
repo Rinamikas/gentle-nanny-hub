@@ -15,9 +15,9 @@ interface AppointmentFormProps {
 export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, selectedNanny: initialNanny }: AppointmentFormProps) {
   console.log("AppointmentForm render:", { isOpen, initialDate, initialNanny });
   
-  const [selectedNanny, setSelectedNanny] = useState(initialNanny);
-  const [selectedParent, setSelectedParent] = useState<string>();
-  const [selectedService, setSelectedService] = useState<string>();
+  const [selectedNanny, setSelectedNanny] = useState(initialNanny || '');
+  const [selectedParent, setSelectedParent] = useState('');
+  const [selectedService, setSelectedService] = useState('');
   const [promoCode, setPromoCode] = useState("");
   const [dateTimeEntries, setDateTimeEntries] = useState<Array<{ date: Date; startTime: string; endTime: string; }>>([
     { date: initialDate || new Date(), startTime: "09:00", endTime: "11:00" }
@@ -44,7 +44,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       dateTimeEntries
     });
 
-    if (!selectedNanny) {
+    if (!selectedNanny || selectedNanny === '') {
       toast({
         title: "Ошибка",
         description: "Выберите няню",
@@ -53,7 +53,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       return;
     }
 
-    if (!selectedParent) {
+    if (!selectedParent || selectedParent === '') {
       toast({
         title: "Ошибка",
         description: "Выберите семью",
@@ -62,7 +62,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
       return;
     }
 
-    if (!selectedService) {
+    if (!selectedService || selectedService === '') {
       toast({
         title: "Ошибка", 
         description: "Выберите услугу",

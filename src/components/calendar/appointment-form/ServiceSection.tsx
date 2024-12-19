@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ServiceSectionProps {
-  selectedService?: string;
+  selectedService: string;
   setSelectedService: (service: string) => void;
 }
 
