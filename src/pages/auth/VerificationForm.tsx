@@ -37,25 +37,32 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
 
       // 2. Создаем/обновляем пользователя через Edge Function
       console.log("2. Creating/updating user through Edge Function");
-      const { data, error: functionError } = await supabase.functions.invoke('create-auth-user', {
-        body: JSON.stringify({ email })
+      const response = await supabase.functions.invoke('create-auth-user', {
+        body: JSON.stringify({ 
+          email: email 
+        })
       });
 
-      console.log("Edge function response:", data);
+      console.log("Edge function response:", response);
       
-      if (functionError || !data?.success) {
-        console.error("Error creating/updating user:", functionError || data?.error);
-        throw new Error(functionError?.message || data?.error || "Failed to create/update user");
+      if (response.error) {
+        console.error("Error from edge function:", response.error);
+        throw new Error(response.error.message || "Failed to create/update user");
+      }
+
+      if (!response.data || !response.data.success) {
+        console.error("Invalid response from edge function:", response.data);
+        throw new Error("Некорректный ответ от сервера");
       }
 
       console.log("3. User created/updated successfully");
+      console.log("Password from response:", response.data.password);
       
       // 4. Входим с созданными учетными данными
       console.log("4. Signing in with created credentials");
-      console.log("Using password from response:", data.password);
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: data.password
+        password: response.data.password
       });
 
       if (signInError) {
