@@ -25,6 +25,9 @@ serve(async (req) => {
 
     console.log("Creating/updating user with email:", email)
 
+    // Генерируем пароль
+    const password = Math.random().toString(36).slice(-8)
+
     // Проверяем существует ли пользователь
     const { data: existingUsers, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
@@ -40,28 +43,21 @@ serve(async (req) => {
     let userId
 
     if (existingUsers.users.length > 0) {
-      // Если пользователь существует, обновляем его пароль
+      // Если пользователь существует, обновляем пароль
       console.log("User exists, updating password")
-      const user = existingUsers.users[0]
-      
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        user.id,
-        { password: crypto.randomUUID() }
+      const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingUsers.users[0].id,
+        { password }
       )
-
-      if (updateError) {
-        console.error("Error updating user:", updateError)
-        throw updateError
-      }
-
-      userId = user.id
+      if (updateError) throw updateError
+      userId = existingUsers.users[0].id
     } else {
       // Если пользователь не существует, создаем нового
       console.log("User doesn't exist, creating new user")
       const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-        password: crypto.randomUUID()
+        email,
+        password,
+        email_confirm: true
       })
 
       if (createError) {
@@ -75,10 +71,10 @@ serve(async (req) => {
       userId = user.id
     }
 
-    console.log("Operation successful, returning user id:", userId)
+    console.log("Operation successful, returning user id and password")
 
     return new Response(
-      JSON.stringify({ id: userId }),
+      JSON.stringify({ id: userId, password }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
@@ -86,7 +82,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error("Error in create-auth-user function:", error)
+    console.error("Error in create-user function:", error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
