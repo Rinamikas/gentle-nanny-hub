@@ -17,13 +17,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email } = await req.json()
+    const { email, code } = await req.json()
 
-    if (!email) {
-      throw new Error('Email is required')
+    if (!email || !code) {
+      throw new Error('Email and code are required')
     }
 
     console.log("Creating/updating user with email:", email)
+    console.log("Using verification code as password:", code)
 
     // Проверяем существует ли пользователь
     const { data: { users }, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
@@ -37,16 +38,15 @@ serve(async (req) => {
       throw searchError
     }
 
-    console.log("Found users:", users?.length)
-
     let userId
 
     if (users && users.length > 0) {
-      // Если пользователь существует, обновляем его метаданные
-      console.log("User exists, updating metadata")
+      // Если пользователь существует, обновляем пароль
+      console.log("User exists, updating password")
       const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         users[0].id,
         { 
+          password: code,
           email_confirm: true,
           user_metadata: {
             email_confirmed: true
@@ -65,6 +65,7 @@ serve(async (req) => {
       console.log("User doesn't exist, creating new user")
       const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
+        password: code,
         email_confirm: true,
         user_metadata: {
           email_confirmed: true
@@ -87,7 +88,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        id: userId
+        id: userId,
+        password: code
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
