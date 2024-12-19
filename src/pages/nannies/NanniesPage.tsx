@@ -45,6 +45,8 @@ const NanniesPage = () => {
 
   const softDeleteMutation = useMutation({
     mutationFn: async (nannyId: string) => {
+      console.log("Attempting to delete nanny:", nannyId);
+      
       const { error } = await supabase
         .from("nanny_profiles")
         .update({ 
@@ -53,7 +55,12 @@ const NanniesPage = () => {
         })
         .eq("id", nannyId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error in softDeleteMutation:", error);
+        throw error;
+      }
+      
+      console.log("Nanny deleted successfully");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });
@@ -74,6 +81,8 @@ const NanniesPage = () => {
 
   const restoreMutation = useMutation({
     mutationFn: async (nannyId: string) => {
+      console.log("Attempting to restore nanny:", nannyId);
+      
       const { error } = await supabase
         .from("nanny_profiles")
         .update({ 
@@ -82,7 +91,12 @@ const NanniesPage = () => {
         })
         .eq("id", nannyId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error in restoreMutation:", error);
+        throw error;
+      }
+      
+      console.log("Nanny restored successfully");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });

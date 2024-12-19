@@ -44,8 +44,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         'create-user',
         {
           body: JSON.stringify({
-            email,
-            password: otp
+            email
           })
         }
       );
@@ -55,27 +54,8 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw createError;
       }
 
-      // Добавляем задержку перед входом
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 3. Входим с помощью созданных credentials
-      console.log("4. Signing in with created credentials");
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: otp,
-      });
-
-      if (signInError) {
-        console.error("5. Sign in error:", signInError);
-        throw signInError;
-      }
-
-      if (!data.session) {
-        throw new Error("Не удалось создать сессию");
-      }
-
       // 4. Обновляем статус кода в БД
-      console.log("6. Updating verification code status");
+      console.log("4. Updating verification code status");
       const { error: codeUpdateError } = await supabase
         .from("verification_codes")
         .update({ status: 'verified' })
@@ -83,7 +63,7 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         .eq("code", otp);
 
       if (codeUpdateError) {
-        console.error("7. Status update error:", codeUpdateError);
+        console.error("5. Status update error:", codeUpdateError);
         throw new Error("Ошибка при обновлении статуса кода");
       }
 
