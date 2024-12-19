@@ -67,9 +67,73 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     enabled: !!userId
   });
 
-  const handleSubmit = async (data: any) => {
-    console.log("Submitting appointment data:", data);
-    // Handle appointment submission logic here
+  const handleSubmit = async () => {
+    console.log("Submitting appointment with data:", {
+      selectedNanny,
+      selectedService,
+      promoCode,
+      dateTimeEntries,
+      parentProfile
+    });
+
+    if (!selectedNanny) {
+      toast({
+        title: "Ошибка",
+        description: "Выберите няню",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!parentProfile) {
+      toast({
+        title: "Ошибка",
+        description: "Профиль родителя не найден",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Создаем заявки для каждого выбранного времени
+      for (const entry of dateTimeEntries) {
+        const startTime = new Date(entry.date);
+        startTime.setHours(parseInt(entry.startTime.split(':')[0]), parseInt(entry.startTime.split(':')[1]));
+
+        const endTime = new Date(entry.date);
+        endTime.setHours(parseInt(entry.endTime.split(':')[0]), parseInt(entry.endTime.split(':')[1]));
+
+        const { error } = await supabase
+          .from('appointments')
+          .insert({
+            nanny_id: selectedNanny,
+            parent_id: parentProfile.id,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            service_id: selectedService,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error("Ошибка создания заявки:", error);
+          throw error;
+        }
+      }
+
+      toast({
+        title: "Успешно",
+        description: "Заявка создана",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Ошибка при сохранении заявки:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать заявку",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePromoCodeCheck = (discountPercent: number) => {
@@ -84,10 +148,11 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <h2 className="text-lg font-semibold">Создание новой заявки</h2>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4">
           <DateTimeSection 
             entries={dateTimeEntries}
             onEntriesChange={setDateTimeEntries}
+            selectedNanny={selectedNanny}
           />
           <NannySelect 
             value={selectedNanny} 
@@ -106,7 +171,7 @@ export function AppointmentForm({ isOpen, onClose, selectedDate: initialDate, se
           <NannyAvailabilityIndicator 
             status={selectedNanny ? "available" : "unavailable"}
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
             <Button type="submit">Сохранить</Button>
           </div>
