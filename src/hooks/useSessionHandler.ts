@@ -12,7 +12,17 @@ export const useSessionHandler = () => {
       setIsLoading(true);
       console.log("Начинаем процесс выхода...");
       
-      const { error } = await supabase.auth.signOut();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("Сессия уже не активна, перенаправляем на страницу входа");
+        navigate("/auth");
+        return;
+      }
+
+      const { error } = await supabase.auth.signOut({
+        scope: 'local'
+      });
       
       if (error) {
         console.error("Ошибка при выходе:", error);
