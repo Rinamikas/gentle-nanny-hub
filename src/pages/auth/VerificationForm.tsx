@@ -38,35 +38,21 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Пробуем войти с существующим кодом
-      console.log("2. Attempting to sign in");
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: otp
-      });
-
-      // Если не получилось войти - значит пользователя нет, создаём
-      if (signInError) {
-        console.log("Sign in failed, creating new user");
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: otp,
-          options: {
-            data: {
-              email: email
-            }
-          }
-        });
-
-        if (signUpError) {
-          console.error("Sign up error:", signUpError);
-          throw signUpError;
+      // 2. Создаем/обновляем пользователя через Edge Function
+      console.log("2. Creating/updating user through Edge Function");
+      const { data: createUserData, error: createUserError } = await supabase.functions.invoke(
+        'create-auth-user',
+        {
+          body: { email }
         }
+      );
 
-        console.log("Sign up successful:", signUpData);
-      } else {
-        console.log("Sign in successful:", signInData);
+      if (createUserError) {
+        console.error("Error creating/updating user:", createUserError);
+        throw createUserError;
       }
+
+      console.log("User created/updated successfully:", createUserData);
 
       // 3. Обновляем статус кода в БД
       console.log("3. Updating verification code status");
