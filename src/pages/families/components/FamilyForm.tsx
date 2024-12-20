@@ -76,17 +76,21 @@ const FamilyForm = () => {
       console.log("Сохранение данных семьи...", data);
       
       // Получаем текущую сессию
-      const { data: session } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session?.session?.user) {
-        throw new Error("Не авторизован");
+      if (sessionError || !session?.user) {
+        console.error("Ошибка получения сессии:", sessionError);
+        throw new Error("Не удалось получить сессию пользователя");
       }
+
+      const userId = session.user.id;
+      console.log("ID текущего пользователя:", userId);
 
       // Создаем или обновляем профиль
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .upsert({
-          id: session.session.user.id,
+          id: userId,
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone,
@@ -106,7 +110,7 @@ const FamilyForm = () => {
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
-          user_id: profile.id, // Важно! Устанавливаем user_id
+          user_id: userId, // Важно! Устанавливаем user_id
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
