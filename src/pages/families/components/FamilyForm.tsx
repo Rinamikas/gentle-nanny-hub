@@ -38,7 +38,7 @@ export default function FamilyForm() {
       phone: "",
       additional_phone: "",
       address: "",
-      status: "active",
+      status: "default",
       notes: "",
     },
   });
@@ -70,7 +70,7 @@ export default function FamilyForm() {
             phone: parentProfile.profiles?.phone || "",
             additional_phone: parentProfile.additional_phone || "",
             address: parentProfile.address || "",
-            status: parentProfile.status || "active",
+            status: parentProfile.status || "default",
             notes: parentProfile.notes || "",
           });
         }
@@ -243,8 +243,9 @@ export default function FamilyForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">Активный</SelectItem>
-                    <SelectItem value="inactive">Неактивный</SelectItem>
+                    <SelectItem value="default">Обычный</SelectItem>
+                    <SelectItem value="star">Звездный</SelectItem>
+                    <SelectItem value="diamond">Бриллиантовый</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
