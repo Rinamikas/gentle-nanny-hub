@@ -14,6 +14,7 @@ import AppointmentsPage from "./pages/appointments/AppointmentsPage";
 import Index from "./pages/Index";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import LoadingScreen from "./components/LoadingScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,8 @@ const queryClient = new QueryClient({
             variant: "destructive"
           });
           
+          // Очищаем хранилище и перенаправляем
+          localStorage.clear();
           window.location.href = '/auth';
           return false;
         }
@@ -47,9 +50,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Проверка сессии:", session ? "Активна" : "Отсутствует");
-      setIsAuthenticated(!!session);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Проверка сессии:", session ? "Активна" : "Отсутствует");
+        setIsAuthenticated(!!session);
+      } catch (error) {
+        console.error("Ошибка при проверке сессии:", error);
+        setIsAuthenticated(false);
+      }
     };
 
     // Проверяем сессию при монтировании
@@ -68,7 +76,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   // Показываем загрузку, пока проверяем сессию
   if (isAuthenticated === null) {
-    return null;
+    return <LoadingScreen />;
   }
 
   // Если не авторизован - редиректим на страницу входа
