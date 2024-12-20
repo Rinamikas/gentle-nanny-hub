@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,98 +20,83 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import LoadingScreen from "@/components/LoadingScreen";
-import ChildrenSection from "./ChildrenSection";
+import { supabase } from "@/integrations/supabase/client";
+import { familyFormSchema } from "../schemas/family-form-schema";
+import type { FormValues } from "../types/form";
 
-interface FamilyFormData {
-  first_name: string;
-  last_name: string;
-  phone: string;
-  additional_phone?: string;
-  address: string;
-  status: "default" | "star" | "diamond";
-  notes?: string;
-}
-
-const FamilyForm = () => {
+export default function FamilyForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const form = useForm<FamilyFormData>();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: family, isLoading } = useQuery({
-    queryKey: ["family", id],
-    queryFn: async () => {
-      if (!id) return null;
-
-      console.log("Загрузка данных семьи...");
-      const { data, error } = await supabase
-        .from("parent_profiles")
-        .select(`
-          *,
-          profiles (
-            first_name,
-            last_name,
-            phone
-          ),
-          children (*)
-        `)
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        console.error("Ошибка при загрузке семьи:", error);
-        throw error;
-      }
-
-      console.log("Загружены данные семьи:", data);
-      return data;
+  const form = useForm<FormValues>({
+    resolver: zodResolver(familyFormSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      phone: "",
+      additional_phone: "",
+      address: "",
+      status: "active",
+      notes: "",
     },
-    enabled: !!id,
   });
 
-  const mutation = useMutation({
-    mutationFn: async (data: FamilyFormData) => {
+  useEffect(() => {
+    const loadFamilyData = async () => {
+      if (!id) return;
+
+      try {
+        const { data: parentProfile, error: parentProfileError } = await supabase
+          .from("parent_profiles")
+          .select(`
+            *,
+            profiles (
+              first_name,
+              last_name,
+              phone
+            )
+          `)
+          .eq("id", id)
+          .single();
+
+        if (parentProfileError) throw parentProfileError;
+
+        if (parentProfile) {
+          form.reset({
+            first_name: parentProfile.profiles?.first_name || "",
+            last_name: parentProfile.profiles?.last_name || "",
+            phone: parentProfile.profiles?.phone || "",
+            additional_phone: parentProfile.additional_phone || "",
+            address: parentProfile.address || "",
+            status: parentProfile.status || "active",
+            notes: parentProfile.notes || "",
+          });
+        }
+      } catch (error) {
+        console.error("Error loading family data:", error);
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Не удалось загрузить данные семьи",
+        });
+      }
+    };
+
+    loadFamilyData();
+  }, [id, form]);
+
+  const onSubmit = async (data: FormValues) => {
+    try {
+      setIsLoading(true);
       console.log("Сохранение данных семьи...", data);
-      
-      // Получаем текущую сессию
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        console.error("Ошибка получения сессии:", sessionError);
-        throw new Error("Не удалось получить сессию пользователя");
-      }
 
-      const userId = session.user.id;
-      console.log("ID текущего пользователя:", userId);
-
-      // Создаем или обновляем профиль
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: userId,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-        })
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error("Ошибка при сохранении профиля:", profileError);
-        throw profileError;
-      }
-
-      console.log("Профиль сохранен:", profile);
-
-      // Создаем или обновляем профиль родителя
-      const { data: parentProfile, error: parentError } = await supabase
+      // Создаем или обновляем профиль семьи
+      const { data: parentProfile, error: parentProfileError } = await supabase
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
-          user_id: userId, // Важно! Устанавливаем user_id
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
@@ -119,147 +105,63 @@ const FamilyForm = () => {
         .select()
         .single();
 
-      if (parentError) {
-        console.error("Ошибка при сохранении профиля родителя:", parentError);
-        throw parentError;
+      if (parentProfileError) {
+        console.error("Ошибка сохранения профиля семьи:", parentProfileError);
+        throw parentProfileError;
       }
 
-      console.log("Профиль родителя сохранен:", parentProfile);
-      return parentProfile;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["families"] });
+      console.log("Профиль семьи сохранен:", parentProfile);
+
+      // Обновляем профиль в таблице profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: parentProfile.user_id,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+        });
+
+      if (profileError) {
+        console.error("Ошибка обновления основного профиля:", profileError);
+        throw profileError;
+      }
+
       toast({
         title: "Успешно",
         description: "Данные семьи сохранены",
       });
+
       navigate("/families");
-    },
-    onError: (error) => {
+    } catch (error: any) {
       console.error("Ошибка при сохранении:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось сохранить данные семьи",
+        description: error.message || "Не удалось сохранить данные",
       });
-    },
-  });
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  const onSubmit = (data: FamilyFormData) => {
-    mutation.mutate(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-6">
-        {id ? "Редактирование" : "Создание"} анкеты семьи
+        {id ? "Редактирование семьи" : "Добавление новой семьи"}
       </h1>
 
-      <div className="space-y-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="first_name"
-                defaultValue={family?.profiles?.first_name || ""}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Имя</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="last_name"
-                defaultValue={family?.profiles?.last_name || ""}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Фамилия</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                defaultValue={family?.profiles?.phone || ""}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Основной телефон</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="additional_phone"
-                defaultValue={family?.additional_phone || ""}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Дополнительный телефон</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                defaultValue={family?.status || "default"}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Статус</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Выберите статус" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="default">Обычный</SelectItem>
-                        <SelectItem value="star">Звезда</SelectItem>
-                        <SelectItem value="diamond">Бриллиант</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="address"
-              defaultValue={family?.address || ""}
+              name="first_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Адрес</FormLabel>
+                  <FormLabel>Имя</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="Введите имя" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -268,36 +170,119 @@ const FamilyForm = () => {
 
             <FormField
               control={form.control}
-              name="notes"
-              defaultValue={family?.notes || ""}
+              name="last_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Примечания</FormLabel>
+                  <FormLabel>Фамилия</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Input placeholder="Введите фамилию" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Телефон</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+7 (999) 999-99-99" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/families")}
-              >
-                Отмена
-              </Button>
-              <Button type="submit">Сохранить</Button>
-            </div>
-          </form>
-        </Form>
+            <FormField
+              control={form.control}
+              name="additional_phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Дополнительный телефон</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+7 (999) 999-99-99" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        {id && <ChildrenSection parentId={id} />}
-      </div>
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Адрес</FormLabel>
+                <FormControl>
+                  <Input placeholder="Введите адрес" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Статус</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите статус" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="active">Активный</SelectItem>
+                    <SelectItem value="inactive">Неактивный</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Заметки</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Введите дополнительную информацию"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Сохранение..." : "Сохранить"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/families")}
+            >
+              Отмена
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
-};
-
-export default FamilyForm;
+}

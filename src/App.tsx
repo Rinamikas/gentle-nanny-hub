@@ -32,7 +32,6 @@ const queryClient = new QueryClient({
             variant: "destructive"
           });
           
-          // Очищаем хранилище и перенаправляем
           localStorage.clear();
           window.location.href = '/auth';
           return false;
@@ -44,7 +43,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Компонент для защищенных роутов
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -52,7 +50,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("Проверка сессии:", session ? "Активна" : "Отсутствует");
         setIsAuthenticated(!!session);
       } catch (error) {
         console.error("Ошибка при проверке сессии:", error);
@@ -60,12 +57,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Проверяем сессию при монтировании
     checkAuth();
 
-    // Подписываемся на изменения состояния авторизации
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Изменение состояния авторизации:", _event);
       setIsAuthenticated(!!session);
     });
 
@@ -74,14 +68,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Показываем загрузку, пока проверяем сессию
   if (isAuthenticated === null) {
     return <LoadingScreen />;
   }
 
-  // Если не авторизован - редиректим на страницу входа
   if (!isAuthenticated) {
-    console.log("Пользователь не авторизован, редирект на /auth");
     return <Navigate to="/auth" replace />;
   }
 
