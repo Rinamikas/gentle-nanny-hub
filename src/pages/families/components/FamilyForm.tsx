@@ -24,11 +24,13 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { familyFormSchema } from "../schemas/family-form-schema";
 import type { FormValues } from "../types/form";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 
 export default function FamilyForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { session } = useSessionContext();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
@@ -48,6 +50,7 @@ export default function FamilyForm() {
       if (!id) return;
 
       try {
+        console.log("Загрузка данных семьи...");
         const { data: parentProfile, error: parentProfileError } = await supabase
           .from("parent_profiles")
           .select(`
@@ -63,6 +66,8 @@ export default function FamilyForm() {
 
         if (parentProfileError) throw parentProfileError;
 
+        console.log("Загруженные данные:", parentProfile);
+
         if (parentProfile) {
           form.reset({
             first_name: parentProfile.profiles?.first_name || "",
@@ -75,7 +80,7 @@ export default function FamilyForm() {
           });
         }
       } catch (error) {
-        console.error("Error loading family data:", error);
+        console.error("Ошибка загрузки данных семьи:", error);
         toast({
           variant: "destructive",
           title: "Ошибка",
@@ -88,6 +93,16 @@ export default function FamilyForm() {
   }, [id, form]);
 
   const onSubmit = async (data: FormValues) => {
+    if (!session?.user?.id) {
+      console.error("Пользователь не авторизован");
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Необходимо авторизоваться",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       console.log("Сохранение данных семьи...", data);
@@ -97,6 +112,7 @@ export default function FamilyForm() {
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
+          user_id: session.user.id, // Важно! Добавляем user_id
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
@@ -116,7 +132,7 @@ export default function FamilyForm() {
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({
-          id: parentProfile.user_id,
+          id: session.user.id,
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone,
@@ -286,4 +302,4 @@ export default function FamilyForm() {
       </Form>
     </div>
   );
-}
+};
