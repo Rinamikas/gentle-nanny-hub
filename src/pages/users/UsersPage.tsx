@@ -15,7 +15,6 @@ const UsersPage = () => {
     email: "",
   });
 
-  // Проверяем сессию при монтировании
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -37,7 +36,10 @@ const UsersPage = () => {
   };
 
   const handleSaveEdit = async (id: string) => {
-    updateUser({ id, updates: editForm });
+    updateUser({ 
+      id, 
+      updates: editForm 
+    });
     setEditingUser(null);
   };
 

@@ -17,7 +17,10 @@ export const useUsers = () => {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: updateUserProfile,
+    mutationFn: async (params: { id: string, updates: { first_name: string; last_name: string; email: string } }) => {
+      console.log("Обновляем пользователя:", params);
+      return updateUserProfile(params.id, params.updates);
+    },
     onSuccess: () => {
       console.log("Мутация обновления успешно завершена");
       queryClient.invalidateQueries({ queryKey: ["users"] });
