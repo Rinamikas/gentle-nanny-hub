@@ -28,7 +28,7 @@ BEGIN
   FROM profiles 
   WHERE email = p_email;
 
-  -- Если профиль не найден, создаем нового пользователя через Edge Function
+  -- Если профиль не найден, создаем новый
   IF v_user_id IS NULL THEN
     -- Генерируем UUID для нового пользователя
     v_user_id := gen_random_uuid();

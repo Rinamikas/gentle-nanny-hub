@@ -16,26 +16,56 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, password, userData } = await req.json()
-    console.log("Creating auth user with email:", email)
+    const { email, code } = await req.json()
+    console.log("=== Начало создания пользователя ===")
+    console.log("Email:", email)
+
+    // Проверяем код верификации
+    const { data: isValid, error: verifyError } = await supabase
+      .rpc('check_verification_code', {
+        p_email: email,
+        p_code: code
+      })
+
+    if (verifyError || !isValid) {
+      console.error("Ошибка проверки кода:", verifyError)
+      throw new Error("Неверный код верификации")
+    }
+
+    // Генерируем случайный пароль
+    const password = Math.random().toString(36).slice(-8)
+    console.log("Сгенерирован пароль для пользователя")
 
     // Создаем пользователя в auth.users
-    const { data: authData, error: createError } = await supabase.auth.admin.createUser({
+    const { data: { user }, error: createError } = await supabase.auth.admin.createUser({
       email,
-      password: password || Math.random().toString(36).slice(-8), // Генерируем случайный пароль если не передан
-      email_confirm: true,
-      user_metadata: userData
+      password,
+      email_confirm: true
     })
 
     if (createError) {
-      console.error("Error creating auth user:", createError)
+      console.error("Ошибка создания пользователя:", createError)
       throw createError
     }
 
-    console.log("Successfully created auth user:", authData.user.id)
+    console.log("Пользователь успешно создан:", user.id)
+
+    // Обновляем статус кода верификации
+    const { error: updateError } = await supabase
+      .from('verification_codes')
+      .update({ status: 'verified' })
+      .eq('email', email)
+      .eq('code', code)
+
+    if (updateError) {
+      console.error("Ошибка обновления статуса кода:", updateError)
+    }
 
     return new Response(
-      JSON.stringify({ user: authData.user }),
+      JSON.stringify({ 
+        user: user,
+        password: password 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
@@ -43,7 +73,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error("Create auth user error:", error.message)
+    console.error("Ошибка:", error.message)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
