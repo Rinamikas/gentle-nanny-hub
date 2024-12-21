@@ -17,9 +17,20 @@ Deno.serve(async (req) => {
     )
 
     const { id, updates } = await req.json()
-    console.log("Обновление пользователя:", { id, updates })
+    console.log("Attempting to update user:", { id, updates })
 
-    const { data: authUser, error: authError } = await supabase.auth.admin.updateUserById(
+    // Проверяем существование пользователя
+    const { data: authUser, error: authCheckError } = await supabase.auth.admin.getUserById(id)
+    
+    if (authCheckError || !authUser.user) {
+      console.error("User not found in auth.users:", authCheckError || "No user data")
+      throw new Error("User not found")
+    }
+
+    console.log("User found, proceeding with update")
+
+    // Обновляем данные в auth.users
+    const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(
       id,
       {
         email: updates.email,
@@ -29,15 +40,38 @@ Deno.serve(async (req) => {
         }
       }
     )
-    
-    if (authError) throw authError
 
-    return new Response(JSON.stringify({ user: authUser }), {
+    if (authError) {
+      console.error("Error updating auth.users:", authError)
+      throw authError
+    }
+
+    console.log("Successfully updated auth user")
+
+    // Обновляем профиль
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        email: updates.email,
+        first_name: updates.first_name,
+        last_name: updates.last_name,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+
+    if (profileError) {
+      console.error("Error updating profile:", profileError)
+      throw profileError
+    }
+
+    console.log("Successfully updated user profile")
+
+    return new Response(JSON.stringify({ user: authData.user }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    console.error(error)
+    console.error("Update user error:", error.message)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
