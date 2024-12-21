@@ -3,28 +3,17 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { familyFormSchema } from "../schemas/family-form-schema";
 import type { FormValues } from "../types/form";
 import { useSessionContext } from "@supabase/auth-helpers-react";
+import PersonalSection from "./sections/PersonalSection";
+import ContactSection from "./sections/ContactSection";
+import AddressSection from "./sections/AddressSection";
+import StatusSection from "./sections/StatusSection";
+import { setFormMethods } from "@/utils/formTestUtils";
 
 export default function FamilyForm() {
   const { id } = useParams();
@@ -44,6 +33,10 @@ export default function FamilyForm() {
       notes: "",
     },
   });
+
+  useEffect(() => {
+    setFormMethods(form);
+  }, [form]);
 
   useEffect(() => {
     const loadFamilyData = async () => {
@@ -107,12 +100,11 @@ export default function FamilyForm() {
       setIsLoading(true);
       console.log("Сохранение данных семьи...", data);
 
-      // Создаем или обновляем профиль семьи
       const { data: parentProfile, error: parentProfileError } = await supabase
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
-          user_id: session.user.id, // Важно! Добавляем user_id
+          user_id: session.user.id,
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
@@ -128,7 +120,6 @@ export default function FamilyForm() {
 
       console.log("Профиль семьи сохранен:", parentProfile);
 
-      // Обновляем профиль в таблице profiles
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({
@@ -169,122 +160,10 @@ export default function FamilyForm() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="first_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Имя</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Введите имя" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="last_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Фамилия</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Введите фамилию" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Телефон</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+7 (999) 999-99-99" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="additional_phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Дополнительный телефон</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+7 (999) 999-99-99" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Адрес</FormLabel>
-                <FormControl>
-                  <Input placeholder="Введите адрес" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Статус</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите статус" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="default">Обычный</SelectItem>
-                    <SelectItem value="star">Звездный</SelectItem>
-                    <SelectItem value="diamond">Бриллиантовый</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Заметки</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Введите дополнительную информацию"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <PersonalSection form={form} />
+          <ContactSection form={form} />
+          <AddressSection form={form} />
+          <StatusSection form={form} />
 
           <div className="flex gap-4">
             <Button type="submit" disabled={isLoading}>
@@ -302,4 +181,4 @@ export default function FamilyForm() {
       </Form>
     </div>
   );
-};
+}

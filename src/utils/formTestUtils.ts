@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker/locale/ru";
 
-type FieldType = "text" | "tel" | "email" | "date" | "number" | "select";
+type FieldType = "text" | "tel" | "email" | "date" | "number" | "select" | "status";
 
 const formatPhoneNumber = (number: string): string => {
   const cleaned = number.replace(/\D/g, "");
@@ -18,6 +18,7 @@ const getFieldType = (name: string): FieldType => {
   if (name.includes('date')) return 'date';
   if (name.includes('rate') || name.includes('years')) return 'number';
   if (name === 'training_stage') return 'select';
+  if (name === 'status') return 'status';
   return 'text';
 };
 
@@ -78,6 +79,10 @@ const generateValidValue = (type: FieldType, name?: string): string | number => 
         return stages[Math.floor(Math.random() * stages.length)];
       }
       return '';
+
+    case 'status':
+      const statuses = ['default', 'star', 'diamond'];
+      return statuses[Math.floor(Math.random() * statuses.length)];
     
     default:
       return '';
@@ -98,6 +103,8 @@ const generateInvalidValue = (type: FieldType): string => {
       return 'не число';
     case 'select':
       return 'invalid_option';
+    case 'status':
+      return 'invalid_status';
     default:
       return 'некорректное значение';
   }
@@ -142,26 +149,23 @@ export const fillFormWithTestData = (isValid: boolean = true) => {
     }
   });
 
-  // Обрабатываем select поля отдельно
-  const selectFields = ['training_stage'];
-  selectFields.forEach(fieldName => {
-    console.log(`Обработка select поля ${fieldName}`);
+  // Обрабатываем select и status поля отдельно
+  const specialFields = ['training_stage', 'status'];
+  specialFields.forEach(fieldName => {
+    console.log(`Обработка специального поля ${fieldName}`);
     
     const type = getFieldType(fieldName);
     const value = isValid 
       ? generateValidValue(type, fieldName)
       : generateInvalidValue(type);
 
-    console.log(`Устанавливаем значение для select ${fieldName}:`, value);
+    console.log(`Устанавливаем значение для поля ${fieldName}:`, value);
     
     setValue(fieldName, value, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true
     });
-
-    // Принудительно обновляем UI через React Hook Form
-    formMethods.trigger(fieldName);
   });
 
   console.log('Значения формы после заполнения:', getValues());
