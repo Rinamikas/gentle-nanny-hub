@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { familyFormSchema } from "../schemas/family-form-schema";
 import type { FormValues } from "../types/form";
-import { useSessionContext } from "@supabase/auth-helpers-react";
 import PersonalSection from "./sections/PersonalSection";
 import ContactSection from "./sections/ContactSection";
 import AddressSection from "./sections/AddressSection";
@@ -19,7 +18,6 @@ export default function FamilyForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const { session } = useSessionContext();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
@@ -86,41 +84,15 @@ export default function FamilyForm() {
   }, [id, form]);
 
   const onSubmit = async (data: FormValues) => {
-    if (!session?.user?.id) {
-      console.error("Пользователь не авторизован");
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Необходимо авторизоваться",
-      });
-      return;
-    }
-
     try {
       setIsLoading(true);
       console.log("Сохранение данных семьи...", data);
 
-      // Сначала обновляем или создаем основной профиль
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: session.user.id,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-        });
-
-      if (profileError) {
-        console.error("Ошибка обновления основного профиля:", profileError);
-        throw profileError;
-      }
-
-      // Затем обновляем или создаем профиль семьи
+      // Создаем или обновляем профиль семьи
       const { data: parentProfile, error: parentProfileError } = await supabase
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
-          user_id: session.user.id, // Важно! Устанавливаем user_id
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,

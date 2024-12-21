@@ -1,33 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import LoadingScreen from "@/components/LoadingScreen";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 import NannyForm from "../nannies/components/NannyForm";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileForm from "./components/ProfileForm";
 import type { Profile } from "./types";
-import { useEffect } from "react";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("Нет активной сессии в ProfilePage");
-        navigate("/auth");
-      }
-    };
-    checkSession();
-  }, [navigate]);
+  const { session } = useSessionContext();
 
   const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Начинаем загрузку профиля...");
-      
-      const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         console.log("Сессия не найдена в queryFn");
@@ -47,6 +34,9 @@ const ProfilePage = () => {
         console.error("Ошибка при загрузке профиля:", profileError);
         throw profileError;
       }
+
+      // Используем email из сессии вместо профиля
+      profileData.email = session.user.email;
 
       console.log("Загружен профиль:", profileData);
 
@@ -96,10 +86,6 @@ const ProfilePage = () => {
       return formattedData;
     },
   });
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
 
   return (
     <div className="container mx-auto py-6">
