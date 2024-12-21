@@ -6,6 +6,6 @@ export type ParentProfileBase = Database['public']['Tables']['parent_profiles'][
 export type ChildRow = Tables['children']['Row'];
 
 export interface ParentProfile extends ParentProfileBase {
-  profiles?: ProfileRow;
+  profiles: Partial<ProfileRow>;
   children?: ChildRow[];
 }

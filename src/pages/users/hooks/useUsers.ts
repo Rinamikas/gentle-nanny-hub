@@ -97,7 +97,6 @@ export const useUsers = () => {
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRoleType }) => {
       console.log("Changing role for user:", userId, "to:", newRole);
       
-      // Получаем текущую роль и профили пользователя
       const { data: currentRoles } = await supabase
         .from("user_roles")
         .select("role")
@@ -110,7 +109,6 @@ export const useUsers = () => {
         throw new Error("Новая роль совпадает с текущей");
       }
 
-      // Начинаем транзакцию
       const { error: roleError } = await supabase
         .from("user_roles")
         .update({ role: newRole })
@@ -118,7 +116,6 @@ export const useUsers = () => {
 
       if (roleError) throw roleError;
 
-      // Мягко удаляем старый профиль
       if (currentRole === 'nanny') {
         const { error: nannyError } = await supabase
           .from("nanny_profiles")
@@ -141,7 +138,6 @@ export const useUsers = () => {
         if (parentError) throw parentError;
       }
 
-      // Создаем новый профиль
       if (newRole === 'nanny') {
         const { error: newNannyError } = await supabase
           .from("nanny_profiles")
@@ -178,7 +174,6 @@ export const useUsers = () => {
       console.log("Deleting user with ID:", id);
       
       try {
-        // Удаляем профиль пользователя
         const { error: profileError } = await supabase
           .from("profiles")
           .delete()
@@ -219,6 +214,6 @@ export const useUsers = () => {
     updateUser: updateUserMutation.mutate,
     deleteUser: deleteUserMutation.mutate,
     changeUserRole: (userId: string, newRole: UserRoleType) => 
-      changeUserRoleMutation.mutate({ userId, newRole }),
+      changeUserRoleMutation.mutateAsync({ userId, newRole }),
   };
 };
