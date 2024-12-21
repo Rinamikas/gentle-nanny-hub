@@ -19,18 +19,18 @@ Deno.serve(async (req) => {
     const { id, updates } = await req.json()
     console.log("Attempting to update user:", { id, updates })
 
-    // Проверяем существование пользователя
-    const { data: authUser, error: authCheckError } = await supabase.auth.admin.getUserById(id)
+    // Сначала проверяем существование пользователя
+    const { data: { user }, error: getUserError } = await supabase.auth.admin.getUserById(id)
     
-    if (authCheckError || !authUser.user) {
-      console.error("User not found in auth.users:", authCheckError || "No user data")
+    if (getUserError || !user) {
+      console.error("User not found:", getUserError || "No user data")
       throw new Error("User not found")
     }
 
-    console.log("User found, proceeding with update")
+    console.log("Found user:", user.id)
 
     // Обновляем данные в auth.users
-    const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(
+    const { data: authData, error: updateError } = await supabase.auth.admin.updateUserById(
       id,
       {
         email: updates.email,
@@ -41,9 +41,9 @@ Deno.serve(async (req) => {
       }
     )
 
-    if (authError) {
-      console.error("Error updating auth.users:", authError)
-      throw authError
+    if (updateError) {
+      console.error("Error updating auth user:", updateError)
+      throw updateError
     }
 
     console.log("Successfully updated auth user")
@@ -66,15 +66,22 @@ Deno.serve(async (req) => {
 
     console.log("Successfully updated user profile")
 
-    return new Response(JSON.stringify({ user: authData.user }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+    return new Response(
+      JSON.stringify({ user: authData.user }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    )
+
   } catch (error) {
     console.error("Update user error:", error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
+      }
+    )
   }
 })
