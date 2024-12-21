@@ -1,118 +1,98 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-Deno.serve(async (req) => {
+console.log('Loading create-auth-user function...')
+
+serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabase = createClient(
+    // Создаем Supabase клиент с сервисной ролью
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     )
 
+    // Получаем данные из запроса
     const { email, code } = await req.json()
-    console.log("=== Начало создания/обновления пользователя ===")
-    console.log("Email:", email)
+    console.log('Received request for email:', email)
 
-    // Проверяем код верификации
-    const { data: isValid, error: verifyError } = await supabase
-      .rpc('check_verification_code', {
-        p_email: email,
-        p_code: code
-      })
+    try {
+      // Проверяем существующих пользователей
+      console.log('Checking existing users...')
+      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin
+        .listUsers()
 
-    if (verifyError || !isValid) {
-      console.error("Ошибка проверки кода:", verifyError)
-      throw new Error("Неверный код верификации")
-    }
-
-    // Генерируем случайный пароль
-    const password = Math.random().toString(36).slice(-8)
-    console.log("Сгенерирован пароль для пользователя")
-
-    // Проверяем существование пользователя
-    console.log("Проверяем существование пользователя")
-    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
-    })
-
-    if (getUserError) {
-      console.error("Ошибка при поиске пользователя:", getUserError)
-      throw getUserError
-    }
-
-    let user;
-
-    if (users && users.length > 0) {
-      // Если пользователь существует - обновляем пароль
-      console.log("Пользователь найден, обновляем пароль")
-      const { data: { user: updatedUser }, error: updateError } = await supabase.auth.admin.updateUserById(
-        users[0].id,
-        { password: password }
-      )
-
-      if (updateError) {
-        console.error("Ошибка обновления пользователя:", updateError)
-        throw updateError
+      if (listError) {
+        console.error('Error listing users:', listError)
+        throw listError
       }
 
-      user = updatedUser
-      console.log("Пароль пользователя успешно обновлен")
-    } else {
-      // Если пользователь не существует - создаем нового
-      console.log("Создаем нового пользователя")
-      const { data: { user: newUser }, error: createError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true
-      })
+      const existingUser = existingUsers.users.find(u => u.email === email)
+      
+      // Генерируем случайный пароль
+      const password = code
+
+      if (existingUser) {
+        console.log('User exists, updating password...')
+        const { data, error: updateError } = await supabaseAdmin.auth.admin
+          .updateUserById(existingUser.id, { password })
+
+        if (updateError) {
+          console.error('Error updating user:', updateError)
+          throw updateError
+        }
+
+        return new Response(
+          JSON.stringify({ password }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log('Creating new user...')
+      const { data, error: createError } = await supabaseAdmin.auth.admin
+        .createUser({
+          email,
+          password,
+          email_confirm: true
+        })
 
       if (createError) {
-        console.error("Ошибка создания пользователя:", createError)
+        console.error('Error creating user:', createError)
         throw createError
       }
 
-      user = newUser
-      console.log("Новый пользователь успешно создан")
+      return new Response(
+        JSON.stringify({ password }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    } catch (error) {
+      console.error('Error in user management:', error)
+      throw error
     }
-
-    // Обновляем статус кода верификации
-    const { error: updateError } = await supabase
-      .from('verification_codes')
-      .update({ status: 'verified' })
-      .eq('email', email)
-      .eq('code', code)
-
-    if (updateError) {
-      console.error("Ошибка обновления статуса кода:", updateError)
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        user: user,
-        password: password 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    )
 
   } catch (error) {
-    console.error("Ошибка:", error.message)
+    console.error('Fatal error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
