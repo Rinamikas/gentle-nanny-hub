@@ -9,7 +9,8 @@ export const fetchUserProfiles = async () => {
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("*")
-      .throwOnError();
+      .throwOnError()
+      .maybeSingle();
 
     if (profilesError) {
       console.error("Ошибка загрузки профилей:", profilesError);
@@ -22,9 +23,14 @@ export const fetchUserProfiles = async () => {
     }
 
     console.log("Профили успешно загружены:", profiles);
-    return profiles;
+    return [profiles]; // Возвращаем массив даже с одним профилем
   } catch (error) {
     console.error("Критическая ошибка при загрузке профилей:", error);
+    toast({
+      variant: "destructive",
+      title: "Ошибка",
+      description: "Не удалось загрузить данные пользователей"
+    });
     throw error;
   }
 };
@@ -49,6 +55,11 @@ export const fetchUserRoles = async () => {
     return userRoles;
   } catch (error) {
     console.error("Критическая ошибка при загрузке ролей:", error);
+    toast({
+      variant: "destructive",
+      title: "Ошибка",
+      description: "Не удалось загрузить роли пользователей"
+    });
     throw error;
   }
 };
