@@ -9,8 +9,7 @@ export const fetchUserProfiles = async () => {
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("*")
-      .throwOnError()
-      .maybeSingle();
+      .throwOnError();
 
     if (profilesError) {
       console.error("Ошибка загрузки профилей:", profilesError);
@@ -23,7 +22,7 @@ export const fetchUserProfiles = async () => {
     }
 
     console.log("Профили успешно загружены:", profiles);
-    return [profiles]; // Возвращаем массив даже с одним профилем
+    return profiles;
   } catch (error) {
     console.error("Критическая ошибка при загрузке профилей:", error);
     toast({
