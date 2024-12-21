@@ -7,7 +7,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 const UsersPage = () => {
   const navigate = useNavigate();
-  const { users, isLoading, error, updateUser, deleteUser } = useUsers();
+  const { users, isLoading, error, updateUser, deleteUser, changeUserRole } = useUsers();
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     first_name: "",
@@ -74,6 +74,7 @@ const UsersPage = () => {
             onCancel={() => setEditingUser(null)}
             onDelete={() => handleDelete(user.id)}
             onFormChange={handleFormChange}
+            onRoleChange={changeUserRole}
           />
         ))}
       </div>
