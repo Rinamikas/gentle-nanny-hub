@@ -2,7 +2,7 @@ import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/for
 import { User, Diamond, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const StatusSection = ({ form }: { form: any }) => {
+export default function StatusSection({ form }: { form: any }) {
   const statuses = [
     { value: 'default', icon: User, label: 'Обычный' },
     { value: 'premium', icon: Diamond, label: 'Премиум' },
@@ -36,4 +36,4 @@ export const StatusSection = ({ form }: { form: any }) => {
       )}
     />
   );
-};
+}
