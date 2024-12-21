@@ -15,7 +15,6 @@ const UsersPage = () => {
     email: "",
   });
 
-  // Проверяем сессию при монтировании
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -28,6 +27,7 @@ const UsersPage = () => {
   }, [navigate]);
 
   const handleEditClick = (user: any) => {
+    console.log("Edit click, setting form:", user); // Лог при начале редактирования
     setEditingUser(user.id);
     setEditForm({
       first_name: user.first_name || "",
@@ -37,18 +37,24 @@ const UsersPage = () => {
   };
 
   const handleSaveEdit = async (id: string) => {
-    updateUser({ id, updates: editForm });
+    console.log("Saving edit for user:", id, editForm); // Лог при сохранении
+    await updateUser({ id, updates: editForm });
     setEditingUser(null);
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Вы уверены, что хотите удалить этого пользователя?")) {
-      deleteUser(id);
+      await deleteUser(id);
     }
   };
 
   const handleFormChange = (field: string, value: string) => {
-    setEditForm({ ...editForm, [field]: value });
+    console.log("Form change:", field, value); // Лог изменения формы
+    setEditForm(prev => {
+      const newForm = { ...prev, [field]: value };
+      console.log("New form state:", newForm); // Лог нового состояния
+      return newForm;
+    });
   };
 
   if (isLoading) {

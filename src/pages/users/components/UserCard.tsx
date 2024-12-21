@@ -28,23 +28,34 @@ export const UserCard = ({
   onDelete,
   onFormChange,
 }: UserCardProps) => {
+  console.log("UserCard render:", { user, isEditing, editForm }); // Добавляем лог
+
   return (
     <div className="p-4 bg-white rounded-lg shadow flex items-center justify-between">
       {isEditing ? (
         <div className="flex-1 grid grid-cols-3 gap-4 mr-4">
           <Input
             value={editForm.first_name}
-            onChange={(e) => onFormChange("first_name", e.target.value)}
+            onChange={(e) => {
+              console.log("First name change:", e.target.value); // Лог изменения
+              onFormChange("first_name", e.target.value);
+            }}
             placeholder="Имя"
           />
           <Input
             value={editForm.last_name}
-            onChange={(e) => onFormChange("last_name", e.target.value)}
+            onChange={(e) => {
+              console.log("Last name change:", e.target.value); // Лог изменения
+              onFormChange("last_name", e.target.value);
+            }}
             placeholder="Фамилия"
           />
           <Input
             value={editForm.email}
-            onChange={(e) => onFormChange("email", e.target.value)}
+            onChange={(e) => {
+              console.log("Email change:", e.target.value); // Лог изменения
+              onFormChange("email", e.target.value);
+            }}
             placeholder="Email"
           />
         </div>

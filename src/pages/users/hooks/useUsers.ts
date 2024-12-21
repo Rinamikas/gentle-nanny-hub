@@ -9,7 +9,7 @@ export const useUsers = () => {
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      console.log("Fetching users...");
+      console.log("Fetching users..."); // Лог запроса
       
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -23,7 +23,6 @@ export const useUsers = () => {
         throw new Error("Пользователь не аутентифицирован");
       }
 
-      // Получаем все профили
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*");
@@ -35,7 +34,6 @@ export const useUsers = () => {
 
       console.log("Profiles fetched successfully:", profiles);
 
-      // Получаем все роли через RPC вызов
       const { data: userRoles, error: rolesError } = await supabase
         .rpc('get_user_roles');
 
@@ -46,7 +44,6 @@ export const useUsers = () => {
 
       console.log("User roles fetched successfully:", userRoles);
 
-      // Создаем мапу ролей
       const rolesMap: { [key: string]: { role: string }[] } = {};
       userRoles.forEach((role: { user_id: string; role: string }) => {
         if (!rolesMap[role.user_id]) {
@@ -55,7 +52,6 @@ export const useUsers = () => {
         rolesMap[role.user_id].push({ role: role.role });
       });
 
-      // Объединяем данные
       const usersWithRoles = profiles.map(profile => ({
         ...profile,
         user_roles: rolesMap[profile.id] || []
@@ -74,11 +70,16 @@ export const useUsers = () => {
       id: string;
       updates: { first_name: string; last_name: string; email: string };
     }) => {
+      console.log("Updating user:", id, updates); // Лог обновления
       const { error } = await supabase
         .from("profiles")
         .update(updates)
         .eq("id", id);
-      if (error) throw error;
+      if (error) {
+        console.error("Update error:", error); // Лог ошибки
+        throw error;
+      }
+      console.log("Update successful"); // Лог успеха
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -95,7 +96,6 @@ export const useUsers = () => {
       console.log("Deleting user with ID:", id);
       
       try {
-        // Удаляем профиль пользователя
         const { error: profileError } = await supabase
           .from("profiles")
           .delete()
