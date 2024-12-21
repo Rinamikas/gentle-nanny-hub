@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     )
 
     const { email, code } = await req.json()
-    console.log("=== Начало создания пользователя ===")
+    console.log("=== Начало создания/обновления пользователя ===")
     console.log("Email:", email)
 
     // Проверяем код верификации
@@ -36,19 +36,52 @@ Deno.serve(async (req) => {
     const password = Math.random().toString(36).slice(-8)
     console.log("Сгенерирован пароль для пользователя")
 
-    // Создаем пользователя в auth.users
-    const { data: { user }, error: createError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
+    // Проверяем существование пользователя
+    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: email
+      }
     })
 
-    if (createError) {
-      console.error("Ошибка создания пользователя:", createError)
-      throw createError
+    if (getUserError) {
+      console.error("Ошибка при поиске пользователя:", getUserError)
+      throw getUserError
     }
 
-    console.log("Пользователь успешно создан:", user.id)
+    let user;
+
+    if (users && users.length > 0) {
+      // Если пользователь существует - обновляем пароль
+      console.log("Пользователь найден, обновляем пароль")
+      const { data: { user: updatedUser }, error: updateError } = await supabase.auth.admin.updateUserById(
+        users[0].id,
+        { password: password }
+      )
+
+      if (updateError) {
+        console.error("Ошибка обновления пользователя:", updateError)
+        throw updateError
+      }
+
+      user = updatedUser
+      console.log("Пароль пользователя успешно обновлен")
+    } else {
+      // Если пользователь не существует - создаем нового
+      console.log("Создаем нового пользователя")
+      const { data: { user: newUser }, error: createError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true
+      })
+
+      if (createError) {
+        console.error("Ошибка создания пользователя:", createError)
+        throw createError
+      }
+
+      user = newUser
+      console.log("Новый пользователь успешно создан")
+    }
 
     // Обновляем статус кода верификации
     const { error: updateError } = await supabase
