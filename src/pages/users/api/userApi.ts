@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { User } from "../types";
+import type { User, UserRole } from "../types";
 
 export const fetchUserProfiles = async () => {
   console.log("Начинаем загрузку пользователей...");
@@ -40,12 +40,12 @@ export const fetchUserProfiles = async () => {
 
       console.log("Загружены роли:", roles);
 
-      // Комбинируем данные
+      // Комбинируем данные и приводим роли к правильному типу
       const enrichedProfiles = profiles.map(profile => ({
         ...profile,
         user_roles: roles
           .filter(role => role.user_id === profile.id)
-          .map(({ role }) => ({ role }))
+          .map(({ role }) => ({ role: role as UserRole }))
       }));
 
       console.log("Профили успешно загружены:", enrichedProfiles);

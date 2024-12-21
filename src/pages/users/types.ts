@@ -9,5 +9,5 @@ export interface User extends ProfileRow {
   user_roles?: Pick<UserRoleRow, 'role'>[];
 }
 
-// Используем только то, что нужно из ролей
-export type UserRole = Pick<UserRoleRow, 'role'>;
+// Используем enum из базы данных для ролей
+export type UserRole = Database['public']['Enums']['user_role'];
