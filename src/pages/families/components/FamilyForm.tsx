@@ -49,13 +49,18 @@ export default function FamilyForm() {
           .select(`
             *,
             profiles (
+              id,
+              email,
               first_name,
               last_name,
-              phone
+              phone,
+              photo_url,
+              created_at,
+              updated_at
             )
           `)
           .eq("id", id)
-          .single();
+          .maybeSingle();
 
         if (parentProfileError) {
           console.error("Ошибка загрузки данных семьи:", parentProfileError);
@@ -64,16 +69,24 @@ export default function FamilyForm() {
 
         console.log("Загруженные данные:", parentProfile);
 
-        if (parentProfile) {
+        if (parentProfile?.profiles) {
           form.reset({
-            first_name: parentProfile.profiles?.first_name || "",
-            last_name: parentProfile.profiles?.last_name || "",
-            phone: parentProfile.profiles?.phone || "",
+            first_name: parentProfile.profiles.first_name || "",
+            last_name: parentProfile.profiles.last_name || "",
+            phone: parentProfile.profiles.phone || "",
             additional_phone: parentProfile.additional_phone || "",
             address: parentProfile.address || "",
             status: parentProfile.status || "default",
             notes: parentProfile.notes || "",
           });
+        } else {
+          console.log("Профиль семьи не найден");
+          toast({
+            variant: "destructive",
+            title: "Ошибка",
+            description: "Профиль семьи не найден",
+          });
+          navigate("/families");
         }
       } catch (error) {
         console.error("Ошибка загрузки данных семьи:", error);
@@ -86,7 +99,7 @@ export default function FamilyForm() {
     };
 
     loadFamilyData();
-  }, [id, form]);
+  }, [id, form, navigate]);
 
   const onSubmit = async (data: FormValues) => {
     if (!session?.user?.id) {
@@ -113,11 +126,16 @@ export default function FamilyForm() {
           phone: data.phone,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error("Ошибка сохранения профиля:", profileError);
         throw profileError;
+      }
+
+      if (!profileData) {
+        console.error("Профиль не найден после сохранения");
+        throw new Error("Профиль не найден после сохранения");
       }
 
       console.log("Профиль сохранен:", profileData);
@@ -134,11 +152,16 @@ export default function FamilyForm() {
           notes: data.notes,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (parentProfileError) {
         console.error("Ошибка сохранения профиля семьи:", parentProfileError);
         throw parentProfileError;
+      }
+
+      if (!parentProfile) {
+        console.error("Профиль семьи не найден после сохранения");
+        throw new Error("Профиль семьи не найден после сохранения");
       }
 
       console.log("Профиль семьи сохранен:", parentProfile);
