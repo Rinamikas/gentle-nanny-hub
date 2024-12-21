@@ -19,7 +19,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      suspense: true, // Включаем Suspense для всех запросов
       retry: (failureCount, error: any) => {
         console.log("Query error:", error);
         
