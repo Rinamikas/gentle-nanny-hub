@@ -14,12 +14,19 @@ const FamiliesPage = () => {
     queryKey: ["families"],
     queryFn: async () => {
       console.log("Loading families list...");
-      const { data, error } = await supabase.from("parent_profiles").select(`
+      const { data, error } = await supabase
+        .from("parent_profiles")
+        .select(`
           *,
           profiles (
+            id,
+            email,
             first_name,
             last_name,
-            phone
+            phone,
+            photo_url,
+            created_at,
+            updated_at
           ),
           children (*)
         `);
