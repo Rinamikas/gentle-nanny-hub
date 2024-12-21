@@ -67,7 +67,8 @@ export const updateUserProfile = async (id: string, updates: {
       .from("profiles")
       .select()
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle()
+      .throwOnError();
 
     if (checkError) {
       console.error("Ошибка проверки профиля:", checkError);
@@ -96,7 +97,8 @@ export const updateUserProfile = async (id: string, updates: {
       })
       .eq("id", id)
       .select()
-      .maybeSingle();
+      .maybeSingle()
+      .throwOnError();
 
     if (error) {
       console.error("Ошибка обновления профиля:", error);
@@ -125,7 +127,8 @@ export const deleteUserProfile = async (id: string) => {
       .from("profiles")
       .select()
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle()
+      .throwOnError();
 
     if (checkError) {
       console.error("Ошибка проверки профиля:", checkError);
@@ -140,7 +143,8 @@ export const deleteUserProfile = async (id: string) => {
     const { error: deleteError } = await supabase
       .from("profiles")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .throwOnError();
 
     if (deleteError) {
       console.error("Ошибка удаления профиля:", deleteError);
