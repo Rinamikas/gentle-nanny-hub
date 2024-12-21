@@ -100,11 +100,27 @@ export default function FamilyForm() {
       setIsLoading(true);
       console.log("Сохранение данных семьи...", data);
 
+      // Сначала обновляем или создаем основной профиль
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: session.user.id,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+        });
+
+      if (profileError) {
+        console.error("Ошибка обновления основного профиля:", profileError);
+        throw profileError;
+      }
+
+      // Затем обновляем или создаем профиль семьи
       const { data: parentProfile, error: parentProfileError } = await supabase
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
-          user_id: session.user.id,
+          user_id: session.user.id, // Важно! Устанавливаем user_id
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
@@ -119,20 +135,6 @@ export default function FamilyForm() {
       }
 
       console.log("Профиль семьи сохранен:", parentProfile);
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: session.user.id,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-        });
-
-      if (profileError) {
-        console.error("Ошибка обновления основного профиля:", profileError);
-        throw profileError;
-      }
 
       toast({
         title: "Успешно",
