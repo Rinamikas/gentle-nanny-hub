@@ -34,7 +34,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md mx-4">
         <CardContent className="pt-6">
           {!showVerification ? (
-            <EmailForm onSubmit={handleEmailSubmit} />
+            <EmailForm onEmailSubmit={handleEmailSubmit} />
           ) : (
             <VerificationForm 
               email={email} 
