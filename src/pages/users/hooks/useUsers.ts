@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { User } from "../types";
+import { User, UserRoleType } from "../types";
 
 export const useUsers = () => {
   const queryClient = useQueryClient();
@@ -23,7 +23,6 @@ export const useUsers = () => {
         throw new Error("Пользователь не аутентифицирован");
       }
 
-      // Получаем все профили
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*");
@@ -35,7 +34,6 @@ export const useUsers = () => {
 
       console.log("Profiles fetched successfully:", profiles);
 
-      // Получаем все роли через RPC вызов
       const { data: userRoles, error: rolesError } = await supabase
         .rpc('get_user_roles');
 
@@ -46,7 +44,6 @@ export const useUsers = () => {
 
       console.log("User roles fetched successfully:", userRoles);
 
-      // Создаем мапу ролей
       const rolesMap: { [key: string]: { role: string }[] } = {};
       userRoles.forEach((role: { user_id: string; role: string }) => {
         if (!rolesMap[role.user_id]) {
@@ -55,7 +52,6 @@ export const useUsers = () => {
         rolesMap[role.user_id].push({ role: role.role });
       });
 
-      // Объединяем данные
       const usersWithRoles = profiles.map(profile => ({
         ...profile,
         user_roles: rolesMap[profile.id] || []
@@ -98,7 +94,7 @@ export const useUsers = () => {
   });
 
   const changeUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRoleType }) => {
       console.log("Changing role for user:", userId, "to:", newRole);
       
       // Получаем текущую роль и профили пользователя
@@ -201,11 +197,18 @@ export const useUsers = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("Пользователь успешно удален");
+      toast({
+        title: "Успешно",
+        description: "Пользователь успешно удален",
+      });
     },
     onError: (error) => {
       console.error("Error deleting user:", error);
-      toast.error("Ошибка при удалении пользователя");
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить пользователя",
+        variant: "destructive",
+      });
     },
   });
 
@@ -215,7 +218,7 @@ export const useUsers = () => {
     error,
     updateUser: updateUserMutation.mutate,
     deleteUser: deleteUserMutation.mutate,
-    changeUserRole: (userId: string, newRole: string) => 
+    changeUserRole: (userId: string, newRole: UserRoleType) => 
       changeUserRoleMutation.mutate({ userId, newRole }),
   };
 };
