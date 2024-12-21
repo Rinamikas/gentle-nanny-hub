@@ -14,6 +14,10 @@ const AuthPage = () => {
     setShowVerification(true);
   };
 
+  const handleBack = () => {
+    setShowVerification(false);
+  };
+
   const handleVerificationSuccess = () => {
     console.log("Verification successful, navigating to home");
     navigate("/");
@@ -36,6 +40,7 @@ const AuthPage = () => {
         ) : (
           <VerificationForm
             email={email}
+            onBack={handleBack}
             onVerificationSuccess={handleVerificationSuccess}
           />
         )}

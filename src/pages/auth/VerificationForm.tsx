@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { OTPInput } from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,15 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 interface VerificationFormProps {
   email: string;
   onBack: () => void;
+  onVerificationSuccess?: () => void;
 }
 
-export default function VerificationForm({ email, onBack }: VerificationFormProps) {
+export default function VerificationForm({ email, onBack, onVerificationSuccess }: VerificationFormProps) {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const navigate = useNavigate();
 
-  // Автоматический сабмит формы при заполнении всех цифр
   useEffect(() => {
     if (code.length === 6) {
       formRef.current?.requestSubmit();
@@ -38,12 +38,20 @@ export default function VerificationForm({ email, onBack }: VerificationFormProp
       if (data) {
         const { error: signInError } = await supabase.auth.signInWithOtp({
           email,
-          token: code,
+          options: {
+            data: {
+              verification_code: code
+            }
+          }
         });
 
         if (signInError) throw signInError;
 
-        navigate("/");
+        if (onVerificationSuccess) {
+          onVerificationSuccess();
+        } else {
+          navigate("/");
+        }
       } else {
         toast({
           variant: "destructive",
@@ -73,11 +81,18 @@ export default function VerificationForm({ email, onBack }: VerificationFormProp
       </div>
 
       <div className="flex justify-center my-4">
-        <OTPInput
+        <InputOTP
           value={code}
           onChange={setCode}
           maxLength={6}
           disabled={isLoading}
+          render={({ slots }) => (
+            <InputOTPGroup>
+              {slots.map((slot, index) => (
+                <InputOTPSlot key={index} {...slot} />
+              ))}
+            </InputOTPGroup>
+          )}
         />
       </div>
 

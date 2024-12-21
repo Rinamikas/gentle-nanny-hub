@@ -1,13 +1,13 @@
 import * as React from "react"
-import { OTPInput, OTPInputContext } from "input-otp"
+import { OTPInput as BaseOTPInput, OTPInputContext } from "input-otp"
 import { Dot } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const InputOTP = React.forwardRef<
-  React.ElementRef<typeof OTPInput>,
-  React.ComponentPropsWithoutRef<typeof OTPInput>
+export const InputOTP = React.forwardRef<
+  React.ElementRef<typeof BaseOTPInput>,
+  React.ComponentPropsWithoutRef<typeof BaseOTPInput>
 >(({ className, containerClassName, ...props }, ref) => (
-  <OTPInput
+  <BaseOTPInput
     ref={ref}
     containerClassName={cn(
       "flex items-center gap-2 has-[:disabled]:opacity-50",

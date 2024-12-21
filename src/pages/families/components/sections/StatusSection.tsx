@@ -1,39 +1,39 @@
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Person, Diamond, Star } from "lucide-react";
-import { UseFormReturn } from "react-hook-form";
-import { FormValues } from "../../types/form";
-import { FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { User, Diamond, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface StatusSectionProps {
-  form: UseFormReturn<FormValues>;
-}
+export const StatusSection = ({ form }: { form: any }) => {
+  const statuses = [
+    { value: 'default', icon: User, label: 'Обычный' },
+    { value: 'premium', icon: Diamond, label: 'Премиум' },
+    { value: 'vip', icon: Star, label: 'VIP' }
+  ];
 
-export default function StatusSection({ form }: StatusSectionProps) {
   return (
     <FormField
       control={form.control}
       name="status"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Статус семьи</FormLabel>
-          <ToggleGroup
-            type="single"
-            value={field.value}
-            onValueChange={field.onChange}
-            className="justify-start"
-          >
-            <ToggleGroupItem value="default" aria-label="Обычный статус">
-              <Person className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="diamond" aria-label="Бриллиантовый статус">
-              <Diamond className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="star" aria-label="Звездный статус">
-              <Star className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <FormLabel>Статус</FormLabel>
+          <FormControl>
+            <div className="flex gap-2">
+              {statuses.map(({ value, icon: Icon, label }) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={field.value === value ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => field.onChange(value)}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </FormControl>
         </FormItem>
       )}
     />
   );
-}
+};
