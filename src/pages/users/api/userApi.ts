@@ -67,8 +67,8 @@ export const updateUserProfile = async (id: string, updates: {
       .from("profiles")
       .select()
       .eq("id", id)
-      .maybeSingle()
-      .throwOnError();
+      .throwOnError()
+      .maybeSingle();
 
     if (checkError) {
       console.error("Ошибка проверки профиля:", checkError);
@@ -96,9 +96,9 @@ export const updateUserProfile = async (id: string, updates: {
         updated_at: new Date().toISOString()
       })
       .eq("id", id)
+      .throwOnError()
       .select()
-      .maybeSingle()
-      .throwOnError();
+      .maybeSingle();
 
     if (error) {
       console.error("Ошибка обновления профиля:", error);
@@ -127,8 +127,8 @@ export const deleteUserProfile = async (id: string) => {
       .from("profiles")
       .select()
       .eq("id", id)
-      .maybeSingle()
-      .throwOnError();
+      .throwOnError()
+      .maybeSingle();
 
     if (checkError) {
       console.error("Ошибка проверки профиля:", checkError);
