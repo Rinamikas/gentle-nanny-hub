@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import type { User } from "../types";
 
 export const fetchUserProfiles = async () => {
   console.log("Начинаем загрузку пользователей...");
@@ -7,8 +8,7 @@ export const fetchUserProfiles = async () => {
   try {
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("*")
-      .throwOnError();
+      .select("*");
 
     if (profilesError) {
       console.error("Ошибка загрузки профилей:", profilesError);
@@ -28,35 +28,6 @@ export const fetchUserProfiles = async () => {
       variant: "destructive",
       title: "Ошибка",
       description: "Не удалось загрузить данные пользователей"
-    });
-    throw error;
-  }
-};
-
-export const fetchUserRoles = async () => {
-  try {
-    const { data: userRoles, error: rolesError } = await supabase
-      .rpc('get_user_roles')
-      .throwOnError();
-
-    if (rolesError) {
-      console.error("Ошибка загрузки ролей:", rolesError);
-      throw rolesError;
-    }
-
-    if (!userRoles) {
-      console.log("Роли не найдены");
-      return [];
-    }
-
-    console.log("Роли пользователей успешно загружены:", userRoles);
-    return userRoles;
-  } catch (error) {
-    console.error("Критическая ошибка при загрузке ролей:", error);
-    toast({
-      variant: "destructive",
-      title: "Ошибка",
-      description: "Не удалось загрузить роли пользователей"
     });
     throw error;
   }
@@ -149,8 +120,7 @@ export const deleteUserProfile = async (id: string) => {
     const { error: deleteError } = await supabase
       .from("profiles")
       .delete()
-      .eq("id", id)
-      .throwOnError();
+      .eq("id", id);
 
     if (deleteError) {
       console.error("Ошибка удаления профиля:", deleteError);
