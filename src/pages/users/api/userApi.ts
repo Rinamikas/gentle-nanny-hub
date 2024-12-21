@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { User } from "../types";
 
 export const fetchUserProfiles = async () => {
   console.log("Начинаем загрузку пользователей...");
@@ -77,7 +76,6 @@ export const updateUserProfile = async (id: string, updates: {
       .from("profiles")
       .select()
       .eq("id", id)
-      .throwOnError()
       .maybeSingle();
 
     if (checkError) {
@@ -106,7 +104,6 @@ export const updateUserProfile = async (id: string, updates: {
         updated_at: new Date().toISOString()
       })
       .eq("id", id)
-      .throwOnError()
       .select()
       .maybeSingle();
 
@@ -137,7 +134,6 @@ export const deleteUserProfile = async (id: string) => {
       .from("profiles")
       .select()
       .eq("id", id)
-      .throwOnError()
       .maybeSingle();
 
     if (checkError) {
