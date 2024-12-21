@@ -25,7 +25,7 @@ const ProfilePage = () => {
       console.log("ID пользователя:", session.user.id);
 
       // Получаем базовый профиль
-      const { data: profileData, error: profileError } = await supabase
+      let { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
@@ -104,13 +104,15 @@ const ProfilePage = () => {
       console.log("Форматированные данные профиля:", formattedData);
       return formattedData;
     },
-    onError: (error: any) => {
-      console.error("Ошибка при загрузке данных профиля:", error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить данные профиля",
-        variant: "destructive"
-      });
+    meta: {
+      onError: (error: any) => {
+        console.error("Ошибка при загрузке данных профиля:", error);
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить данные профиля",
+          variant: "destructive"
+        });
+      }
     }
   });
 
