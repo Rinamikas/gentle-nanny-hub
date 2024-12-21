@@ -68,35 +68,10 @@ export const updateUserProfile = async (id: string, updates: {
   last_name: string; 
   email: string; 
 }) => {
-  console.log("Обновляем пользователя с ID:", id);
-  console.log("Данные для обновления:", updates);
-
+  console.log("Обновляем пользователя:", { id, updates });
+  
   try {
-    // Сначала проверяем существование профиля
-    const { data: existingProfile, error: checkError } = await supabase
-      .from("profiles")
-      .select()
-      .eq("id", id)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error("Ошибка проверки профиля:", checkError);
-      throw checkError;
-    }
-
-    if (!existingProfile) {
-      const error = new Error("Профиль не найден");
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Профиль пользователя не найден"
-      });
-      throw error;
-    }
-
-    // Если профиль существует, обновляем его
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({
         first_name: updates.first_name,
@@ -104,24 +79,34 @@ export const updateUserProfile = async (id: string, updates: {
         email: updates.email,
         updated_at: new Date().toISOString()
       })
-      .eq("id", id)
-      .select()
-      .maybeSingle();
+      .eq("id", id);
 
     if (error) {
       console.error("Ошибка обновления профиля:", error);
       throw error;
     }
 
-    if (!data) {
-      console.error("Данные не получены после обновления");
-      throw new Error("Данные не получены после обновления");
+    // Получаем обновленные данные
+    const { data: updatedProfile, error: fetchError } = await supabase
+      .from("profiles")
+      .select()
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Ошибка получения обновленного профиля:", fetchError);
+      throw fetchError;
     }
 
-    console.log("Профиль успешно обновлен:", data);
-    return data;
+    console.log("Профиль успешно обновлен:", updatedProfile);
+    return updatedProfile;
   } catch (error) {
     console.error("Критическая ошибка при обновлении профиля:", error);
+    toast({
+      variant: "destructive",
+      title: "Ошибка",
+      description: "Не удалось обновить профиль"
+    });
     throw error;
   }
 };
@@ -130,36 +115,24 @@ export const deleteUserProfile = async (id: string) => {
   console.log("Удаляем пользователя с ID:", id);
   
   try {
-    // Сначала проверяем существование профиля
-    const { data: existingProfile, error: checkError } = await supabase
-      .from("profiles")
-      .select()
-      .eq("id", id)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error("Ошибка проверки профиля:", checkError);
-      throw checkError;
-    }
-
-    if (!existingProfile) {
-      console.error("Профиль не найден");
-      throw new Error("Профиль не найден");
-    }
-
-    const { error: deleteError } = await supabase
+    const { error } = await supabase
       .from("profiles")
       .delete()
       .eq("id", id);
 
-    if (deleteError) {
-      console.error("Ошибка удаления профиля:", deleteError);
-      throw deleteError;
+    if (error) {
+      console.error("Ошибка удаления профиля:", error);
+      throw error;
     }
 
     console.log("Профиль успешно удален");
   } catch (error) {
     console.error("Критическая ошибка при удалении профиля:", error);
+    toast({
+      variant: "destructive",
+      title: "Ошибка",
+      description: "Не удалось удалить профиль"
+    });
     throw error;
   }
 };
