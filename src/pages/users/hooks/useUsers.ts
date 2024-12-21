@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import type { User } from "../types";
 
 export const useUsers = () => {
@@ -77,6 +77,23 @@ export const useUsers = () => {
       console.log("Обновляем пользователя с ID:", id);
       console.log("Данные для обновления:", updates);
 
+      // Проверяем существование профиля перед обновлением
+      const { data: existingProfile, error: checkError } = await supabase
+        .from("profiles")
+        .select()
+        .eq("id", id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Ошибка проверки профиля:", checkError);
+        throw checkError;
+      }
+
+      if (!existingProfile) {
+        console.error("Профиль не найден");
+        throw new Error("Профиль не найден");
+      }
+
       // Обновляем профиль
       const { data, error } = await supabase
         .from("profiles")
@@ -88,11 +105,16 @@ export const useUsers = () => {
         })
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Ошибка обновления профиля:", error);
         throw error;
+      }
+
+      if (!data) {
+        console.error("Данные не получены после обновления");
+        throw new Error("Данные не получены после обновления");
       }
 
       console.log("Профиль успешно обновлен:", data);
@@ -101,11 +123,18 @@ export const useUsers = () => {
     onSuccess: () => {
       console.log("Мутация обновления успешно завершена");
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("Пользователь успешно обновлен");
+      toast({
+        title: "Успешно",
+        description: "Пользователь успешно обновлен",
+      });
     },
     onError: (error) => {
       console.error("Ошибка в мутации обновления:", error);
-      toast.error("Ошибка при обновлении пользователя");
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось обновить пользователя",
+      });
     },
   });
 
@@ -113,6 +142,23 @@ export const useUsers = () => {
     mutationFn: async (id: string) => {
       console.log("Удаляем пользователя с ID:", id);
       
+      // Проверяем существование профиля перед удалением
+      const { data: existingProfile, error: checkError } = await supabase
+        .from("profiles")
+        .select()
+        .eq("id", id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Ошибка проверки профиля:", checkError);
+        throw checkError;
+      }
+
+      if (!existingProfile) {
+        console.error("Профиль не найден");
+        throw new Error("Профиль не найден");
+      }
+
       try {
         // Удаляем профиль пользователя
         const { error: profileError } = await supabase
@@ -133,11 +179,18 @@ export const useUsers = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("Пользователь успешно удален");
+      toast({
+        title: "Успешно",
+        description: "Пользователь успешно удален",
+      });
     },
     onError: (error) => {
       console.error("Ошибка удаления пользователя:", error);
-      toast.error("Ошибка при удалении пользователя");
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось удалить пользователя",
+      });
     },
   });
 
