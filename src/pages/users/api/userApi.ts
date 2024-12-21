@@ -8,7 +8,12 @@ export const fetchUserProfiles = async () => {
   try {
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("*");
+      .select(`
+        *,
+        user_roles (
+          role
+        )
+      `);
 
     if (profilesError) {
       console.error("Ошибка загрузки профилей:", profilesError);
@@ -71,7 +76,25 @@ export const updateUserProfile = async (id: string, updates: {
   console.log("Обновляем пользователя:", { id, updates });
   
   try {
-    const { error } = await supabase
+    // Обновляем auth.users через административные функции
+    const { data: authUser, error: authError } = await supabase.auth.admin.updateUserById(
+      id,
+      {
+        email: updates.email,
+        user_metadata: {
+          first_name: updates.first_name,
+          last_name: updates.last_name
+        }
+      }
+    );
+
+    if (authError) {
+      console.error("Ошибка обновления auth.users:", authError);
+      throw authError;
+    }
+
+    // Обновляем profiles
+    const { error: profileError } = await supabase
       .from("profiles")
       .update({
         first_name: updates.first_name,
@@ -81,25 +104,13 @@ export const updateUserProfile = async (id: string, updates: {
       })
       .eq("id", id);
 
-    if (error) {
-      console.error("Ошибка обновления профиля:", error);
-      throw error;
+    if (profileError) {
+      console.error("Ошибка обновления профиля:", profileError);
+      throw profileError;
     }
 
-    // Получаем обновленные данные
-    const { data: updatedProfile, error: fetchError } = await supabase
-      .from("profiles")
-      .select()
-      .eq("id", id)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("Ошибка получения обновленного профиля:", fetchError);
-      throw fetchError;
-    }
-
-    console.log("Профиль успешно обновлен:", updatedProfile);
-    return updatedProfile;
+    console.log("Профиль успешно обновлен");
+    return authUser;
   } catch (error) {
     console.error("Критическая ошибка при обновлении профиля:", error);
     toast({
@@ -115,23 +126,32 @@ export const deleteUserProfile = async (id: string) => {
   console.log("Удаляем пользователя с ID:", id);
   
   try {
-    const { error } = await supabase
+    // Сначала удаляем из auth.users
+    const { error: authError } = await supabase.auth.admin.deleteUser(id);
+
+    if (authError) {
+      console.error("Ошибка удаления из auth.users:", authError);
+      throw authError;
+    }
+
+    // Затем удаляем из profiles (должно произойти каскадно из-за внешнего ключа)
+    const { error: profileError } = await supabase
       .from("profiles")
       .delete()
       .eq("id", id);
 
-    if (error) {
-      console.error("Ошибка удаления профиля:", error);
-      throw error;
+    if (profileError) {
+      console.error("Ошибка удаления профиля:", profileError);
+      throw profileError;
     }
 
-    console.log("Профиль успешно удален");
+    console.log("Пользователь успешно удален из обеих таблиц");
   } catch (error) {
-    console.error("Критическая ошибка при удалении профиля:", error);
+    console.error("Критическая ошибка при удалении пользователя:", error);
     toast({
       variant: "destructive",
       title: "Ошибка",
-      description: "Не удалось удалить профиль"
+      description: "Не удалось удалить пользователя"
     });
     throw error;
   }
