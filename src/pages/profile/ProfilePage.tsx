@@ -5,6 +5,7 @@ import { useSessionContext } from "@supabase/auth-helpers-react";
 import NannyForm from "../nannies/components/NannyForm";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileForm from "./components/ProfileForm";
+import { toast } from "@/hooks/use-toast";
 import type { Profile } from "./types";
 
 const ProfilePage = () => {
@@ -28,15 +29,33 @@ const ProfilePage = () => {
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error("Ошибка при загрузке профиля:", profileError);
         throw profileError;
       }
 
-      // Используем email из сессии вместо профиля
-      profileData.email = session.user.email;
+      if (!profileData) {
+        console.log("Профиль не найден, создаем новый");
+        const { data: newProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert([
+            { 
+              id: session.user.id,
+              email: session.user.email
+            }
+          ])
+          .select()
+          .maybeSingle();
+
+        if (createError) {
+          console.error("Ошибка при создании профиля:", createError);
+          throw createError;
+        }
+
+        profileData = newProfile;
+      }
 
       console.log("Загружен профиль:", profileData);
 
@@ -85,7 +104,21 @@ const ProfilePage = () => {
       console.log("Форматированные данные профиля:", formattedData);
       return formattedData;
     },
+    onError: (error: any) => {
+      console.error("Ошибка при загрузке данных профиля:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить данные профиля",
+        variant: "destructive"
+      });
+    }
   });
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+    </div>;
+  }
 
   return (
     <div className="container mx-auto py-6">
