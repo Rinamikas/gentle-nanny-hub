@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import EmailForm from "./EmailForm";
+import { EmailForm } from "./EmailForm";
 import VerificationForm from "./VerificationForm";
 import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
@@ -38,7 +38,7 @@ export default function AuthPage() {
           ) : (
             <VerificationForm 
               email={email} 
-              onSuccess={handleVerificationSuccess}
+              onVerificationSuccess={handleVerificationSuccess}
               onBack={() => setShowVerification(false)} 
             />
           )}
