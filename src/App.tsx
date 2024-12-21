@@ -14,7 +14,6 @@ import AppointmentsPage from "./pages/appointments/AppointmentsPage";
 import Index from "./pages/Index";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import LoadingScreen from "./components/LoadingScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,43 +44,9 @@ const queryClient = new QueryClient({
 });
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const { session } = useSessionContext();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("Проверка сессии...");
-        const { data: { session: supaSession } } = await supabase.auth.getSession();
-        console.log("Статус сессии:", !!supaSession);
-        setIsAuthenticated(!!supaSession);
-      } catch (error) {
-        console.error("Ошибка при проверке сессии:", error);
-        setIsAuthenticated(false);
-      }
-    };
-
-    if (session === null) {
-      checkAuth();
-    } else {
-      setIsAuthenticated(!!session);
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Изменение состояния аутентификации:", _event);
-      setIsAuthenticated(!!session);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [session]);
-
-  if (isAuthenticated === null) {
-    return <LoadingScreen />;
-  }
-
-  if (!isAuthenticated) {
+  if (!session) {
     console.log("Пользователь не авторизован, перенаправление на /auth");
     return <Navigate to="/auth" replace />;
   }

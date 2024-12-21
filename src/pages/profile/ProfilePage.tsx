@@ -4,14 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
 import NannyForm from "../nannies/components/NannyForm";
 import ProfileHeader from "./components/ProfileHeader";
-import ContactInfo from "./components/ContactInfo";
+import ProfileForm from "./components/ProfileForm";
 import type { Profile } from "./types";
 import { useEffect } from "react";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
 
-  // Проверяем сессию при монтировании
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -23,7 +22,7 @@ const ProfilePage = () => {
     checkSession();
   }, [navigate]);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Начинаем загрузку профиля...");
@@ -98,24 +97,26 @@ const ProfilePage = () => {
     },
   });
 
-  if (isLoading || !profile) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
     <div className="container mx-auto py-6">
       <ProfileHeader profile={profile} />
-      <ContactInfo email={profile.email} phone={profile.phone} />
+      <div className="mt-8">
+        <ProfileForm profile={profile} onUpdate={refetch} />
+      </div>
 
       {profile?.user_roles?.[0]?.role === "nanny" && profile.nanny_profiles?.[0] && (
-        <div>
+        <div className="mt-8">
           <h2 className="text-lg font-semibold mb-4">Анкета няни</h2>
           <NannyForm />
         </div>
       )}
 
       {profile?.user_roles?.[0]?.role === "parent" && profile.parent_profiles?.[0] && (
-        <div>
+        <div className="mt-8">
           <h2 className="text-lg font-semibold mb-4">Анкета родителя</h2>
           {/* TODO: Добавить форму родителя */}
         </div>
