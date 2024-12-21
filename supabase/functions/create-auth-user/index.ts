@@ -36,25 +36,22 @@ Deno.serve(async (req) => {
     const password = Math.random().toString(36).slice(-8)
     console.log("Сгенерирован пароль для пользователя")
 
-    // Проверяем существование пользователя
-    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
-    })
+    // Сначала проверяем, существует ли пользователь
+    console.log("Проверяем существование пользователя")
+    const { data: existingUser, error: getUserError } = await supabase.auth.admin.getUserByEmail(email)
 
-    if (getUserError) {
+    if (getUserError && getUserError.message !== 'User not found') {
       console.error("Ошибка при поиске пользователя:", getUserError)
       throw getUserError
     }
 
     let user;
 
-    if (users && users.length > 0) {
+    if (existingUser) {
       // Если пользователь существует - обновляем пароль
       console.log("Пользователь найден, обновляем пароль")
       const { data: { user: updatedUser }, error: updateError } = await supabase.auth.admin.updateUserById(
-        users[0].id,
+        existingUser.id,
         { password: password }
       )
 
