@@ -38,36 +38,6 @@ export const fetchUserProfiles = async () => {
   }
 };
 
-export const fetchUserRoles = async () => {
-  console.log("Начинаем загрузку ролей пользователей...");
-  
-  try {
-    const { data: userRoles, error: rolesError } = await supabase
-      .rpc('get_user_roles');
-
-    if (rolesError) {
-      console.error("Ошибка загрузки ролей:", rolesError);
-      throw rolesError;
-    }
-
-    if (!userRoles) {
-      console.log("Роли не найдены");
-      return [];
-    }
-
-    console.log("Роли пользователей успешно загружены:", userRoles);
-    return userRoles;
-  } catch (error) {
-    console.error("Критическая ошибка при загрузке ролей:", error);
-    toast({
-      variant: "destructive",
-      title: "Ошибка",
-      description: "Не удалось загрузить роли пользователей"
-    });
-    throw error;
-  }
-};
-
 export const updateUserProfile = async (id: string, updates: { 
   first_name: string; 
   last_name: string; 
@@ -76,17 +46,10 @@ export const updateUserProfile = async (id: string, updates: {
   console.log("Обновляем пользователя:", { id, updates });
   
   try {
-    // Обновляем auth.users через административные функции
-    const { data: authUser, error: authError } = await supabase.auth.admin.updateUserById(
-      id,
-      {
-        email: updates.email,
-        user_metadata: {
-          first_name: updates.first_name,
-          last_name: updates.last_name
-        }
-      }
-    );
+    // Обновляем auth.users через Edge Function
+    const { error: authError } = await supabase.functions.invoke('update-user', {
+      body: { id, updates }
+    });
 
     if (authError) {
       console.error("Ошибка обновления auth.users:", authError);
@@ -110,7 +73,6 @@ export const updateUserProfile = async (id: string, updates: {
     }
 
     console.log("Профиль успешно обновлен");
-    return authUser;
   } catch (error) {
     console.error("Критическая ошибка при обновлении профиля:", error);
     toast({
@@ -126,15 +88,17 @@ export const deleteUserProfile = async (id: string) => {
   console.log("Удаляем пользователя с ID:", id);
   
   try {
-    // Сначала удаляем из auth.users
-    const { error: authError } = await supabase.auth.admin.deleteUser(id);
+    // Удаляем из auth.users через Edge Function
+    const { error: authError } = await supabase.functions.invoke('delete-user', {
+      body: { id }
+    });
 
     if (authError) {
       console.error("Ошибка удаления из auth.users:", authError);
       throw authError;
     }
 
-    // Затем удаляем из profiles (должно произойти каскадно из-за внешнего ключа)
+    // Удаляем из profiles
     const { error: profileError } = await supabase
       .from("profiles")
       .delete()
