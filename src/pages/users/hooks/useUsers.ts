@@ -8,10 +8,7 @@ export const useUsers = () => {
 
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
-    queryFn: async () => {
-      const profiles = await fetchUserProfiles();
-      return profiles;
-    },
+    queryFn: fetchUserProfiles,
   });
 
   const updateUserMutation = useMutation({

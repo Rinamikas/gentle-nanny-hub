@@ -6,27 +6,35 @@ export const fetchUserProfiles = async () => {
   console.log("Начинаем загрузку пользователей...");
   
   try {
+    // Сначала получаем профили
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select(`
-        *,
-        user_roles (
-          role
-        )
-      `);
+      .select("*");
 
     if (profilesError) {
       console.error("Ошибка загрузки профилей:", profilesError);
       throw profilesError;
     }
 
-    if (!profiles) {
-      console.log("Профили не найдены");
-      return [];
+    // Затем получаем роли отдельным запросом
+    const { data: roles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("user_id, role");
+
+    if (rolesError) {
+      console.error("Ошибка загрузки ролей:", rolesError);
+      throw rolesError;
     }
 
-    console.log("Профили успешно загружены:", profiles);
-    return profiles;
+    // Комбинируем данные
+    const enrichedProfiles = profiles.map(profile => ({
+      ...profile,
+      user_roles: roles.filter(role => role.user_id === profile.id)
+        .map(({ role }) => ({ role }))
+    }));
+
+    console.log("Профили успешно загружены:", enrichedProfiles);
+    return enrichedProfiles;
   } catch (error) {
     console.error("Критическая ошибка при загрузке профилей:", error);
     toast({
