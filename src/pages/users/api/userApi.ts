@@ -29,10 +29,9 @@ export const fetchUserProfiles = async () => {
 
       console.log("Загружены профили:", profiles);
 
-      // Затем получаем роли отдельным запросом
+      // Используем RPC-функцию вместо прямого запроса к таблице
       const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+        .rpc('get_user_roles');
 
       if (rolesError) {
         console.error("Ошибка загрузки ролей:", rolesError);
