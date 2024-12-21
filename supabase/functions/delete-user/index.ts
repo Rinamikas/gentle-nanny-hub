@@ -17,47 +17,63 @@ Deno.serve(async (req) => {
     )
 
     const { id } = await req.json()
-    console.log("Attempting to delete user:", id)
+    console.log("=== Начало процесса удаления пользователя ===")
+    console.log("ID пользователя:", id)
 
     // Проверяем существование пользователя в auth.users
-    const { data: authUser, error: authCheckError } = await supabase.auth.admin.getUserById(id)
+    const { data: { user }, error: getUserError } = await supabase.auth.admin.getUserById(id)
     
-    if (authCheckError || !authUser.user) {
-      console.error("User not found in auth.users:", authCheckError || "No user data")
-      throw new Error("User not found")
+    if (getUserError) {
+      console.error("Ошибка при поиске пользователя:", getUserError)
+      throw new Error("Ошибка при поиске пользователя")
     }
 
-    // Удаляем пользователя из auth.users
-    const { error: authError } = await supabase.auth.admin.deleteUser(id)
-    if (authError) {
-      console.error("Error deleting from auth.users:", authError)
-      throw authError
+    if (!user) {
+      console.error("Пользователь не найден в auth.users")
+      throw new Error("Пользователь не найден")
     }
 
-    console.log("Successfully deleted user from auth.users")
+    console.log("Пользователь найден:", user.id)
 
-    // Удаляем связанные записи
+    // Удаляем связанные записи из profiles
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
       .eq('id', id)
 
     if (profileError) {
-      console.error("Error deleting from profiles:", profileError)
+      console.error("Ошибка удаления из profiles:", profileError)
       throw profileError
     }
 
-    console.log("Successfully deleted user profile")
+    console.log("Профиль успешно удален")
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+    // Удаляем пользователя из auth.users
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(id)
+    
+    if (deleteError) {
+      console.error("Ошибка удаления из auth.users:", deleteError)
+      throw deleteError
+    }
+
+    console.log("Пользователь успешно удален из auth.users")
+
+    return new Response(
+      JSON.stringify({ success: true }), 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+
   } catch (error) {
-    console.error("Delete user error:", error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    console.error("Ошибка при удалении пользователя:", error.message)
+    return new Response(
+      JSON.stringify({ error: error.message }), 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
+      }
+    )
   }
 })
