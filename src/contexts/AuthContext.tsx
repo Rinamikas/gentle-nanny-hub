@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
-import LoadingScreen from "@/components/LoadingScreen";
 
 interface AuthContextType {
   isInitialAuthCheckComplete: boolean;
@@ -10,25 +9,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isInitialAuthCheckComplete, setIsInitialAuthCheckComplete] = useState(false);
+  const [isInitialAuthCheckComplete, setIsInitialAuthCheckComplete] = useState(true);
   const { session } = useSessionContext();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (!session) {
-        console.log("Нет активной сессии, перенаправление на /auth");
-        navigate("/auth");
-      }
-      setIsInitialAuthCheckComplete(true);
-    };
-
-    checkAuth();
+    console.log("AuthProvider: Начало проверки сессии");
+    
+    if (!session) {
+      console.log("AuthProvider: Сессия отсутствует, перенаправление на /auth");
+      navigate("/auth", { replace: true });
+    } else {
+      console.log("AuthProvider: Сессия активна", session.user.id);
+    }
   }, [session, navigate]);
-
-  if (!isInitialAuthCheckComplete) {
-    return <LoadingScreen />;
-  }
 
   return (
     <AuthContext.Provider value={{ isInitialAuthCheckComplete }}>
