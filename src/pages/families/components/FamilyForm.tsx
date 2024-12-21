@@ -13,11 +13,13 @@ import ContactSection from "./sections/ContactSection";
 import AddressSection from "./sections/AddressSection";
 import StatusSection from "./sections/StatusSection";
 import { setFormMethods } from "@/utils/formTestUtils";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 
 export default function FamilyForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { session } = useSessionContext();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
@@ -55,7 +57,10 @@ export default function FamilyForm() {
           .eq("id", id)
           .single();
 
-        if (parentProfileError) throw parentProfileError;
+        if (parentProfileError) {
+          console.error("Ошибка загрузки данных семьи:", parentProfileError);
+          throw parentProfileError;
+        }
 
         console.log("Загруженные данные:", parentProfile);
 
@@ -84,15 +89,45 @@ export default function FamilyForm() {
   }, [id, form]);
 
   const onSubmit = async (data: FormValues) => {
+    if (!session?.user?.id) {
+      console.error("Пользователь не авторизован");
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Необходимо авторизоваться",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       console.log("Сохранение данных семьи...", data);
+
+      // Создаем или обновляем профиль
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: session.user.id,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error("Ошибка сохранения профиля:", profileError);
+        throw profileError;
+      }
+
+      console.log("Профиль сохранен:", profileData);
 
       // Создаем или обновляем профиль семьи
       const { data: parentProfile, error: parentProfileError } = await supabase
         .from("parent_profiles")
         .upsert({
           id: id || undefined,
+          user_id: session.user.id,
           address: data.address,
           status: data.status,
           additional_phone: data.additional_phone,
