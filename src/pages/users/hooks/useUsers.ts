@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User } from "../types";
+import type { User } from "../types";
 
 export const useUsers = () => {
   const queryClient = useQueryClient();
@@ -9,17 +9,17 @@ export const useUsers = () => {
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      console.log("Fetching users...");
+      console.log("Начинаем загрузку пользователей...");
       
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error("Session error:", sessionError);
+        console.error("Ошибка сессии:", sessionError);
         throw new Error("Ошибка аутентификации");
       }
 
       if (!session) {
-        console.error("No active session");
+        console.error("Нет активной сессии");
         throw new Error("Пользователь не аутентифицирован");
       }
 
@@ -29,22 +29,22 @@ export const useUsers = () => {
         .select("*");
 
       if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
+        console.error("Ошибка загрузки профилей:", profilesError);
         throw profilesError;
       }
 
-      console.log("Profiles fetched successfully:", profiles);
+      console.log("Профили успешно загружены:", profiles);
 
       // Получаем все роли через RPC вызов
       const { data: userRoles, error: rolesError } = await supabase
         .rpc('get_user_roles');
 
       if (rolesError) {
-        console.error("Error fetching roles:", rolesError);
+        console.error("Ошибка загрузки ролей:", rolesError);
         throw rolesError;
       }
 
-      console.log("User roles fetched successfully:", userRoles);
+      console.log("Роли пользователей успешно загружены:", userRoles);
 
       // Создаем мапу ролей
       const rolesMap: { [key: string]: { role: string }[] } = {};
@@ -61,7 +61,7 @@ export const useUsers = () => {
         user_roles: rolesMap[profile.id] || []
       }));
 
-      console.log("Final users with roles:", usersWithRoles);
+      console.log("Итоговые данные пользователей с ролями:", usersWithRoles);
       return usersWithRoles as User[];
     },
   });
@@ -74,11 +74,11 @@ export const useUsers = () => {
       id: string;
       updates: { first_name: string; last_name: string; email: string };
     }) => {
-      console.log("Updating user with ID:", id);
-      console.log("Update data:", updates);
+      console.log("Обновляем пользователя с ID:", id);
+      console.log("Данные для обновления:", updates);
 
       // Обновляем профиль
-      const { data: updatedProfile, error: updateError } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .update({
           first_name: updates.first_name,
@@ -90,28 +90,28 @@ export const useUsers = () => {
         .select()
         .single();
 
-      if (updateError) {
-        console.error("Error updating profile:", updateError);
-        throw updateError;
+      if (error) {
+        console.error("Ошибка обновления профиля:", error);
+        throw error;
       }
 
-      console.log("Profile updated successfully:", updatedProfile);
-      return updatedProfile;
+      console.log("Профиль успешно обновлен:", data);
+      return data;
     },
     onSuccess: () => {
-      console.log("Update mutation completed successfully");
+      console.log("Мутация обновления успешно завершена");
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Пользователь успешно обновлен");
     },
     onError: (error) => {
-      console.error("Error in update mutation:", error);
+      console.error("Ошибка в мутации обновления:", error);
       toast.error("Ошибка при обновлении пользователя");
     },
   });
 
   const deleteUserMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log("Deleting user with ID:", id);
+      console.log("Удаляем пользователя с ID:", id);
       
       try {
         // Удаляем профиль пользователя
@@ -121,13 +121,13 @@ export const useUsers = () => {
           .eq("id", id);
 
         if (profileError) {
-          console.error("Error deleting user profile:", profileError);
+          console.error("Ошибка удаления профиля пользователя:", profileError);
           throw profileError;
         }
 
-        console.log("User successfully deleted");
+        console.log("Пользователь успешно удален");
       } catch (error) {
-        console.error("Error in delete mutation:", error);
+        console.error("Ошибка в мутации удаления:", error);
         throw error;
       }
     },
@@ -136,7 +136,7 @@ export const useUsers = () => {
       toast.success("Пользователь успешно удален");
     },
     onError: (error) => {
-      console.error("Error deleting user:", error);
+      console.error("Ошибка удаления пользователя:", error);
       toast.error("Ошибка при удалении пользователя");
     },
   });

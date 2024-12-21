@@ -1,12 +1,13 @@
-export interface UserRole {
-  role: string;
+import type { Database } from '@/integrations/supabase/types';
+
+// Базовый тип из Supabase
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type UserRoleRow = Database['public']['Tables']['user_roles']['Row'];
+
+// Расширяем тип для нашего компонента
+export interface User extends ProfileRow {
+  user_roles?: Pick<UserRoleRow, 'role'>[];
 }
 
-export interface User {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  photo_url: string | null;
-  user_roles: UserRole[] | null;
-}
+// Используем только то, что нужно из ролей
+export type UserRole = Pick<UserRoleRow, 'role'>;
