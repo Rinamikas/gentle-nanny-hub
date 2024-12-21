@@ -4,11 +4,10 @@ import { useUsers } from "./hooks/useUsers";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
-import { UserRoleType } from "./types";
 
 const UsersPage = () => {
   const navigate = useNavigate();
-  const { users, isLoading, error, updateUser, deleteUser, changeUserRole } = useUsers();
+  const { users, isLoading, error, updateUser, deleteUser } = useUsers();
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     first_name: "",
@@ -16,6 +15,7 @@ const UsersPage = () => {
     email: "",
   });
 
+  // Проверяем сессию при монтировании
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -37,22 +37,18 @@ const UsersPage = () => {
   };
 
   const handleSaveEdit = async (id: string) => {
-    await updateUser({ id, updates: editForm });
+    updateUser({ id, updates: editForm });
     setEditingUser(null);
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Вы уверены, что хотите удалить этого пользователя?")) {
-      await deleteUser(id);
+      deleteUser(id);
     }
   };
 
   const handleFormChange = (field: string, value: string) => {
     setEditForm({ ...editForm, [field]: value });
-  };
-
-  const handleRoleChange = async (userId: string, newRole: UserRoleType) => {
-    await changeUserRole(userId, newRole);
   };
 
   if (isLoading) {
@@ -78,7 +74,6 @@ const UsersPage = () => {
             onCancel={() => setEditingUser(null)}
             onDelete={() => handleDelete(user.id)}
             onFormChange={handleFormChange}
-            onRoleChange={handleRoleChange}
           />
         ))}
       </div>

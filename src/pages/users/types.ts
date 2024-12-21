@@ -10,5 +10,3 @@ export interface User {
   photo_url: string | null;
   user_roles: UserRole[] | null;
 }
-
-export type UserRoleType = "parent" | "nanny" | "owner" | "admin";
