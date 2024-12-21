@@ -26,17 +26,18 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8 p-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-primary mb-2">
-            Nanny Management System
-          </h1>
-          <p className="text-muted-foreground">
-            Вход в панель администратора
-          </p>
-        </div>
-        
         {!showVerification ? (
-          <EmailForm onEmailSubmit={handleEmailSubmit} />
+          <>
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold text-primary mb-2">
+                Nanny Management System
+              </h1>
+              <p className="text-muted-foreground">
+                Вход в панель администратора
+              </p>
+            </div>
+            <EmailForm onEmailSubmit={handleEmailSubmit} />
+          </>
         ) : (
           <VerificationForm
             email={email}
