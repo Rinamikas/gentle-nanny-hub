@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { User } from "../types";
 
 export const fetchUserProfiles = async () => {
@@ -61,6 +62,7 @@ export const updateUserProfile = async (id: string, updates: {
   console.log("Данные для обновления:", updates);
 
   try {
+    // Сначала проверяем существование профиля
     const { data: existingProfile, error: checkError } = await supabase
       .from("profiles")
       .select()
@@ -73,10 +75,17 @@ export const updateUserProfile = async (id: string, updates: {
     }
 
     if (!existingProfile) {
-      console.error("Профиль не найден");
-      throw new Error("Профиль не найден");
+      const error = new Error("Профиль не найден");
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Профиль пользователя не найден"
+      });
+      throw error;
     }
 
+    // Если профиль существует, обновляем его
     const { data, error } = await supabase
       .from("profiles")
       .update({
@@ -111,6 +120,7 @@ export const deleteUserProfile = async (id: string) => {
   console.log("Удаляем пользователя с ID:", id);
   
   try {
+    // Сначала проверяем существование профиля
     const { data: existingProfile, error: checkError } = await supabase
       .from("profiles")
       .select()
