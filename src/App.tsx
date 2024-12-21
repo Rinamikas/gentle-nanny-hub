@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SessionContextProvider } from "@supabase/auth-helpers-react";
+import { SessionContextProvider, useSessionContext } from "@supabase/auth-helpers-react";
 import { useEffect, useState } from "react";
 import AdminLayout from "./components/AdminLayout";
 import AuthPage from "./pages/auth/AuthPage";
@@ -23,8 +23,9 @@ const queryClient = new QueryClient({
         console.log("Query error:", error);
         
         if (error?.message?.includes('Invalid Refresh Token') || 
-            error?.message?.includes('refresh_token_not_found')) {
-          console.log("Detected refresh token error, redirecting to auth...");
+            error?.message?.includes('refresh_token_not_found') ||
+            error?.status === 412) {
+          console.log("Detected auth error, redirecting to auth...");
           
           toast({
             title: "Ошибка авторизации",
@@ -45,34 +46,43 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { session } = useSessionContext();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setIsAuthenticated(!!session);
+        console.log("Проверка сессии...");
+        const { data: { session: supaSession } } = await supabase.auth.getSession();
+        console.log("Статус сессии:", !!supaSession);
+        setIsAuthenticated(!!supaSession);
       } catch (error) {
         console.error("Ошибка при проверке сессии:", error);
         setIsAuthenticated(false);
       }
     };
 
-    checkAuth();
+    if (session === null) {
+      checkAuth();
+    } else {
+      setIsAuthenticated(!!session);
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Изменение состояния аутентификации:", _event);
       setIsAuthenticated(!!session);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [session]);
 
   if (isAuthenticated === null) {
     return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
+    console.log("Пользователь не авторизован, перенаправление на /auth");
     return <Navigate to="/auth" replace />;
   }
 
