@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Star, Diamond } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
+import type { ParentProfile } from "@/integrations/supabase/types";
 
 interface FamiliesTableProps {
   families: ParentProfile[];
