@@ -1,6 +1,10 @@
 import { faker } from "@faker-js/faker/locale/ru";
 
-type ValidityType = "valid" | "invalid";
+export type ValidityType = "valid" | "invalid";
+
+export const setFormMethods = (form: any) => {
+  (window as any).testForm = form;
+};
 
 export const fillFormWithTestData = (type: ValidityType) => {
   const isValid = type === "valid";
@@ -11,8 +15,8 @@ export const fillFormWithTestData = (type: ValidityType) => {
   const formData = {
     firstName: isValid ? faker.person.firstName() : "a",
     lastName: isValid ? faker.person.lastName() : "b",
-    phone: isValid ? faker.phone.number("+7 ### ### ## ##") : "invalid",
-    additionalPhone: isValid ? faker.phone.number("+7 ### ### ## ##") : "invalid",
+    phone: isValid ? faker.phone.number() : "invalid",
+    additionalPhone: isValid ? faker.phone.number() : "invalid",
     email: isValid ? faker.internet.email() : "invalid-email",
     address: isValid ? faker.location.streetAddress() : "c",
     notes: isValid ? faker.lorem.paragraph() : "d",

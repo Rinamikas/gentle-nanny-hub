@@ -3,7 +3,7 @@ import { OTPInput as BaseOTPInput, OTPInputContext } from "input-otp"
 import { Dot } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export const InputOTP = React.forwardRef<
+const InputOTP = React.forwardRef<
   React.ElementRef<typeof BaseOTPInput>,
   React.ComponentPropsWithoutRef<typeof BaseOTPInput>
 >(({ className, containerClassName, ...props }, ref) => (
