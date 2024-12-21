@@ -74,18 +74,37 @@ export const useUsers = () => {
       id: string;
       updates: { first_name: string; last_name: string; email: string };
     }) => {
-      const { error } = await supabase
+      console.log("Updating user with ID:", id);
+      console.log("Update data:", updates);
+
+      // Обновляем профиль
+      const { data: updatedProfile, error: updateError } = await supabase
         .from("profiles")
-        .update(updates)
-        .eq("id", id);
-      if (error) throw error;
+        .update({
+          first_name: updates.first_name,
+          last_name: updates.last_name,
+          email: updates.email,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Error updating profile:", updateError);
+        throw updateError;
+      }
+
+      console.log("Profile updated successfully:", updatedProfile);
+      return updatedProfile;
     },
     onSuccess: () => {
+      console.log("Update mutation completed successfully");
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Пользователь успешно обновлен");
     },
     onError: (error) => {
-      console.error("Error updating user:", error);
+      console.error("Error in update mutation:", error);
       toast.error("Ошибка при обновлении пользователя");
     },
   });

@@ -321,7 +321,9 @@ export type Database = {
           address: string | null
           children_count: number | null
           created_at: string
+          deleted_at: string | null
           id: string
+          is_deleted: boolean | null
           notes: string | null
           special_requirements: string | null
           status: Database["public"]["Enums"]["parent_status"] | null
@@ -333,7 +335,9 @@ export type Database = {
           address?: string | null
           children_count?: number | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           notes?: string | null
           special_requirements?: string | null
           status?: Database["public"]["Enums"]["parent_status"] | null
@@ -345,7 +349,9 @@ export type Database = {
           address?: string | null
           children_count?: number | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           notes?: string | null
           special_requirements?: string | null
           status?: Database["public"]["Enums"]["parent_status"] | null
