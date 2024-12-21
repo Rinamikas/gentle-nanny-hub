@@ -9,6 +9,18 @@ export const useUsers = () => {
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUserProfiles,
+    retry: 3,
+    retryDelay: 1000,
+    meta: {
+      onError: (error: any) => {
+        console.error("Ошибка при загрузке пользователей:", error);
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Не удалось загрузить список пользователей"
+        });
+      }
+    }
   });
 
   const updateUserMutation = useMutation({

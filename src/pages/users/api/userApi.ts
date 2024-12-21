@@ -5,44 +5,70 @@ import type { User } from "../types";
 export const fetchUserProfiles = async () => {
   console.log("Начинаем загрузку пользователей...");
   
-  try {
-    // Сначала получаем профили
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("*");
+  // Проверяем сессию перед запросом
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    console.error("Сессия отсутствует");
+    throw new Error("Необходима авторизация");
+  }
 
-    if (profilesError) {
-      console.error("Ошибка загрузки профилей:", profilesError);
-      throw profilesError;
+  let retries = 3;
+  
+  while (retries > 0) {
+    try {
+      // Сначала получаем профили
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
+
+      if (profilesError) {
+        console.error("Ошибка загрузки профилей:", profilesError);
+        throw profilesError;
+      }
+
+      console.log("Загружены профили:", profiles);
+
+      // Затем получаем роли отдельным запросом
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) {
+        console.error("Ошибка загрузки ролей:", rolesError);
+        throw rolesError;
+      }
+
+      console.log("Загружены роли:", roles);
+
+      // Комбинируем данные
+      const enrichedProfiles = profiles.map(profile => ({
+        ...profile,
+        user_roles: roles
+          .filter(role => role.user_id === profile.id)
+          .map(({ role }) => ({ role }))
+      }));
+
+      console.log("Профили успешно загружены:", enrichedProfiles);
+      return enrichedProfiles;
+      
+    } catch (error: any) {
+      console.error(`Попытка ${4 - retries}/3 загрузки профилей не удалась:`, error);
+      
+      retries--;
+      
+      if (retries === 0) {
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Не удалось загрузить данные пользователей"
+        });
+        throw error;
+      }
+      
+      // Ждем перед следующей попыткой
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    // Затем получаем роли отдельным запросом
-    const { data: roles, error: rolesError } = await supabase
-      .from("user_roles")
-      .select("user_id, role");
-
-    if (rolesError) {
-      console.error("Ошибка загрузки ролей:", rolesError);
-      throw rolesError;
-    }
-
-    // Комбинируем данные
-    const enrichedProfiles = profiles.map(profile => ({
-      ...profile,
-      user_roles: roles.filter(role => role.user_id === profile.id)
-        .map(({ role }) => ({ role }))
-    }));
-
-    console.log("Профили успешно загружены:", enrichedProfiles);
-    return enrichedProfiles;
-  } catch (error) {
-    console.error("Критическая ошибка при загрузке профилей:", error);
-    toast({
-      variant: "destructive",
-      title: "Ошибка",
-      description: "Не удалось загрузить данные пользователей"
-    });
-    throw error;
   }
 };
 
