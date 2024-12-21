@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
+import { Suspense } from "react";
 import AdminLayout from "./components/AdminLayout";
 import AuthPage from "./pages/auth/AuthPage";
 import UsersPage from "./pages/users/UsersPage";
@@ -18,6 +19,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      suspense: true, // Включаем Suspense для всех запросов
       retry: (failureCount, error: any) => {
         console.log("Query error:", error);
         
@@ -47,35 +49,44 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Компонент для отображения состояния загрузки
+const PageLoader = () => (
+  <div className="flex-1 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
 function App() {
   return (
     <SessionContextProvider supabaseClient={supabase}>
       <QueryClientProvider client={queryClient}>
         <Router>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AuthProvider>
-                    <AdminLayout />
-                  </AuthProvider>
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Index />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="nannies" element={<NanniesPage />} />
-              <Route path="nannies/create" element={<NannyForm />} />
-              <Route path="nannies/:id/edit" element={<NannyForm />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="families" element={<FamiliesPage />} />
-              <Route path="families/create" element={<FamilyForm />} />
-              <Route path="families/:id/edit" element={<FamilyForm />} />
-              <Route path="appointments" element={<AppointmentsPage />} />
-            </Route>
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AuthProvider>
+                      <AdminLayout />
+                    </AuthProvider>
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Index />} />
+                <Route path="users" element={<UsersPage />} />
+                <Route path="nannies" element={<NanniesPage />} />
+                <Route path="nannies/create" element={<NannyForm />} />
+                <Route path="nannies/:id/edit" element={<NannyForm />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="families" element={<FamiliesPage />} />
+                <Route path="families/create" element={<FamilyForm />} />
+                <Route path="families/:id/edit" element={<FamilyForm />} />
+                <Route path="appointments" element={<AppointmentsPage />} />
+              </Route>
+            </Routes>
+          </Suspense>
         </Router>
       </QueryClientProvider>
     </SessionContextProvider>
