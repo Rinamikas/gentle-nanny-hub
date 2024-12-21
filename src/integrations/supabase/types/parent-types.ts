@@ -1,22 +1,11 @@
+import { Database } from './database';
 import { ProfileRow } from './profile-types';
-import { ChildRow } from './database-types';
+import { Tables } from './tables';
 
-export interface ParentProfileBase {
-  id: string;
-  user_id: string | null;
-  children_count: number | null;
-  address: string | null;
-  special_requirements: string | null;
-  created_at: string;
-  updated_at: string;
-  status: string | null;
-  additional_phone: string | null;
-  notes: string | null;
-  is_deleted: boolean | null;
-  deleted_at: string | null;
-}
+export type ParentProfileBase = Database['public']['Tables']['parent_profiles']['Row'];
+export type ChildRow = Tables['children']['Row'];
 
 export interface ParentProfile extends ParentProfileBase {
-  profiles?: Partial<ProfileRow>;
+  profiles?: ProfileRow;
   children?: ChildRow[];
 }
