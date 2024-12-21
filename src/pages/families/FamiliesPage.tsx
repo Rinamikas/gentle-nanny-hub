@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
 import FamiliesTable from "./components/FamiliesTable";
-import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
+import type { ParentProfile } from "@/integrations/supabase/types";
 
 const FamiliesPage = () => {
   const navigate = useNavigate();
