@@ -33,6 +33,36 @@ export const fetchUserProfiles = async () => {
   }
 };
 
+export const fetchUserRoles = async () => {
+  console.log("Начинаем загрузку ролей пользователей...");
+  
+  try {
+    const { data: userRoles, error: rolesError } = await supabase
+      .rpc('get_user_roles');
+
+    if (rolesError) {
+      console.error("Ошибка загрузки ролей:", rolesError);
+      throw rolesError;
+    }
+
+    if (!userRoles) {
+      console.log("Роли не найдены");
+      return [];
+    }
+
+    console.log("Роли пользователей успешно загружены:", userRoles);
+    return userRoles;
+  } catch (error) {
+    console.error("Критическая ошибка при загрузке ролей:", error);
+    toast({
+      variant: "destructive",
+      title: "Ошибка",
+      description: "Не удалось загрузить роли пользователей"
+    });
+    throw error;
+  }
+};
+
 export const updateUserProfile = async (id: string, updates: { 
   first_name: string; 
   last_name: string; 
