@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { fetchUserProfiles, fetchUserRoles, updateUserProfile, deleteUserProfile } from "../api/userApi";
-import { combineUserData } from "../utils/userUtils";
+import { fetchUserProfiles, updateUserProfile, deleteUserProfile } from "../api/userApi";
 import type { User } from "../types";
 
 export const useUsers = () => {
@@ -11,8 +10,7 @@ export const useUsers = () => {
     queryKey: ["users"],
     queryFn: async () => {
       const profiles = await fetchUserProfiles();
-      const userRoles = await fetchUserRoles();
-      return combineUserData(profiles, userRoles);
+      return profiles;
     },
   });
 
