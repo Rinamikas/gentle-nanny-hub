@@ -30,36 +30,28 @@ serve(async (req) => {
 
     // 1. Проверяем код верификации
     console.log('1. Checking verification code...')
-    const { data: codes, error: codeError } = await supabaseAdmin
-      .from('verification_codes')
-      .select('*')
-      .eq('email', email)
-      .eq('code', code)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const { data: hasValidCode, error: rpcError } = await supabaseAdmin
+      .rpc('check_verification_code', {
+        p_email: email,
+        p_code: code
+      })
 
-    if (codeError) {
-      console.error('Verification code check error:', codeError)
+    if (rpcError) {
+      console.error('Verification code check error:', rpcError)
       throw new Error('Failed to verify code')
     }
 
-    if (!codes || codes.length === 0) {
+    if (!hasValidCode) {
       console.error('Invalid or expired verification code')
       throw new Error('Invalid or expired verification code')
     }
 
     console.log('2. Verification code is valid')
 
-    // 2. Проверяем существование пользователя через listUsers
+    // 2. Проверяем существование пользователя
     console.log('3. Checking for existing user...')
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
-      .listUsers({
-        filter: {
-          email: email
-        }
-      })
+      .listUsers()
 
     if (getUserError) {
       console.error('Error checking existing users:', getUserError)
@@ -116,15 +108,13 @@ serve(async (req) => {
     const { error: updateCodeError } = await supabaseAdmin
       .from('verification_codes')
       .update({ status: 'verified' })
-      .eq('id', codes[0].id)
+      .eq('email', email)
+      .eq('code', code)
 
     if (updateCodeError) {
       console.error('Error updating verification code:', updateCodeError)
       // Не прерываем процесс, так как пользователь уже создан/обновлен
     }
-
-    // 5. Добавляем задержку перед возвратом результата
-    await new Promise(resolve => setTimeout(resolve, 2000))
 
     console.log('=== User management process completed successfully ===')
 
