@@ -43,6 +43,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
       console.log("Загружены дети:", data);
       return data || [];
     },
+    enabled: !!parentId, // Добавляем эту опцию
   });
 
   const mutation = useMutation({

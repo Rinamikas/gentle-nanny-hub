@@ -22,7 +22,7 @@ interface FamilyFormProps {
 export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
   
-  console.log("FamilyForm: initialData =", initialData); // Добавим лог для отладки
+  console.log("FamilyForm: initialData =", initialData);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
