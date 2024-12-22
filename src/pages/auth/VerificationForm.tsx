@@ -14,7 +14,6 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Устанавливаем фокус на первый слот при монтировании
     const firstInput = document.querySelector('input[id^="otp-"]') as HTMLInputElement;
     if (firstInput) {
       firstInput.focus();
@@ -22,7 +21,6 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
   }, []);
 
   useEffect(() => {
-    // Автоматически отправляем форму при заполнении всех слотов
     if (otp.length === 6) {
       handleVerification();
     }
@@ -58,9 +56,9 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         .from('profiles')
         .select('id, email')
         .eq('email', email.toLowerCase())
-        .single();
+        .maybeSingle();
 
-      if (profileError) {
+      if (profileError && profileError.code !== 'PGRST116') {
         console.error("Error checking profile:", profileError);
         throw profileError;
       }
