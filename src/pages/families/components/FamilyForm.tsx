@@ -23,7 +23,6 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
   
   console.log("FamilyForm: начало рендера с initialData =", initialData);
-  console.log("FamilyForm: профиль пользователя =", initialData?.profiles);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
@@ -40,6 +39,22 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
   });
 
   console.log("FamilyForm: defaultValues установлены", form.getValues());
+
+  useEffect(() => {
+    if (initialData?.profiles) {
+      console.log("FamilyForm: обновляем значения формы из profiles", initialData.profiles);
+      form.reset({
+        first_name: initialData.profiles.first_name || "",
+        last_name: initialData.profiles.last_name || "",
+        phone: initialData.profiles.phone || "",
+        additional_phone: initialData.additional_phone || "",
+        address: initialData.address || "",
+        special_requirements: initialData.special_requirements || "",
+        notes: initialData.notes || "",
+        status: initialData.status || "default",
+      });
+    }
+  }, [initialData, form]);
 
   useEffect(() => {
     console.log("FamilyForm: useEffect - установка методов формы");
