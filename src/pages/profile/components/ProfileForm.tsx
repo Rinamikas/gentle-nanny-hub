@@ -1,149 +1,75 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useSessionContext } from "@supabase/auth-helpers-react";
-import { useQueryClient } from "@tanstack/react-query";
-
-const profileFormSchema = z.object({
-  first_name: z.string().min(2, "Минимум 2 символа"),
-  last_name: z.string().min(2, "Минимум 2 символа"),
-  phone: z.string().optional(),
-  email: z.string().email("Неверный формат email"),
-});
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+import { profileFormSchema } from "../schemas/profile-form-schema";
+import type { Profile } from "../types";
+import ContactInfo from "./ContactInfo";
+import UserRoleManager from "./UserRoleManager";
 
 interface ProfileFormProps {
-  profile: any;
+  profile?: Profile | null;
   onUpdate: () => void;
 }
 
 export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
-  console.log("Rendering ProfileForm with profile:", profile);
   const { toast } = useToast();
-  const { session } = useSessionContext();
-  const queryClient = useQueryClient();
-
-  const form = useForm<ProfileFormValues>({
+  const form = useForm({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       first_name: profile?.first_name || "",
       last_name: profile?.last_name || "",
       phone: profile?.phone || "",
-      email: profile?.email || "",
     },
   });
 
-  const onSubmit = async (data: ProfileFormValues) => {
+  const onSubmit = async (values: any) => {
     try {
-      console.log("Submitting profile form with data:", data);
-
-      if (!session?.user?.id) {
-        throw new Error("Не авторизован");
-      }
-
       const { error } = await supabase
         .from("profiles")
         .update({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-          email: data.email,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          phone: values.phone,
+          updated_at: new Date().toISOString(),
         })
-        .eq("id", session.user.id);
+        .eq("id", profile?.id);
 
       if (error) throw error;
 
       toast({
-        title: "Профиль обновлен",
-        description: "Ваши данные успешно сохранены",
+        title: "Успешно",
+        description: "Профиль обновлен",
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["profile"] });
       onUpdate();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Ошибка при обновлении профиля:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: error.message || "Не удалось обновить профиль",
+        description: "Не удалось обновить профиль",
       });
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="first_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Имя</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <ContactInfo form={form} />
+          <Button type="submit">Сохранить</Button>
+        </form>
+      </Form>
 
-        <FormField
-          control={form.control}
-          name="last_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Фамилия</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div className="border-t pt-6">
+        <UserRoleManager 
+          currentRole={profile?.user_roles?.[0]?.role} 
+          onRoleChange={onUpdate} 
         />
-
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Телефон</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit">Сохранить изменения</Button>
-      </form>
-    </Form>
+      </div>
+    </div>
   );
 }
