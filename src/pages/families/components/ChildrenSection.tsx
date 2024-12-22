@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
@@ -25,6 +25,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
   const queryClient = useQueryClient();
 
   console.log("ChildrenSection: начало рендера с parentId =", parentId);
+  console.log("ChildrenSection: текущее состояние формы:", { isDialogOpen, selectedChild });
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["children", parentId],
@@ -72,8 +73,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
         title: "Успешно",
         description: "Данные ребенка сохранены",
       });
-      setIsDialogOpen(false);
-      setSelectedChild(null);
+      handleCloseDialog();
     },
     onError: (error) => {
       console.error("ChildrenSection: ошибка при сохранении:", error);
@@ -115,20 +115,34 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
     },
   });
 
-  const handleSubmit = (data: ChildFormData) => {
+  const handleSubmit = useCallback((data: ChildFormData) => {
+    console.log("ChildrenSection: вызов handleSubmit с данными:", data);
     mutation.mutate(data);
-  };
+  }, [mutation]);
 
-  const handleEdit = (child: any) => {
+  const handleEdit = useCallback((child: any) => {
+    console.log("ChildrenSection: начало редактирования ребенка:", child);
     setSelectedChild(child);
     setIsDialogOpen(true);
-  };
+  }, []);
 
-  const handleDelete = (childId: string) => {
+  const handleDelete = useCallback((childId: string) => {
     if (window.confirm("Вы уверены, что хотите удалить ребенка?")) {
       deleteMutation.mutate(childId);
     }
-  };
+  }, [deleteMutation]);
+
+  const handleOpenDialog = useCallback(() => {
+    console.log("ChildrenSection: открытие формы добавления ребенка");
+    setSelectedChild(null);
+    setIsDialogOpen(true);
+  }, []);
+
+  const handleCloseDialog = useCallback(() => {
+    console.log("ChildrenSection: закрытие формы");
+    setIsDialogOpen(false);
+    setSelectedChild(null);
+  }, []);
 
   if (isLoading) {
     console.log("ChildrenSection: загрузка...");
@@ -141,13 +155,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
     <div className="mt-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Дети</h2>
-        <Button
-          onClick={() => {
-            console.log("ChildrenSection: открытие формы добавления ребенка");
-            setSelectedChild(null);
-            setIsDialogOpen(true);
-          }}
-        >
+        <Button onClick={handleOpenDialog}>
           <Plus className="w-4 h-4 mr-2" />
           Добавить ребенка
         </Button>
@@ -192,7 +200,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
 
       <ChildForm
         isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
+        onClose={handleCloseDialog}
         onSubmit={handleSubmit}
         initialData={selectedChild}
       />

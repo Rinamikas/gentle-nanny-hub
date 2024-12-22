@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useEffect } from "react";
 
 interface ChildFormData {
   first_name: string;
@@ -41,7 +42,7 @@ interface ChildFormProps {
 }
 
 const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) => {
-  console.log("Initial data for child form:", initialData);
+  console.log("ChildForm: рендер с параметрами:", { isOpen, initialData });
   
   const form = useForm<ChildFormData>({
     defaultValues: {
@@ -50,13 +51,23 @@ const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) =
     },
   });
 
+  useEffect(() => {
+    console.log("ChildForm: изменение состояния isOpen:", isOpen);
+  }, [isOpen]);
+
   const handleSubmit = (data: ChildFormData) => {
-    console.log("Submitting child form with data:", data);
+    console.log("ChildForm: отправка формы с данными:", data);
     onSubmit(data);
   };
 
+  const handleClose = () => {
+    console.log("ChildForm: закрытие формы");
+    form.reset();
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -176,7 +187,7 @@ const ChildForm = ({ isOpen, onClose, onSubmit, initialData }: ChildFormProps) =
             />
 
             <div className="flex justify-end gap-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Отмена
               </Button>
               <Button type="submit">Сохранить</Button>
