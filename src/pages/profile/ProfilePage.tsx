@@ -5,6 +5,7 @@ import { useSessionContext } from "@supabase/auth-helpers-react";
 import NannyForm from "../nannies/components/NannyForm";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileForm from "./components/ProfileForm";
+import ParentForm from "./components/ParentForm";
 import { toast } from "@/hooks/use-toast";
 import type { Profile } from "./types";
 
@@ -108,9 +109,9 @@ const ProfilePage = () => {
       onError: (error: any) => {
         console.error("Ошибка при загрузке данных профиля:", error);
         toast({
+          variant: "destructive",
           title: "Ошибка",
           description: "Не удалось загрузить данные профиля",
-          variant: "destructive"
         });
       }
     }
@@ -138,8 +139,10 @@ const ProfilePage = () => {
 
       {profile?.user_roles?.[0]?.role === "parent" && profile.parent_profiles?.[0] && (
         <div className="mt-8">
-          <h2 className="text-lg font-semibold mb-4">Анкета родителя</h2>
-          {/* TODO: Добавить форму родителя */}
+          <ParentForm 
+            profile={profile.parent_profiles[0]} 
+            onUpdate={refetch}
+          />
         </div>
       )}
     </div>

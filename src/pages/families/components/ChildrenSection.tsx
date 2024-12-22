@@ -118,7 +118,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
   const handleSubmit = useCallback((data: ChildFormData) => {
     console.log("ChildrenSection: вызов handleSubmit с данными:", data);
     mutation.mutate(data);
-  }, [mutation]);
+  }, [mutation, parentId]); // Добавляем parentId в зависимости
 
   const handleEdit = useCallback((child: any) => {
     console.log("ChildrenSection: начало редактирования ребенка:", child);
