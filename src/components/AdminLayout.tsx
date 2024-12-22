@@ -32,10 +32,17 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       
       try {
-        // Получаем базовый профиль
+        // Получаем профиль вместе с ролями одним запросом
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select(`
+            *,
+            user_roles (
+              id,
+              role,
+              created_at
+            )
+          `)
           .eq('id', session.user.id)
           .single();
 
@@ -44,25 +51,12 @@ const AdminLayout = () => {
           throw profileError;
         }
 
-        console.log("Загружен профиль:", profileData);
+        console.log("Загружен профиль с ролями:", profileData);
 
-        // Получаем роли отдельным запросом
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('id, role, created_at')
-          .eq('user_id', session.user.id);
-
-        if (rolesError) {
-          console.error("Ошибка при загрузке ролей:", rolesError);
-          throw rolesError;
-        }
-
-        console.log("Загружены роли:", rolesData);
-        
-        // Объединяем данные в соответствии с типом Profile
+        // Преобразуем данные в соответствии с типом Profile
         return {
           ...profileData,
-          user_roles: rolesData || []
+          user_roles: profileData.user_roles || []
         };
       } catch (error) {
         console.error("Ошибка при загрузке данных пользователя:", error);
