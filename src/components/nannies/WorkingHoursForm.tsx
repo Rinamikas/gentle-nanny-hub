@@ -110,12 +110,13 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
-                        variant={"outline"}
+                        variant="outline"
                         className={cn(
                           "w-[240px] pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
                         type="button"
+                        onClick={(e) => e.preventDefault()}
                       >
                         {field.value ? (
                           format(field.value, "PPP", { locale: ru })
