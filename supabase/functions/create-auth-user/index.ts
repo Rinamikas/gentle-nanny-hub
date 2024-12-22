@@ -14,7 +14,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Создаем Supabase клиент с сервисной ролью
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -28,11 +27,11 @@ Deno.serve(async (req) => {
 
     // Получаем данные из запроса
     const { email, code } = await req.json()
-    console.log('Received request for email:', email)
+    console.log('Processing request for:', email)
 
     try {
-      // Проверяем код верификации
-      console.log('Checking verification code...')
+      // 1. Проверяем код верификации
+      console.log('1. Checking verification code...')
       const { data: codes, error: codeError } = await supabaseAdmin
         .from('verification_codes')
         .select('*')
@@ -55,8 +54,8 @@ Deno.serve(async (req) => {
 
       console.log('Verification code is valid')
 
-      // Проверяем существующего пользователя
-      console.log('Checking existing user...')
+      // 2. Проверяем существующего пользователя
+      console.log('2. Checking for existing user...')
       const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
         .listUsers({
           filter: {
@@ -75,8 +74,8 @@ Deno.serve(async (req) => {
       let userId
 
       if (existingUser) {
-        // Обновляем существующего пользователя
-        console.log('Updating existing user...')
+        // 3a. Обновляем существующего пользователя
+        console.log('3a. Updating existing user...')
         const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
           .updateUserById(existingUser.id, {
             password: code,
@@ -91,8 +90,8 @@ Deno.serve(async (req) => {
         userId = existingUser.id
         console.log('User updated successfully:', userId)
       } else {
-        // Создаем нового пользователя
-        console.log('Creating new user...')
+        // 3b. Создаем нового пользователя
+        console.log('3b. Creating new user...')
         const { data: createData, error: createError } = await supabaseAdmin.auth.admin
           .createUser({
             email,
@@ -112,8 +111,8 @@ Deno.serve(async (req) => {
         console.log('User created successfully:', userId)
       }
 
-      // Обновляем статус кода верификации
-      console.log('Updating verification code status...')
+      // 4. Обновляем статус кода верификации
+      console.log('4. Updating verification code status...')
       const { error: updateCodeError } = await supabaseAdmin
         .from('verification_codes')
         .update({ status: 'verified' })
