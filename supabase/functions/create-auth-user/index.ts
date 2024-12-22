@@ -34,15 +34,19 @@ serve(async (req) => {
     try {
       // Проверяем существующих пользователей
       console.log('Checking existing users...')
-      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin
-        .listUsers()
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin
+        .listUsers({
+          filter: {
+            email: email
+          }
+        })
 
       if (listError) {
         console.error('Error listing users:', listError)
-        throw listError
+        throw new Error(`Error checking existing users: ${listError.message}`)
       }
 
-      const existingUser = existingUsers.users.find(u => u.email === email)
+      const existingUser = users?.find(u => u.email === email)
       
       // Генерируем случайный пароль
       const password = code
@@ -54,9 +58,10 @@ serve(async (req) => {
 
         if (updateError) {
           console.error('Error updating user:', updateError)
-          throw updateError
+          throw new Error(`Error updating user: ${updateError.message}`)
         }
 
+        console.log('Password updated successfully')
         return new Response(
           JSON.stringify({ password }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -73,9 +78,10 @@ serve(async (req) => {
 
       if (createError) {
         console.error('Error creating user:', createError)
-        throw createError
+        throw new Error(`Error creating user: ${createError.message}`)
       }
 
+      console.log('User created successfully')
       return new Response(
         JSON.stringify({ password }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -83,7 +89,13 @@ serve(async (req) => {
 
     } catch (error) {
       console.error('Error in user management:', error)
-      throw error
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
   } catch (error) {
