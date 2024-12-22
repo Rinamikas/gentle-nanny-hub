@@ -5,11 +5,9 @@ import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { parentFormSchema, type ParentFormValues } from "../schemas/parent-form-schema";
-import ContactInfo from "./ContactInfo";
 import AddressSection from "@/pages/families/components/sections/AddressSection";
 import StatusSection from "@/pages/families/components/sections/StatusSection";
 import ChildrenSection from "@/pages/families/components/ChildrenSection";
-import type { ParentProfile } from "@/pages/families/types/parent-types";
 import type { Database } from "@/integrations/supabase/types";
 import type { Profile } from "../types";
 import { useQuery } from "@tanstack/react-query";
@@ -25,20 +23,23 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
   const { toast } = useToast();
 
   // Получаем данные профиля родителя
-  const { data: parentProfile } = useQuery({
+  const { data: parentProfile, isLoading } = useQuery({
     queryKey: ['parentProfile', profile.id],
     queryFn: async () => {
+      console.log("Загрузка профиля родителя для пользователя:", profile.id);
+      
       const { data, error } = await supabase
         .from('parent_profiles')
         .select('*')
         .eq('user_id', profile.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Ошибка при загрузке профиля родителя:", error);
         throw error;
       }
 
+      console.log("Загружен профиль родителя:", data);
       return data;
     },
     enabled: !!profile.id
@@ -57,35 +58,61 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
 
   const onSubmit = async (values: ParentFormValues) => {
     try {
-      const { error } = await supabase
-        .from("parent_profiles")
-        .update({
-          address: values.address,
-          additional_phone: values.additional_phone,
-          special_requirements: values.special_requirements,
-          notes: values.notes,
-          status: values.status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", profile.id);
+      if (!parentProfile?.id) {
+        console.log("Создание нового профиля родителя");
+        const { error: createError } = await supabase
+          .from("parent_profiles")
+          .insert({
+            user_id: profile.id,
+            address: values.address,
+            additional_phone: values.additional_phone,
+            special_requirements: values.special_requirements,
+            notes: values.notes,
+            status: values.status,
+          });
 
-      if (error) throw error;
+        if (createError) throw createError;
 
-      toast({
-        title: "Успешно",
-        description: "Анкета родителя обновлена",
-      });
+        toast({
+          title: "Успешно",
+          description: "Анкета родителя создана",
+        });
+      } else {
+        console.log("Обновление профиля родителя:", parentProfile.id);
+        const { error } = await supabase
+          .from("parent_profiles")
+          .update({
+            address: values.address,
+            additional_phone: values.additional_phone,
+            special_requirements: values.special_requirements,
+            notes: values.notes,
+            status: values.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", parentProfile.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Успешно",
+          description: "Анкета родителя обновлена",
+        });
+      }
 
       onUpdate();
     } catch (error) {
-      console.error("Ошибка при обновлении анкеты родителя:", error);
+      console.error("Ошибка при сохранении анкеты родителя:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось обновить анкету родителя",
+        description: "Не удалось сохранить анкету родителя",
       });
     }
   };
+
+  if (isLoading) {
+    return <div>Загрузка...</div>;
+  }
 
   return (
     <div className="space-y-6">
