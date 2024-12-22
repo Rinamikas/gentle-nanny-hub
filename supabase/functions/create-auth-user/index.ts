@@ -24,12 +24,11 @@ serve(async (req) => {
       }
     )
 
-    const { email, code, firstName, lastName } = await req.json()
+    const { email, code, shouldSignIn = false } = await req.json()
     console.log('=== Starting user management process ===')
     console.log('Email:', email)
     console.log('Code:', code)
-    console.log('First Name:', firstName)
-    console.log('Last Name:', lastName)
+    console.log('Should Sign In:', shouldSignIn)
 
     // 1. Проверяем существование пользователя через profiles
     console.log('1. Checking for existing user in profiles...')
@@ -73,10 +72,6 @@ serve(async (req) => {
         .updateUserById(user.id, {
           password: code,
           email_confirm: true,
-          user_metadata: {
-            first_name: firstName,
-            last_name: lastName
-          }
         })
 
       if (updateError) {
@@ -85,7 +80,7 @@ serve(async (req) => {
       }
 
       userId = user.id
-      console.log('3a. User password and metadata updated successfully:', userId)
+      console.log('3a. User password updated successfully:', userId)
     } else {
       // Создаем нового пользователя
       console.log('2b. Creating new user...')
@@ -94,10 +89,6 @@ serve(async (req) => {
           email,
           password: code,
           email_confirm: true,
-          user_metadata: {
-            first_name: firstName,
-            last_name: lastName
-          }
         })
 
       if (createError) {
@@ -114,13 +105,16 @@ serve(async (req) => {
       console.log('3b. User created successfully:', userId)
     }
 
+    // Если нужно выполнить вход, возвращаем пароль
+    const response: { id: string; password?: string } = { id: userId }
+    if (shouldSignIn) {
+      response.password = code
+    }
+
     console.log('=== User management process completed successfully ===')
 
     return new Response(
-      JSON.stringify({ 
-        password: code,
-        userId: userId
-      }),
+      JSON.stringify(response),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 

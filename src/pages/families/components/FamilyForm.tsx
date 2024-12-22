@@ -92,15 +92,21 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         // Создание новой семьи
         console.log("FamilyForm: создание новой семьи");
 
-        // Создаем пользователя в auth.users через API
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: values.email,
-          password: Math.random().toString(36).slice(-8), // Временный пароль
-        });
+        // Создаем пользователя в auth.users через API, но без автоматического входа
+        const { data: authData, error: authError } = await supabase.functions.invoke(
+          'create-auth-user',
+          {
+            body: JSON.stringify({ 
+              email: values.email,
+              code: Math.random().toString(36).slice(-8), // Временный пароль
+              shouldSignIn: false // Важно! Не выполняем автоматический вход
+            })
+          }
+        );
 
         if (authError) throw authError;
 
-        if (!authData.user) {
+        if (!authData.id) {
           throw new Error("Не удалось создать пользователя");
         }
 
@@ -115,7 +121,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
             last_name: values.last_name,
             phone: values.phone,
           })
-          .eq("id", authData.user.id);
+          .eq("id", authData.id);
 
         if (profileError) throw profileError;
 
@@ -123,7 +129,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         const { data: parentProfile, error: parentCreateError } = await supabase
           .from("parent_profiles")
           .insert({
-            user_id: authData.user.id,
+            user_id: authData.id,
             additional_phone: values.additional_phone,
             address: values.address,
             special_requirements: values.special_requirements,
