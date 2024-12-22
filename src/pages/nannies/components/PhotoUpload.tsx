@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import ImageCropper from "./ImageCropper";
 
 interface PhotoUploadProps {
   onUpload: (url: string) => void;
@@ -10,24 +11,52 @@ interface PhotoUploadProps {
 
 export default function PhotoUpload({ onUpload, currentPhotoUrl }: PhotoUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
-  const uploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setUploading(true);
-
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error('Необходимо выбрать файл для загрузки');
       }
 
       const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setTempImageUrl(reader.result);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error selecting photo:', error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось загрузить фотографию",
+      });
+    }
+  };
+
+  const uploadPhoto = async (croppedImage: string) => {
+    try {
+      setUploading(true);
+
+      // Конвертируем base64 в blob
+      const response = await fetch(croppedImage);
+      const blob = await response.blob();
+      
+      const fileExt = 'jpg';
       const filePath = `photos/${Math.random()}.${fileExt}`;
 
       console.log('Uploading photo:', filePath);
 
       const { error: uploadError, data } = await supabase.storage
         .from('nanny_files')
-        .upload(filePath, file);
+        .upload(filePath, blob, {
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) {
         throw uploadError;
@@ -40,6 +69,8 @@ export default function PhotoUpload({ onUpload, currentPhotoUrl }: PhotoUploadPr
         .getPublicUrl(filePath);
 
       onUpload(publicUrl);
+      setTempImageUrl(null);
+      
       toast({
         title: "Успешно",
         description: "Фотография загружена",
@@ -78,10 +109,19 @@ export default function PhotoUpload({ onUpload, currentPhotoUrl }: PhotoUploadPr
           type="file"
           id="photo"
           accept="image/*"
-          onChange={uploadPhoto}
+          onChange={handleFileSelect}
           className="hidden"
         />
       </div>
+
+      {tempImageUrl && (
+        <ImageCropper
+          image={tempImageUrl}
+          onCropComplete={uploadPhoto}
+          onClose={() => setTempImageUrl(null)}
+          aspectRatio={1}
+        />
+      )}
     </div>
   );
 }
