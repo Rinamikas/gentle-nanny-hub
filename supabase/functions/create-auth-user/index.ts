@@ -48,7 +48,7 @@ serve(async (req) => {
 
     console.log('2. Verification code is valid')
 
-    // 2. Проверяем существование пользователя через listUsers с фильтрацией
+    // 2. Проверяем существование пользователя через listUsers
     console.log('3. Checking for existing user...')
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
       .listUsers()
@@ -64,7 +64,8 @@ serve(async (req) => {
       searchEmail: email.toLowerCase(),
       foundUser: existingUser ? {
         id: existingUser.id,
-        email: existingUser.email?.toLowerCase()
+        email: existingUser.email,
+        meta: existingUser.user_metadata
       } : 'not found',
       totalUsers: users.length
     })
