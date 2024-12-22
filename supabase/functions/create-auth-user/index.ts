@@ -48,62 +48,41 @@ serve(async (req) => {
     let userId: string
 
     if (profile) {
-      // 2a. Если профиль существует, ищем пользователя в auth.users
-      console.log('2a. Profile exists, searching in auth.users...')
+      // Пользователь существует, получаем его через getUser
+      console.log('2a. Profile exists, getting user directly...')
       
-      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+      const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin
+        .getUserById(profile.id)
 
-      if (listError) {
-        console.error('Error listing users:', listError)
-        throw new Error('Failed to list users')
+      if (getUserError) {
+        console.error('Error getting user:', getUserError)
+        throw getUserError
       }
-
-      const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
 
       if (!user) {
-        // 2b. Пользователь есть в profiles, но нет в auth.users - создаем
-        console.log('2b. User found in profiles but not in auth.users, creating...')
-        
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin
-          .createUser({
-            email,
-            password: code,
-            email_confirm: true
-          })
-
-        if (createError) {
-          console.error('Error creating user:', createError)
-          throw new Error('Failed to create user')
-        }
-
-        if (!newUser.user) {
-          console.error('No user data returned after creation')
-          throw new Error('Failed to create user')
-        }
-
-        userId = newUser.user.id
-        console.log('3b. User created successfully:', userId)
-      } else {
-        // 2c. Пользователь найден - обновляем пароль
-        console.log('2c. User found in auth.users, updating password...')
-        
-        const { error: updateError } = await supabaseAdmin.auth.admin
-          .updateUserById(user.id, {
-            password: code,
-            email_confirm: true
-          })
-
-        if (updateError) {
-          console.error('Error updating user:', updateError)
-          throw new Error('Failed to update user')
-        }
-
-        userId = user.id
-        console.log('3c. User password updated successfully:', userId)
+        console.error('User not found despite having profile')
+        throw new Error('User not found')
       }
+
+      console.log('Found user:', user.id)
+      
+      // Обновляем пароль
+      const { error: updateError } = await supabaseAdmin.auth.admin
+        .updateUserById(user.id, {
+          password: code,
+          email_confirm: true
+        })
+
+      if (updateError) {
+        console.error('Error updating user:', updateError)
+        throw updateError
+      }
+
+      userId = user.id
+      console.log('3a. User password updated successfully:', userId)
     } else {
-      // 2d. Создаем нового пользователя
-      console.log('2d. Creating new user...')
+      // Создаем нового пользователя
+      console.log('2b. Creating new user...')
       const { data: createData, error: createError } = await supabaseAdmin.auth.admin
         .createUser({
           email,
@@ -113,7 +92,7 @@ serve(async (req) => {
 
       if (createError) {
         console.error('Error creating user:', createError)
-        throw new Error('Failed to create user')
+        throw createError
       }
 
       if (!createData.user) {
@@ -122,7 +101,7 @@ serve(async (req) => {
       }
 
       userId = createData.user.id
-      console.log('3d. User created successfully:', userId)
+      console.log('3b. User created successfully:', userId)
     }
 
     console.log('=== User management process completed successfully ===')
