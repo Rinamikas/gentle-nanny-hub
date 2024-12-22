@@ -24,31 +24,31 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  console.log("ChildrenSection: parentId =", parentId);
+  console.log("ChildrenSection: начало рендера с parentId =", parentId);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["children", parentId],
     queryFn: async () => {
-      console.log("Загрузка списка детей...");
+      console.log("ChildrenSection: загрузка списка детей для parentId =", parentId);
       const { data, error } = await supabase
         .from("children")
         .select("*")
         .eq("parent_profile_id", parentId);
 
       if (error) {
-        console.error("Ошибка при загрузке детей:", error);
+        console.error("ChildrenSection: ошибка при загрузке детей:", error);
         throw error;
       }
 
-      console.log("Загружены дети:", data);
+      console.log("ChildrenSection: загружены дети:", data);
       return data || [];
     },
-    enabled: !!parentId, // Добавляем эту опцию
+    enabled: !!parentId,
   });
 
   const mutation = useMutation({
     mutationFn: async (data: ChildFormData) => {
-      console.log("Сохранение данных ребенка...", data);
+      console.log("ChildrenSection: сохранение данных ребенка...", data);
       const { data: child, error } = await supabase
         .from("children")
         .upsert({
@@ -60,7 +60,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
         .single();
 
       if (error) {
-        console.error("Ошибка при сохранении ребенка:", error);
+        console.error("ChildrenSection: ошибка при сохранении ребенка:", error);
         throw error;
       }
 
@@ -76,7 +76,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
       setSelectedChild(null);
     },
     onError: (error) => {
-      console.error("Ошибка при сохранении:", error);
+      console.error("ChildrenSection: ошибка при сохранении:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
@@ -87,14 +87,14 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (childId: string) => {
-      console.log("Удаление ребенка...", childId);
+      console.log("ChildrenSection: удаление ребенка...", childId);
       const { error } = await supabase
         .from("children")
         .delete()
         .eq("id", childId);
 
       if (error) {
-        console.error("Ошибка при удалении ребенка:", error);
+        console.error("ChildrenSection: ошибка при удалении ребенка:", error);
         throw error;
       }
     },
@@ -106,7 +106,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
       });
     },
     onError: (error) => {
-      console.error("Ошибка при удалении:", error);
+      console.error("ChildrenSection: ошибка при удалении:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
@@ -131,8 +131,11 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
   };
 
   if (isLoading) {
+    console.log("ChildrenSection: загрузка...");
     return <div>Загрузка...</div>;
   }
+
+  console.log("ChildrenSection: рендер списка детей:", children);
 
   return (
     <div className="mt-8">
@@ -140,6 +143,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
         <h2 className="text-xl font-semibold">Дети</h2>
         <Button
           onClick={() => {
+            console.log("ChildrenSection: открытие формы добавления ребенка");
             setSelectedChild(null);
             setIsDialogOpen(true);
           }}
@@ -153,7 +157,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
         {children.map((child: any) => (
           <div
             key={child.id}
-            className="flex items-center justify-between p-4 border rounded-lg"
+            className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm"
           >
             <div>
               <h3 className="font-medium">{child.first_name}</h3>

@@ -22,7 +22,8 @@ interface FamilyFormProps {
 export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
   
-  console.log("FamilyForm: initialData =", initialData);
+  console.log("FamilyForm: начало рендера с initialData =", initialData);
+  console.log("FamilyForm: профиль пользователя =", initialData?.profiles);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
@@ -38,21 +39,28 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
     },
   });
 
-  // Устанавливаем методы формы для тестовых данных
+  console.log("FamilyForm: defaultValues установлены", form.getValues());
+
   useEffect(() => {
+    console.log("FamilyForm: useEffect - установка методов формы");
     setFormMethods(form);
-    return () => setFormMethods(null);
+    return () => {
+      console.log("FamilyForm: useEffect cleanup - очистка методов формы");
+      setFormMethods(null);
+    }
   }, [form]);
 
   const handleSubmit = async (values: FormValues) => {
     try {
+      console.log("FamilyForm: начало отправки формы с данными:", values);
+      
       if (onSubmit) {
         onSubmit(values);
         return;
       }
 
       if (!initialData?.id) {
-        console.error("ID семьи не определен");
+        console.error("FamilyForm: ID семьи не определен");
         toast({
           variant: "destructive",
           title: "Ошибка",
@@ -88,12 +96,14 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
 
       if (profileError) throw profileError;
 
+      console.log("FamilyForm: данные успешно обновлены");
+      
       toast({
         title: "Успешно",
         description: "Данные семьи обновлены",
       });
     } catch (error) {
-      console.error("Ошибка при обновлении семьи:", error);
+      console.error("FamilyForm: ошибка при обновлении семьи:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
@@ -104,20 +114,20 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 w-full max-w-2xl mx-auto p-6">
         <PersonalSection form={form} />
         <ContactSection form={form} />
         <AddressSection form={form} />
         <StatusSection form={form} />
         
-        <Button type="submit">Сохранить</Button>
-      </form>
+        <Button type="submit" className="w-full">Сохранить</Button>
 
-      {initialData?.id && (
-        <div className="mt-8">
-          <ChildrenSection parentId={initialData.id} />
-        </div>
-      )}
+        {initialData?.id && (
+          <div className="mt-8">
+            <ChildrenSection parentId={initialData.id} />
+          </div>
+        )}
+      </form>
     </Form>
   );
 }
