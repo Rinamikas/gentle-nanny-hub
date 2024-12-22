@@ -42,7 +42,6 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
       console.log("FamilyForm: загрузка данных семьи для id =", familyId);
       if (!familyId) return null;
 
-      // Сначала получаем parent_profile
       const { data: parentProfile, error: parentError } = await supabase
         .from('parent_profiles')
         .select('*')
@@ -59,7 +58,6 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         return null;
       }
 
-      // Затем получаем связанный profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -76,7 +74,6 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         return null;
       }
 
-      // Объединяем данные
       const result: ParentProfileWithUser = {
         ...parentProfile,
         profiles: profile
@@ -93,6 +90,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
     defaultValues: {
       first_name: "",
       last_name: "",
+      email: "",
       phone: "",
       additional_phone: "",
       address: "",
@@ -108,6 +106,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
       form.reset({
         first_name: familyData.profiles?.first_name || "",
         last_name: familyData.profiles?.last_name || "",
+        email: familyData.profiles?.email || "",
         phone: familyData.profiles?.phone || "",
         additional_phone: familyData.additional_phone || "",
         address: familyData.address || "",
@@ -158,6 +157,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
           .update({
             first_name: values.first_name,
             last_name: values.last_name,
+            email: values.email,
             phone: values.phone,
             updated_at: new Date().toISOString(),
           })
@@ -174,37 +174,61 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
       } else {
         // Создание новой семьи
         console.log("FamilyForm: создание новой семьи");
-        
-        // Создаем базовый профиль
-        const { data: profileData, error: profileError } = await supabase
+
+        // Создаем пользователя в auth.users через API
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: values.email,
+          password: Math.random().toString(36).slice(-8), // Временный пароль
+        });
+
+        if (authError) throw authError;
+
+        if (!authData.user) {
+          throw new Error("Не удалось создать пользователя");
+        }
+
+        // Триггер handle_new_user() автоматически создаст записи в profiles и parent_profiles
+        // Нам нужно только обновить созданные записи
+
+        // Ждем немного, чтобы триггер успел отработать
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Обновляем базовый профиль
+        const { error: profileError } = await supabase
           .from("profiles")
-          .insert({
+          .update({
             first_name: values.first_name,
             last_name: values.last_name,
             phone: values.phone,
           })
-          .select()
-          .single();
+          .eq("id", authData.user.id);
 
         if (profileError) throw profileError;
 
-        // Создаем профиль родителя
-        const { data: parentData, error: parentError } = await supabase
+        // Получаем ID созданного профиля родителя
+        const { data: parentProfile, error: parentFetchError } = await supabase
           .from("parent_profiles")
-          .insert({
-            user_id: profileData.id,
+          .select("id")
+          .eq("user_id", authData.user.id)
+          .single();
+
+        if (parentFetchError) throw parentFetchError;
+
+        // Обновляем профиль родителя
+        const { error: parentUpdateError } = await supabase
+          .from("parent_profiles")
+          .update({
             additional_phone: values.additional_phone,
             address: values.address,
             special_requirements: values.special_requirements,
             notes: values.notes,
             status: values.status,
           })
-          .select()
-          .single();
+          .eq("id", parentProfile.id);
 
-        if (parentError) throw parentError;
+        if (parentUpdateError) throw parentUpdateError;
 
-        console.log("FamilyForm: семья успешно создана:", parentData);
+        console.log("FamilyForm: семья успешно создана:", parentProfile);
         
         toast({
           title: "Успешно",
@@ -212,7 +236,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         });
 
         // Перенаправляем на страницу редактирования
-        navigate(`/families/${parentData.id}/edit`);
+        navigate(`/families/${parentProfile.id}/edit`);
       }
     } catch (error) {
       console.error("FamilyForm: ошибка при сохранении семьи:", error);

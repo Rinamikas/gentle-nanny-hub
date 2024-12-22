@@ -38,6 +38,19 @@ export default function PersonalSection({ form }: PersonalSectionProps) {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="Введите email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
     </div>
   );
