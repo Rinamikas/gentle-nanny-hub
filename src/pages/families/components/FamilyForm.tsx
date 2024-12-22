@@ -15,6 +15,7 @@ import { setFormMethods } from "@/utils/formTestUtils";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Database } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
 type ParentProfile = Database['public']['Tables']['parent_profiles']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -31,6 +32,7 @@ interface FamilyFormProps {
 
 export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   console.log("FamilyForm: начало рендера с familyId =", familyId);
 
@@ -134,55 +136,90 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         return;
       }
 
-      if (!familyId) {
-        console.error("FamilyForm: ID семьи не определен");
+      if (familyId) {
+        // Обновление существующей семьи
+        const { error: parentError } = await supabase
+          .from("parent_profiles")
+          .update({
+            additional_phone: values.additional_phone,
+            address: values.address,
+            special_requirements: values.special_requirements,
+            notes: values.notes,
+            status: values.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", familyId);
+
+        if (parentError) throw parentError;
+
+        // Обновляем базовый профиль
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            first_name: values.first_name,
+            last_name: values.last_name,
+            phone: values.phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", familyData?.profiles?.id);
+
+        if (profileError) throw profileError;
+
+        console.log("FamilyForm: данные успешно обновлены");
+        
         toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "ID семьи не определен",
+          title: "Успешно",
+          description: "Данные семьи обновлены",
         });
-        return;
+      } else {
+        // Создание новой семьи
+        console.log("FamilyForm: создание новой семьи");
+        
+        // Создаем базовый профиль
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .insert({
+            first_name: values.first_name,
+            last_name: values.last_name,
+            phone: values.phone,
+          })
+          .select()
+          .single();
+
+        if (profileError) throw profileError;
+
+        // Создаем профиль родителя
+        const { data: parentData, error: parentError } = await supabase
+          .from("parent_profiles")
+          .insert({
+            user_id: profileData.id,
+            additional_phone: values.additional_phone,
+            address: values.address,
+            special_requirements: values.special_requirements,
+            notes: values.notes,
+            status: values.status,
+          })
+          .select()
+          .single();
+
+        if (parentError) throw parentError;
+
+        console.log("FamilyForm: семья успешно создана:", parentData);
+        
+        toast({
+          title: "Успешно",
+          description: "Новая семья создана",
+        });
+
+        // Перенаправляем на страницу редактирования
+        navigate(`/families/${parentData.id}/edit`);
       }
-
-      const { error } = await supabase
-        .from("parent_profiles")
-        .update({
-          additional_phone: values.additional_phone,
-          address: values.address,
-          special_requirements: values.special_requirements,
-          notes: values.notes,
-          status: values.status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", familyId);
-
-      if (error) throw error;
-
-      // Обновляем базовый профиль
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          first_name: values.first_name,
-          last_name: values.last_name,
-          phone: values.phone,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", familyData?.profiles?.id);
-
-      if (profileError) throw profileError;
-
-      console.log("FamilyForm: данные успешно обновлены");
-      
-      toast({
-        title: "Успешно",
-        description: "Данные семьи обновлены",
-      });
     } catch (error) {
-      console.error("FamilyForm: ошибка при обновлении семьи:", error);
+      console.error("FamilyForm: ошибка при сохранении семьи:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось обновить данные семьи",
+        description: "Не удалось сохранить данные семьи",
       });
     }
   };
