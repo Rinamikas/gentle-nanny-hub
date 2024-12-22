@@ -44,7 +44,8 @@ const AdminLayout = () => {
           user_roles (
             id,
             role,
-            created_at
+            created_at,
+            user_id
           )
         `)
         .eq('id', session.user.id)
@@ -60,8 +61,11 @@ const AdminLayout = () => {
       const profile: Profile = {
         ...profileData,
         user_roles: Array.isArray(profileData.user_roles) 
-          ? profileData.user_roles 
-          : profileData.user_roles ? [profileData.user_roles] : []
+          ? profileData.user_roles.map(role => ({
+              ...role,
+              user_id: profileData.id // Добавляем user_id из профиля
+            }))
+          : profileData.user_roles ? [{ ...profileData.user_roles, user_id: profileData.id }] : []
       };
 
       return profile;
