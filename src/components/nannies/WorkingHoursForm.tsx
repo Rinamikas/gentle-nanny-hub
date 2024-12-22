@@ -60,7 +60,6 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
       console.log("=== Начало сохранения рабочих часов ===");
       console.log("1. Данные формы:", values);
 
-      // Проверяем сессию перед сохранением
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log("2. Проверка сессии:", { session, sessionError });
 
@@ -120,7 +119,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-4">
         <FormField
           control={form.control}
           name="work_date"
@@ -211,7 +210,11 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
           />
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        <Button 
+          onClick={form.handleSubmit(onSubmit)} 
+          disabled={isSubmitting} 
+          className="w-full"
+        >
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -221,7 +224,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
             "Сохранить"
           )}
         </Button>
-      </form>
+      </div>
     </div>
   );
 }
