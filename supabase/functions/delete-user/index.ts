@@ -25,12 +25,12 @@ Deno.serve(async (req) => {
     
     if (getUserError) {
       console.error("Ошибка при поиске пользователя:", getUserError)
-      throw new Error("Ошибка при поиске пользователя")
+      throw new Error(`Ошибка при поиске пользователя: ${getUserError.message}`)
     }
 
     if (!user) {
       console.error("Пользователь не найден в auth.users")
-      throw new Error("Пользователь не найден")
+      throw new Error("Пользователь не найден в auth.users")
     }
 
     console.log("Пользователь найден:", user.id)
