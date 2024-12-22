@@ -25,7 +25,6 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
   const navigate = useNavigate();
   const { id: routeFamilyId } = useParams();
   
-  // Используем ID из пропсов или из URL
   const currentFamilyId = propsFamilyId || routeFamilyId;
   
   console.log("FamilyForm: начало рендера с familyId =", currentFamilyId);
@@ -120,28 +119,21 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
 
         if (profileError) throw profileError;
 
-        // Получаем ID созданного профиля родителя
-        const { data: parentProfile, error: parentFetchError } = await supabase
+        // Создаем профиль родителя
+        const { data: parentProfile, error: parentCreateError } = await supabase
           .from("parent_profiles")
-          .select("id")
-          .eq("user_id", authData.user.id)
-          .single();
-
-        if (parentFetchError) throw parentFetchError;
-
-        // Обновляем профиль родителя
-        const { error: parentUpdateError } = await supabase
-          .from("parent_profiles")
-          .update({
+          .insert({
+            user_id: authData.user.id,
             additional_phone: values.additional_phone,
             address: values.address,
             special_requirements: values.special_requirements,
             notes: values.notes,
             status: values.status,
           })
-          .eq("id", parentProfile.id);
+          .select()
+          .single();
 
-        if (parentUpdateError) throw parentUpdateError;
+        if (parentCreateError) throw parentCreateError;
 
         console.log("FamilyForm: семья успешно создана:", parentProfile);
         
@@ -150,7 +142,6 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
           description: "Новая семья создана",
         });
 
-        // Перенаправляем на список семей
         navigate("/families");
       }
     } catch (error) {
@@ -177,9 +168,9 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         
         <Button type="submit" className="w-full">Сохранить</Button>
 
-        {currentFamilyId && (
+        {currentFamilyId && familyData?.id && (
           <div className="mt-8">
-            <ChildrenSection parentId={currentFamilyId} />
+            <ChildrenSection parentId={familyData.id} />
           </div>
         )}
       </form>
