@@ -50,12 +50,22 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
   const mutation = useMutation({
     mutationFn: async (data: ChildFormData) => {
       console.log("ChildrenSection: сохранение данных ребенка...", data);
+      
+      // Очищаем undefined значения
+      const cleanedData = {
+        ...data,
+        medical_conditions: data.medical_conditions?.value !== "undefined" ? data.medical_conditions : null,
+        notes: data.notes?.value !== "undefined" ? data.notes : null,
+        parent_profile_id: parentId // Добавляем parent_profile_id
+      };
+      
+      console.log("ChildrenSection: очищенные данные для сохранения:", cleanedData);
+
       const { data: child, error } = await supabase
         .from("children")
         .upsert({
           id: selectedChild?.id,
-          parent_profile_id: parentId,
-          ...data,
+          ...cleanedData
         })
         .select()
         .single();
