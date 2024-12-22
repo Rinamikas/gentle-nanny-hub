@@ -52,44 +52,53 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем/обновляем пользователя через Edge Function
-      console.log("2. Creating/updating user through Edge Function");
-      const { data: userData, error: functionError } = await supabase.functions.invoke(
-        'create-auth-user',
-        {
-          body: JSON.stringify({ 
-            email,
-            code: otp
-          })
+      // 2. Проверяем существование пользователя
+      console.log("2. Checking if user exists");
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email.toLowerCase())
+        .single();
+
+      if (profileError) {
+        console.error("Error checking profile:", profileError);
+        throw profileError;
+      }
+
+      let password: string;
+
+      if (!profiles) {
+        // 3a. Если пользователя нет - создаем через Edge Function
+        console.log("3a. User not found, creating new user");
+        const { data: userData, error: functionError } = await supabase.functions.invoke(
+          'create-auth-user',
+          {
+            body: JSON.stringify({ 
+              email,
+              code: otp
+            })
+          }
+        );
+
+        if (functionError) {
+          console.error("Error creating user:", functionError);
+          throw functionError;
         }
-      );
 
-      console.log("Edge function response:", userData);
-      
-      if (functionError) {
-        console.error("Error from edge function:", functionError);
-        throw functionError;
+        password = userData.password;
+        console.log("New user created successfully");
+      } else {
+        // 3b. Если пользователь есть - используем код как пароль
+        console.log("3b. User exists, using verification code as password");
+        password = otp;
       }
 
-      if (!userData?.password) {
-        console.error("Invalid response from edge function:", userData);
-        throw new Error("Не получен пароль от сервера");
-      }
-
-      console.log("3. User created/updated successfully");
-      
-      // 4. Входим с созданными учетными данными
-      console.log("4. Attempting sign in with verification code as password");
-
-      // Добавляем задержку перед входом
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // 4. Входим с учетными данными
+      console.log("4. Attempting to sign in");
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: userData.password
+        password
       });
-
-      console.log("Sign in response:", signInData);
 
       if (signInError) {
         console.error("5. Sign in error:", signInError);
