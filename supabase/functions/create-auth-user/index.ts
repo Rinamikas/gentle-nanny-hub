@@ -52,7 +52,7 @@ serve(async (req) => {
 
     console.log('2. Verification code is valid')
 
-    // 2. Проверяем существование пользователя
+    // 2. Проверяем существование пользователя через auth.users
     console.log('3. Checking for existing user...')
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
       .listUsers({
@@ -74,7 +74,7 @@ serve(async (req) => {
     if (existingUser) {
       // 3a. Обновляем пароль существующего пользователя
       console.log('4a. Updating existing user password...')
-      const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
+      const { error: updateError } = await supabaseAdmin.auth.admin
         .updateUserById(existingUser.id, {
           password: code,
           email_confirm: true
