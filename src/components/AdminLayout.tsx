@@ -42,7 +42,7 @@ const AdminLayout = () => {
       }
 
       console.log("Загружен профиль:", profile);
-      return profile;
+      return profile as Profile;
     },
     enabled: !!session?.user?.id
   });
