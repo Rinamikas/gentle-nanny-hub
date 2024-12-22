@@ -6,6 +6,7 @@ export const familyFormSchema = z.object({
   phone: z.string().min(10, "Введите корректный номер телефона"),
   additional_phone: z.string().optional(),
   address: z.string().min(5, "Введите полный адрес"),
+  special_requirements: z.string().optional(),
   status: z.enum(["default", "star", "diamond"]).default("default"),
   notes: z.string().optional(),
 });
