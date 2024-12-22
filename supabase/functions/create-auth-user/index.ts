@@ -48,27 +48,29 @@ serve(async (req) => {
 
     console.log('2. Verification code is valid')
 
-    // 2. Получаем текущего пользователя через email
-    console.log('3. Getting user by email...')
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single()
+    // 2. Проверяем существование пользователя через listUsers
+    console.log('3. Checking for existing user...')
+    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
+      .listUsers({
+        perPage: 1,
+        page: 1,
+      })
 
-    if (userError) {
-      console.error('Error getting user:', userError)
-      throw new Error('Failed to get user')
+    if (getUserError) {
+      console.error('Error checking existing users:', getUserError)
+      throw new Error('Failed to check existing users')
     }
+
+    const existingUser = users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
+    console.log('Existing user found:', existingUser?.id || 'none')
 
     let userId: string
 
-    if (userData) {
+    if (existingUser) {
       // 3a. Обновляем пароль существующего пользователя
       console.log('4a. Updating existing user password...')
-      userId = userData.id
       const { error: updateError } = await supabaseAdmin.auth.admin
-        .updateUserById(userId, {
+        .updateUserById(existingUser.id, {
           password: code,
           email_confirm: true
         })
@@ -78,6 +80,7 @@ serve(async (req) => {
         throw new Error('Failed to update user')
       }
 
+      userId = existingUser.id
       console.log('5a. User password updated successfully:', userId)
     } else {
       // 3b. Создаем нового пользователя
