@@ -41,6 +41,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   console.log("Rendering WorkingHoursForm for nanny:", nannyId);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const form = useForm<WorkingHoursFormValues>({
     resolver: zodResolver(workingHoursSchema),
@@ -105,7 +106,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Дата</FormLabel>
-              <Popover>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -129,7 +130,10 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
+                    onSelect={(date) => {
+                      field.onChange(date);
+                      setIsCalendarOpen(false);
+                    }}
                     disabled={(date) => date < new Date()}
                     initialFocus
                     locale={ru}

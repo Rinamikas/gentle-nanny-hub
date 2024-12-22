@@ -95,7 +95,7 @@ const NannyForm = () => {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container py-6">
       <div className="flex items-center gap-4">
         <Button 
           variant="ghost" 
@@ -121,7 +121,7 @@ const NannyForm = () => {
             {id && <WorkingHoursSection nannyId={id} />}
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 mb-6">
             <Button 
               type="button" 
               variant="outline"

@@ -12,7 +12,7 @@ export default function WorkingHoursSection({ nannyId }: WorkingHoursSectionProp
   }
 
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader>
         <CardTitle>Рабочие часы</CardTitle>
       </CardHeader>
