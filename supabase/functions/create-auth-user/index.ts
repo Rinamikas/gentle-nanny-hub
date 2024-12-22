@@ -49,15 +49,16 @@ serve(async (req) => {
 
     if (profile) {
       // 2a. Если профиль существует, ищем пользователя по email
-      console.log('2a. Profile exists, getting user by email...')
+      console.log('2a. Profile exists, searching for user...')
       
-      const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin
-        .getUserByEmail(email.toLowerCase())
+      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
 
-      if (getUserError) {
-        console.error('Error getting user by email:', getUserError)
-        throw new Error('Failed to get user')
+      if (listError) {
+        console.error('Error listing users:', listError)
+        throw new Error('Failed to list users')
       }
+
+      const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
 
       if (user) {
         console.log('Found user in auth.users:', user.id)
