@@ -63,39 +63,33 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         throw profileError;
       }
 
-      let password: string;
-
-      if (!profiles) {
-        // 3a. Если пользователя нет - создаем через Edge Function
-        console.log("3a. User not found, creating new user");
-        const { data: userData, error: functionError } = await supabase.functions.invoke(
-          'create-auth-user',
-          {
-            body: JSON.stringify({ 
-              email,
-              code: otp
-            })
-          }
-        );
-
-        if (functionError) {
-          console.error("Error creating user:", functionError);
-          throw functionError;
+      // 3. Создаем или получаем пользователя через Edge Function
+      console.log("3. Creating or getting user through Edge Function");
+      const { data: userData, error: functionError } = await supabase.functions.invoke(
+        'create-auth-user',
+        {
+          body: JSON.stringify({ 
+            email,
+            code: otp,
+            shouldSignIn: true // Важно! Нам нужен пароль для входа
+          })
         }
+      );
 
-        password = userData.password;
-        console.log("New user created successfully");
-      } else {
-        // 3b. Если пользователь есть - используем код как пароль
-        console.log("3b. User exists, using verification code as password");
-        password = otp;
+      if (functionError) {
+        console.error("Error creating/getting user:", functionError);
+        throw functionError;
+      }
+
+      if (!userData.password) {
+        throw new Error("Не получен пароль для входа");
       }
 
       // 4. Входим с учетными данными
       console.log("4. Attempting to sign in");
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password: userData.password
       });
 
       if (signInError) {
