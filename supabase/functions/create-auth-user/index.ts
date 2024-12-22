@@ -46,15 +46,19 @@ serve(async (req) => {
         throw new Error(`Error checking existing users: ${listError.message}`)
       }
 
+      console.log('Found users:', users?.length || 0)
       const existingUser = users?.find(u => u.email === email)
       
-      // Генерируем случайный пароль
+      // Генерируем пароль из кода
       const password = code
 
       if (existingUser) {
         console.log('User exists, updating password...')
         const { data, error: updateError } = await supabaseAdmin.auth.admin
-          .updateUserById(existingUser.id, { password })
+          .updateUserById(existingUser.id, { 
+            password,
+            email_confirm: true
+          })
 
         if (updateError) {
           console.error('Error updating user:', updateError)
@@ -73,7 +77,10 @@ serve(async (req) => {
         .createUser({
           email,
           password,
-          email_confirm: true
+          email_confirm: true,
+          user_metadata: {
+            email_verified: true
+          }
         })
 
       if (createError) {
@@ -81,7 +88,7 @@ serve(async (req) => {
         throw new Error(`Error creating user: ${createError.message}`)
       }
 
-      console.log('User created successfully')
+      console.log('User created successfully:', data.user.id)
       return new Response(
         JSON.stringify({ password }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
