@@ -32,7 +32,21 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('*, user_roles(*)')
+        .select(`
+          id,
+          email,
+          first_name,
+          last_name,
+          phone,
+          photo_url,
+          created_at,
+          updated_at,
+          user_roles (
+            id,
+            role,
+            created_at
+          )
+        `)
         .eq('id', session.user.id)
         .single();
 
@@ -43,7 +57,6 @@ const AdminLayout = () => {
 
       console.log("Загружен профиль:", profileData);
       
-      // Преобразуем данные в правильный формат
       const profile: Profile = {
         ...profileData,
         user_roles: Array.isArray(profileData.user_roles) 
