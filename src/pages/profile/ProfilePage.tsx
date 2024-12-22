@@ -28,7 +28,15 @@ const ProfilePage = () => {
       // Получаем базовый профиль с ролями
       let { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*, user_roles(*)")
+        .select(`
+          *,
+          user_roles (
+            id,
+            role,
+            created_at,
+            user_id
+          )
+        `)
         .eq("id", session.user.id)
         .single();
 
@@ -39,64 +47,71 @@ const ProfilePage = () => {
         if (profileError.code === 'PGRST116') {
           console.log("Профиль не найден, создаем новый");
           
-          // Создаем новый профиль
-          const { data: newProfile, error: createError } = await supabase
+          // Сначала создаем профиль
+          const { data: newProfile, error: createProfileError } = await supabase
             .from("profiles")
-            .insert([
-              { 
-                id: session.user.id,
-                email: session.user.email
-              }
-            ])
-            .select("*, user_roles(*)")
+            .insert([{ 
+              id: session.user.id,
+              email: session.user.email
+            }])
+            .select()
             .single();
 
-          if (createError) {
-            console.error("Ошибка при создании профиля:", createError);
-            throw createError;
+          if (createProfileError) {
+            console.error("Ошибка при создании профиля:", createProfileError);
+            throw createProfileError;
           }
 
-          profileData = newProfile;
+          // Затем создаем роль parent по умолчанию
+          const { error: createRoleError } = await supabase
+            .from("user_roles")
+            .insert([{
+              user_id: session.user.id,
+              role: 'parent'
+            }]);
+
+          if (createRoleError) {
+            console.error("Ошибка при создании роли:", createRoleError);
+            throw createRoleError;
+          }
+
+          // Получаем обновленный профиль с ролью
+          const { data: updatedProfile, error: fetchError } = await supabase
+            .from("profiles")
+            .select(`
+              *,
+              user_roles (
+                id,
+                role,
+                created_at,
+                user_id
+              )
+            `)
+            .eq("id", session.user.id)
+            .single();
+
+          if (fetchError) {
+            console.error("Ошибка при получении обновленного профиля:", fetchError);
+            throw fetchError;
+          }
+
+          profileData = updatedProfile;
         } else {
           throw profileError;
         }
       }
 
       console.log("Загружен профиль:", profileData);
-
-      // Получаем данные няни
-      const { data: nannyData, error: nannyError } = await supabase
-        .from("nanny_profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (nannyError && nannyError.code !== 'PGRST116') {
-        console.error("Ошибка при загрузке профиля няни:", nannyError);
-      }
-
-      // Получаем данные родителя
-      const { data: parentData, error: parentError } = await supabase
-        .from("parent_profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (parentError && parentError.code !== 'PGRST116') {
-        console.error("Ошибка при загрузке профиля родителя:", parentError);
-      }
-
-      const formattedData: Profile = {
+      
+      // Преобразуем данные в правильный формат
+      const profile: Profile = {
         ...profileData,
         user_roles: Array.isArray(profileData.user_roles) 
           ? profileData.user_roles 
-          : profileData.user_roles ? [profileData.user_roles] : [],
-        nanny_profiles: nannyData ? [nannyData] : [],
-        parent_profiles: parentData ? [parentData] : [],
+          : profileData.user_roles ? [profileData.user_roles] : []
       };
 
-      console.log("Форматированные данные профиля:", formattedData);
-      return formattedData;
+      return profile;
     },
     meta: {
       onError: (error: any) => {
