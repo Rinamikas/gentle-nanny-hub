@@ -17,7 +17,11 @@ import {
   LogOut
 } from "lucide-react";
 import { localizeUserRole } from "@/utils/localization";
-import type { Profile } from "@/pages/profile/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type Profile = Database['public']['Tables']['profiles']['Row'] & {
+  user_roles?: Database['public']['Tables']['user_roles']['Row'][];
+};
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -32,7 +36,7 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       
       try {
-        // Сначала получаем профиль
+        // Получаем профиль
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -44,10 +48,10 @@ const AdminLayout = () => {
           throw profileError;
         }
 
-        // Затем отдельно получаем роли
+        // Получаем роли отдельным запросом
         const { data: rolesData, error: rolesError } = await supabase
           .from('user_roles')
-          .select('id, role, created_at')
+          .select('*')
           .eq('user_id', session.user.id);
 
         if (rolesError) {
@@ -61,8 +65,8 @@ const AdminLayout = () => {
         // Объединяем данные
         return {
           ...profileData,
-          user_roles: rolesData || []
-        } as Profile;
+          user_roles: rolesData
+        };
       } catch (error) {
         console.error("Ошибка при загрузке данных пользователя:", error);
         throw error;
