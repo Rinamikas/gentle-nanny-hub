@@ -12,6 +12,7 @@ import ChildrenSection from "@/pages/families/components/ChildrenSection";
 import type { ParentProfile } from "@/pages/families/types/parent-types";
 import type { Database } from "@/integrations/supabase/types";
 import type { Profile } from "../types";
+import { useQuery } from "@tanstack/react-query";
 
 type ParentStatus = Database['public']['Enums']['parent_status'];
 
@@ -22,14 +23,35 @@ interface ParentFormProps {
 
 export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
   const { toast } = useToast();
+
+  // Получаем данные профиля родителя
+  const { data: parentProfile } = useQuery({
+    queryKey: ['parentProfile', profile.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('parent_profiles')
+        .select('*')
+        .eq('user_id', profile.id)
+        .single();
+
+      if (error) {
+        console.error("Ошибка при загрузке профиля родителя:", error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!profile.id
+  });
+
   const form = useForm<ParentFormValues>({
     resolver: zodResolver(parentFormSchema),
     defaultValues: {
-      address: profile?.parent_profiles?.[0]?.address || "",
-      additional_phone: profile?.parent_profiles?.[0]?.additional_phone || "",
-      special_requirements: profile?.parent_profiles?.[0]?.special_requirements || "",
-      notes: profile?.parent_profiles?.[0]?.notes || "",
-      status: (profile?.parent_profiles?.[0]?.status as ParentStatus) || "default",
+      address: parentProfile?.address || "",
+      additional_phone: parentProfile?.additional_phone || "",
+      special_requirements: parentProfile?.special_requirements || "",
+      notes: parentProfile?.notes || "",
+      status: (parentProfile?.status as ParentStatus) || "default",
     },
   });
 
@@ -64,8 +86,6 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
       });
     }
   };
-
-  const parentProfile = profile?.parent_profiles?.[0];
 
   return (
     <div className="space-y-6">
