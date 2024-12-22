@@ -41,7 +41,7 @@ const AdminLayout = () => {
           photo_url,
           created_at,
           updated_at,
-          user_roles!inner (
+          user_roles (
             id,
             role,
             created_at
