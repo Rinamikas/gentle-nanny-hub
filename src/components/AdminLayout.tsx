@@ -59,14 +59,18 @@ const AdminLayout = () => {
         console.log("Загружен профиль с ролями:", profileData);
 
         // Преобразуем данные в соответствии с типом Profile
-        const typedProfileData = profileData as ProfileWithRoles;
-        
-        return {
-          ...typedProfileData,
-          user_roles: Array.isArray(typedProfileData.user_roles) 
-            ? typedProfileData.user_roles 
+        const typedProfileData = {
+          ...profileData,
+          user_roles: Array.isArray(profileData.user_roles) 
+            ? profileData.user_roles.map(role => ({
+                id: role.id,
+                role: role.role,
+                created_at: role.created_at
+              }))
             : []
         } as Profile;
+        
+        return typedProfileData;
       } catch (error) {
         console.error("Ошибка при загрузке данных пользователя:", error);
         throw error;
