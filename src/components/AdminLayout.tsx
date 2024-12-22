@@ -18,11 +18,6 @@ import {
 } from "lucide-react";
 import { localizeUserRole } from "@/utils/localization";
 import type { Profile } from "@/pages/profile/types";
-import type { Database } from "@/integrations/supabase/types";
-
-type ProfileWithRoles = Database['public']['Tables']['profiles']['Row'] & {
-  user_roles: Database['public']['Tables']['user_roles']['Row'][];
-};
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -37,17 +32,10 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       
       try {
-        // Получаем профиль вместе с ролями одним запросом
+        // Сначала получаем профиль
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select(`
-            *,
-            user_roles (
-              id,
-              role,
-              created_at
-            )
-          `)
+          .select('*')
           .eq('id', session.user.id)
           .single();
 
@@ -56,21 +44,25 @@ const AdminLayout = () => {
           throw profileError;
         }
 
-        console.log("Загружен профиль с ролями:", profileData);
+        // Затем отдельно получаем роли
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('id, role, created_at')
+          .eq('user_id', session.user.id);
 
-        // Преобразуем данные в соответствии с типом Profile
-        const typedProfileData = {
+        if (rolesError) {
+          console.error("Ошибка при загрузке ролей:", rolesError);
+          throw rolesError;
+        }
+
+        console.log("Загружен профиль:", profileData);
+        console.log("Загружены роли:", rolesData);
+
+        // Объединяем данные
+        return {
           ...profileData,
-          user_roles: Array.isArray(profileData.user_roles) 
-            ? profileData.user_roles.map(role => ({
-                id: role.id,
-                role: role.role,
-                created_at: role.created_at
-              }))
-            : []
+          user_roles: rolesData || []
         } as Profile;
-        
-        return typedProfileData;
       } catch (error) {
         console.error("Ошибка при загрузке данных пользователя:", error);
         throw error;
