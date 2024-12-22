@@ -34,6 +34,24 @@ Deno.serve(async (req) => {
 
     console.log("Found user:", user.id)
 
+    // Проверяем, не занят ли email другим пользователем
+    if (updates.email && updates.email !== user.email) {
+      const { data: existingUser, error: emailCheckError } = await supabase.auth.admin.listUsers()
+      
+      if (emailCheckError) {
+        console.error("Error checking email:", emailCheckError)
+        throw emailCheckError
+      }
+
+      const emailExists = existingUser.users.some(u => 
+        u.email === updates.email && u.id !== id
+      )
+
+      if (emailExists) {
+        throw new Error(`Email ${updates.email} is already taken`)
+      }
+    }
+
     // Обновляем данные в auth.users
     const { data: authData, error: updateError } = await supabase.auth.admin.updateUserById(
       id,
