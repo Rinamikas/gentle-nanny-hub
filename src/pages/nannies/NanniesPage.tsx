@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -8,14 +7,13 @@ import NanniesHeader from "./components/NanniesHeader";
 import LoadingScreen from "@/components/LoadingScreen";
 
 const NanniesPage = () => {
-  const [showDeleted, setShowDeleted] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: nannies, isLoading: isLoadingNannies, error } = useQuery({
-    queryKey: ["nannies", showDeleted],
+    queryKey: ["nannies"],
     queryFn: async () => {
-      console.log("Fetching nannies, showDeleted:", showDeleted);
+      console.log("Загрузка списка нянь...");
       
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -35,11 +33,10 @@ const NanniesPage = () => {
             email,
             phone
           )
-        `)
-        .eq("is_deleted", showDeleted);
+        `);
 
       if (error) {
-        console.error("Error fetching nannies:", error);
+        console.error("Ошибка загрузки нянь:", error);
         if (error.message.includes('JWT')) {
           navigate("/auth");
           return [];
@@ -52,29 +49,26 @@ const NanniesPage = () => {
         throw error;
       }
 
-      console.log("Загруженные няни:", data);
+      console.log("Загружены няни:", data);
       return data;
     },
   });
 
-  const softDeleteMutation = useMutation({
+  const deleteNannyMutation = useMutation({
     mutationFn: async (nannyId: string) => {
-      console.log("Attempting to delete nanny:", nannyId);
+      console.log("Удаление няни:", nannyId);
       
       const { error } = await supabase
         .from("nanny_profiles")
-        .update({ 
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        })
+        .delete()
         .eq("id", nannyId);
 
       if (error) {
-        console.error("Error in softDeleteMutation:", error);
+        console.error("Ошибка при удалении няни:", error);
         throw error;
       }
       
-      console.log("Nanny deleted successfully");
+      console.log("Няня успешно удалена");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nannies"] });
@@ -84,47 +78,11 @@ const NanniesPage = () => {
       });
     },
     onError: (error) => {
-      console.error("Error deleting nanny:", error);
+      console.error("Ошибка удаления няни:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
         description: "Не удалось удалить няню",
-      });
-    },
-  });
-
-  const restoreMutation = useMutation({
-    mutationFn: async (nannyId: string) => {
-      console.log("Attempting to restore nanny:", nannyId);
-      
-      const { error } = await supabase
-        .from("nanny_profiles")
-        .update({ 
-          is_deleted: false,
-          deleted_at: null
-        })
-        .eq("id", nannyId);
-
-      if (error) {
-        console.error("Error in restoreMutation:", error);
-        throw error;
-      }
-      
-      console.log("Nanny restored successfully");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nannies"] });
-      toast({
-        title: "Успешно",
-        description: "Няня восстановлена",
-      });
-    },
-    onError: (error) => {
-      console.error("Error restoring nanny:", error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось восстановить няню",
       });
     },
   });
@@ -139,13 +97,7 @@ const NanniesPage = () => {
 
   const handleDeleteNanny = async (nannyId: string) => {
     if (window.confirm("Вы уверены, что хотите удалить эту няню?")) {
-      await softDeleteMutation.mutate(nannyId);
-    }
-  };
-
-  const handleRestoreNanny = async (nannyId: string) => {
-    if (window.confirm("Вы хотите восстановить эту няню?")) {
-      await restoreMutation.mutate(nannyId);
+      await deleteNannyMutation.mutate(nannyId);
     }
   };
 
@@ -159,16 +111,11 @@ const NanniesPage = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <NanniesHeader 
-        showDeleted={showDeleted}
-        onToggleDeleted={() => setShowDeleted(!showDeleted)}
-        onAddNanny={handleAddNanny}
-      />
+      <NanniesHeader onAddNanny={handleAddNanny} />
       <NanniesTable
         nannies={nannies}
         onEdit={handleEditNanny}
         onDelete={handleDeleteNanny}
-        onRestore={handleRestoreNanny}
       />
     </div>
   );

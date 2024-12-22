@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, RotateCcw, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { PostgrestResponse } from "@supabase/supabase-js";
 
@@ -17,10 +17,9 @@ interface NanniesTableProps {
   nannies: Nanny[] | null;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onRestore: (id: string) => void;
 }
 
-const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProps) => {
+const NanniesTable = ({ nannies, onEdit, onDelete }: NanniesTableProps) => {
   return (
     <div className="bg-white shadow-sm rounded-lg">
       <table className="min-w-full divide-y divide-gray-200">
@@ -38,9 +37,6 @@ const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProp
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Контакты
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Статус
-            </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Действия
             </th>
@@ -48,7 +44,7 @@ const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProp
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {nannies?.map((nanny) => (
-            <tr key={nanny.id} className={nanny.is_deleted ? "bg-gray-50" : ""}>
+            <tr key={nanny.id}>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   {nanny.photo_url && (
@@ -78,41 +74,22 @@ const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProp
                   {nanny.profiles?.email}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {nanny.is_deleted ? (
-                  <Badge variant="destructive">Удалена</Badge>
-                ) : (
-                  <Badge variant="default">Активна</Badge>
-                )}
-              </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end gap-2">
-                  {!nanny.is_deleted ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(nanny.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDelete(nanny.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRestore(nanny.id)}
-                    >
-                      <RotateCcw className="h-4 w-4 text-green-500" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(nanny.id)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(nanny.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
               </td>
             </tr>
