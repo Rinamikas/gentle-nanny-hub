@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -42,6 +42,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [date, setDate] = useState<Date>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<WorkingHoursFormValues>({
     resolver: zodResolver(workingHoursSchema),
@@ -53,6 +54,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
 
   const onSubmit = async (values: WorkingHoursFormValues) => {
     try {
+      setIsSubmitting(true);
       console.log("Начинаем сохранение рабочих часов:", values);
       const formattedDate = format(values.work_date, "yyyy-MM-dd");
       console.log("Форматированная дата:", formattedDate);
@@ -92,6 +94,8 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
         title: "Ошибка",
         description: "Не удалось сохранить рабочие часы",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -188,8 +192,15 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
           />
         </div>
 
-        <Button type="submit">
-          Сохранить
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Сохранение...
+            </>
+          ) : (
+            "Сохранить"
+          )}
         </Button>
       </form>
     </div>
