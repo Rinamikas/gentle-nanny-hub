@@ -27,7 +27,6 @@ export function NannySelect({ value, onSelect }: NannySelectProps) {
             last_name
           )
         `)
-        .eq("is_deleted", false)
         .order("created_at");
 
       if (error) {
