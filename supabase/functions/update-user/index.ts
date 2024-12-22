@@ -22,9 +22,14 @@ Deno.serve(async (req) => {
     // Сначала проверяем существование пользователя
     const { data: { user }, error: getUserError } = await supabase.auth.admin.getUserById(id)
     
-    if (getUserError || !user) {
-      console.error("User not found:", getUserError || "No user data")
-      throw new Error("User not found")
+    if (getUserError) {
+      console.error("Error getting user:", getUserError)
+      throw new Error(`Failed to get user: ${getUserError.message}`)
+    }
+    
+    if (!user) {
+      console.error("User not found with ID:", id)
+      throw new Error(`User not found with ID: ${id}`)
     }
 
     console.log("Found user:", user.id)
@@ -77,7 +82,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Update user error:", error.message)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
