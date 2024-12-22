@@ -34,7 +34,7 @@ export function UserCard({ user }: { user: User }) {
           <CardDescription>{user.email}</CardDescription>
         </div>
         <UserRoleManager
-          currentRole={user.role}
+          currentRole={user.user_roles?.[0]?.role}
           onRoleChange={handleRoleChange}
         />
       </CardHeader>

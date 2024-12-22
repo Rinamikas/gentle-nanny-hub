@@ -7,13 +7,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 const UsersPage = () => {
   const navigate = useNavigate();
-  const { users, isLoading, error, updateUser, deleteUser } = useUsers();
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-  });
+  const { users, isLoading, error } = useUsers();
 
   useEffect(() => {
     const checkSession = async () => {
@@ -25,39 +19,6 @@ const UsersPage = () => {
     };
     checkSession();
   }, [navigate]);
-
-  const handleEditClick = (user: any) => {
-    setEditingUser(user.id);
-    setEditForm({
-      first_name: user.first_name || "",
-      last_name: user.last_name || "",
-      email: user.email || "",
-    });
-  };
-
-  const handleSaveEdit = async (id: string) => {
-    updateUser({ 
-      id, 
-      updates: editForm 
-    });
-    setEditingUser(null);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Вы уверены, что хотите удалить этого пользователя?")) {
-      deleteUser(id);
-    }
-  };
-
-  const handleFormChange = (field: string, value: string) => {
-    setEditForm({ ...editForm, [field]: value });
-  };
-
-  const handleRoleChange = () => {
-    // Перезагружаем список пользователей после изменения роли
-    console.log("Обновляем список пользователей после изменения роли");
-    window.location.reload();
-  };
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -72,18 +33,7 @@ const UsersPage = () => {
       <h1 className="text-2xl font-bold mb-6">Управление пользователями</h1>
       <div className="grid gap-4">
         {users?.map((user) => (
-          <UserCard
-            key={user.id}
-            user={user}
-            isEditing={editingUser === user.id}
-            editForm={editForm}
-            onEdit={() => handleEditClick(user)}
-            onSave={() => handleSaveEdit(user.id)}
-            onCancel={() => setEditingUser(null)}
-            onDelete={() => handleDelete(user.id)}
-            onFormChange={handleFormChange}
-            onRoleChange={handleRoleChange}
-          />
+          <UserCard key={user.id} user={user} />
         ))}
       </div>
     </div>
