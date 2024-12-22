@@ -57,19 +57,20 @@ export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Профиль пользователя</h2>
+        <UserRoleManager 
+          currentRole={profile?.user_roles?.[0]?.role} 
+          onRoleChange={onUpdate} 
+        />
+      </div>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <ContactInfo form={form} />
           <Button type="submit">Сохранить</Button>
         </form>
       </Form>
-
-      <div className="border-t pt-6">
-        <UserRoleManager 
-          currentRole={profile?.user_roles?.[0]?.role} 
-          onRoleChange={onUpdate} 
-        />
-      </div>
     </div>
   );
 }

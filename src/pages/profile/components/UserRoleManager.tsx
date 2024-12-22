@@ -3,6 +3,14 @@ import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -10,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertOctagon, UserCog } from "lucide-react";
 import type { UserRole } from "@/pages/users/types";
 
 interface UserRoleManagerProps {
@@ -22,6 +31,7 @@ export default function UserRoleManager({ currentRole, onRoleChange }: UserRoleM
     currentRole as UserRole | undefined
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { session } = useSessionContext();
   const { toast } = useToast();
 
@@ -115,6 +125,7 @@ export default function UserRoleManager({ currentRole, onRoleChange }: UserRoleM
         description: "Тип пользователя изменен",
       });
 
+      setIsOpen(false);
       onRoleChange();
     } catch (error) {
       console.error("Ошибка при смене роли:", error);
@@ -129,28 +140,55 @@ export default function UserRoleManager({ currentRole, onRoleChange }: UserRoleM
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Тип пользователя</h3>
-      <div className="flex gap-4">
-        <Select
-          value={selectedRole}
-          onValueChange={(value) => setSelectedRole(value as UserRole)}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Выберите тип" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="parent">Родитель</SelectItem>
-            <SelectItem value="nanny">Няня</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          onClick={handleRoleChange}
-          disabled={isLoading || !selectedRole || selectedRole === currentRole}
-        >
-          {isLoading ? "Сохранение..." : "Сохранить"}
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon">
+          <UserCog className="h-4 w-4" />
         </Button>
-      </div>
-    </div>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertOctagon className="h-5 w-5 text-yellow-500" />
+            Смена роли пользователя
+          </DialogTitle>
+          <DialogDescription className="text-yellow-600">
+            Внимание! Смена роли приведет к удалению всех данных, связанных с текущей ролью.
+            Это действие необратимо.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Выберите новую роль:</label>
+            <Select
+              value={selectedRole}
+              onValueChange={(value) => setSelectedRole(value as UserRole)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите роль" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="parent">Родитель</SelectItem>
+                <SelectItem value="nanny">Няня</SelectItem>
+                <SelectItem value="admin">Администратор</SelectItem>
+                <SelectItem value="owner">Владелец</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleRoleChange}
+              disabled={isLoading || !selectedRole || selectedRole === currentRole}
+              className="bg-yellow-500 hover:bg-yellow-600"
+            >
+              {isLoading ? "Сохранение..." : "Подтвердить смену роли"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
