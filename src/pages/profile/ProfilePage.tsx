@@ -34,28 +34,32 @@ const ProfilePage = () => {
 
       if (profileError) {
         console.error("Ошибка при загрузке профиля:", profileError);
-        throw profileError;
-      }
+        
+        // Если профиль не найден, создаем новый
+        if (profileError.code === 'PGRST116') {
+          console.log("Профиль не найден, создаем новый");
+          
+          // Создаем новый профиль
+          const { data: newProfile, error: createError } = await supabase
+            .from("profiles")
+            .insert([
+              { 
+                id: session.user.id,
+                email: session.user.email
+              }
+            ])
+            .select("*, user_roles(*)")
+            .single();
 
-      if (!profileData) {
-        console.log("Профиль не найден, создаем новый");
-        const { data: newProfile, error: createError } = await supabase
-          .from("profiles")
-          .insert([
-            { 
-              id: session.user.id,
-              email: session.user.email
-            }
-          ])
-          .select()
-          .single();
+          if (createError) {
+            console.error("Ошибка при создании профиля:", createError);
+            throw createError;
+          }
 
-        if (createError) {
-          console.error("Ошибка при создании профиля:", createError);
-          throw createError;
+          profileData = newProfile;
+        } else {
+          throw profileError;
         }
-
-        profileData = newProfile;
       }
 
       console.log("Загружен профиль:", profileData);
