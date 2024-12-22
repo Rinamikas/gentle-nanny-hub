@@ -12,6 +12,7 @@ serve(async (req) => {
   }
 
   try {
+    // Создаем клиент с service_role ключом
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -28,55 +29,28 @@ serve(async (req) => {
     console.log('Email:', email)
     console.log('Code:', code)
 
-    // 1. Проверяем код верификации через RPC
-    console.log('1. Checking verification code...')
-    const { data: hasValidCode, error: rpcError } = await supabaseAdmin
-      .rpc('check_verification_code', {
-        p_email: email,
-        p_code: code
-      })
+    // 1. Проверяем существование пользователя через profiles
+    console.log('1. Checking for existing user in profiles...')
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email')
+      .eq('email', email.toLowerCase())
+      .maybeSingle()
 
-    if (rpcError) {
-      console.error('Verification code check error:', rpcError)
-      throw new Error('Failed to verify code')
+    if (profileError) {
+      console.error('Error checking profile:', profileError)
+      throw new Error('Failed to check existing profile')
     }
 
-    if (!hasValidCode) {
-      console.error('Invalid or expired verification code')
-      throw new Error('Invalid or expired verification code')
-    }
-
-    console.log('2. Verification code is valid')
-
-    // 2. Проверяем существование пользователя через listUsers
-    console.log('3. Checking for existing user...')
-    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
-      .listUsers()
-
-    if (getUserError) {
-      console.error('Error checking existing users:', getUserError)
-      throw new Error('Failed to check existing users')
-    }
-
-    // Ищем пользователя с учетом регистра email
-    const existingUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
-    console.log('Existing user search result:', {
-      searchEmail: email.toLowerCase(),
-      foundUser: existingUser ? {
-        id: existingUser.id,
-        email: existingUser.email,
-        meta: existingUser.user_metadata
-      } : 'not found',
-      totalUsers: users.length
-    })
+    console.log('Profile search result:', profile)
 
     let userId: string
 
-    if (existingUser) {
-      // 3a. Обновляем пароль существующего пользователя
-      console.log('4a. Updating existing user password...')
+    if (profile) {
+      // 2a. Если профиль существует, обновляем пароль
+      console.log('2a. Profile exists, updating password...')
       const { error: updateError } = await supabaseAdmin.auth.admin
-        .updateUserById(existingUser.id, {
+        .updateUserById(profile.id, {
           password: code,
           email_confirm: true
         })
@@ -86,11 +60,11 @@ serve(async (req) => {
         throw new Error('Failed to update user')
       }
 
-      userId = existingUser.id
-      console.log('5a. User password updated successfully:', userId)
+      userId = profile.id
+      console.log('3a. User password updated successfully:', userId)
     } else {
-      // 3b. Создаем нового пользователя
-      console.log('4b. Creating new user...')
+      // 2b. Создаем нового пользователя
+      console.log('2b. Creating new user...')
       const { data: createData, error: createError } = await supabaseAdmin.auth.admin
         .createUser({
           email,
@@ -109,20 +83,7 @@ serve(async (req) => {
       }
 
       userId = createData.user.id
-      console.log('5b. User created successfully:', userId)
-    }
-
-    // 4. Обновляем статус кода верификации
-    console.log('6. Updating verification code status...')
-    const { error: updateCodeError } = await supabaseAdmin
-      .from('verification_codes')
-      .update({ status: 'verified' })
-      .eq('email', email)
-      .eq('code', code)
-
-    if (updateCodeError) {
-      console.error('Error updating verification code:', updateCodeError)
-      // Не прерываем процесс, так как пользователь уже создан/обновлен
+      console.log('3b. User created successfully:', userId)
     }
 
     console.log('=== User management process completed successfully ===')
@@ -143,7 +104,7 @@ serve(async (req) => {
     console.error('Error details:', error)
     
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to create user' }),
+      JSON.stringify({ error: error.message || 'Failed to manage user' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
