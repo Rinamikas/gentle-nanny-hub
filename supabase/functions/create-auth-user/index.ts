@@ -48,25 +48,22 @@ serve(async (req) => {
     let userId: string
 
     if (profile) {
-      // 2a. Если профиль существует, сначала ищем в auth.users
-      console.log('2a. Profile exists, searching in auth.users...')
+      // 2a. Если профиль существует, ищем пользователя по email
+      console.log('2a. Profile exists, getting user by email...')
       
-      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-        filter: {
-          email: email.toLowerCase()
-        }
-      })
+      const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin
+        .getUserByEmail(email.toLowerCase())
 
-      if (listError) {
-        console.error('Error listing users:', listError)
-        throw new Error('Failed to list users')
+      if (getUserError) {
+        console.error('Error getting user by email:', getUserError)
+        throw new Error('Failed to get user')
       }
 
-      if (users && users.length > 0) {
-        console.log('Found user in auth.users:', users[0].id)
-        // Теперь обновляем пароль
-        const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
-          .updateUserById(users[0].id, {
+      if (user) {
+        console.log('Found user in auth.users:', user.id)
+        // Обновляем пароль
+        const { error: updateError } = await supabaseAdmin.auth.admin
+          .updateUserById(user.id, {
             password: code,
             email_confirm: true
           })
@@ -76,30 +73,11 @@ serve(async (req) => {
           throw new Error('Failed to update user')
         }
 
-        userId = users[0].id
+        userId = user.id
         console.log('3a. User password updated successfully:', userId)
       } else {
-        // Если пользователь есть в profiles, но нет в auth.users - создаем
-        console.log('2b. User found in profiles but not in auth.users, creating...')
-        const { data: createData, error: createError } = await supabaseAdmin.auth.admin
-          .createUser({
-            email,
-            password: code,
-            email_confirm: true
-          })
-
-        if (createError) {
-          console.error('Error creating user:', createError)
-          throw new Error('Failed to create user')
-        }
-
-        if (!createData.user) {
-          console.error('No user data returned after creation')
-          throw new Error('Failed to create user')
-        }
-
-        userId = createData.user.id
-        console.log('3b. User created successfully:', userId)
+        console.error('User not found in auth.users despite having a profile')
+        throw new Error('Inconsistent user state')
       }
     } else {
       // 2b. Создаем нового пользователя
