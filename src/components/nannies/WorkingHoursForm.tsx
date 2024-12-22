@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -23,8 +24,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 
 const workingHoursSchema = z.object({
   work_date: z.date(),
@@ -41,9 +40,6 @@ interface WorkingHoursFormProps {
 export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   console.log("Rendering WorkingHoursForm for nanny:", nannyId);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const [date, setDate] = useState<Date>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<WorkingHoursFormValues>({
@@ -70,7 +66,6 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
           title: "Ошибка",
           description: "Сессия истекла, пожалуйста, войдите снова",
         });
-        navigate("/auth");
         return;
       }
 
@@ -86,7 +81,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
           end_time: values.end_time,
         })
         .select()
-        .maybeSingle();
+        .single();
 
       console.log("5. Результат сохранения:", { data, error });
 
@@ -100,11 +95,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
         description: "Рабочие часы сохранены",
       });
 
-      console.log("7. Обновляем кэш запроса working-hours");
-      await queryClient.invalidateQueries({ queryKey: ["working-hours", nannyId] });
-      
       form.reset();
-      setDate(undefined);
     } catch (error) {
       console.error("8. Ошибка при сохранении рабочих часов:", error);
       toast({
@@ -135,6 +126,9 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
                         "w-[240px] pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                      }}
                     >
                       {field.value ? (
                         format(field.value, "PPP", { locale: ru })
@@ -152,12 +146,12 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
                     onSelect={(date) => {
                       if (date) {
                         console.log("Выбрана дата:", date);
-                        setDate(date);
                         field.onChange(date);
                       }
                     }}
                     disabled={(date) => date < new Date()}
                     initialFocus
+                    locale={ru}
                   />
                 </PopoverContent>
               </Popover>
@@ -174,14 +168,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
               <FormItem>
                 <FormLabel>Начало рабочего дня</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="time" 
-                    {...field} 
-                    onChange={(e) => {
-                      console.log("Изменено время начала:", e.target.value);
-                      field.onChange(e);
-                    }}
-                  />
+                  <Input type="time" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -195,14 +182,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
               <FormItem>
                 <FormLabel>Конец рабочего дня</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="time" 
-                    {...field}
-                    onChange={(e) => {
-                      console.log("Изменено время окончания:", e.target.value);
-                      field.onChange(e);
-                    }}
-                  />
+                  <Input type="time" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
