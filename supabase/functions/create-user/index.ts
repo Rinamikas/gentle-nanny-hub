@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase_supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,47 +25,54 @@ serve(async (req) => {
 
     console.log("Creating/updating user with email:", email)
 
-    // Проверяем существует ли пользователь
-    const { data: existingUsers, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
+    // Создаем пользователя в auth.users если его нет
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      email_confirm: true,
+      password: Math.random().toString(36).slice(-8), // Временный пароль
     })
 
-    if (searchError) {
-      console.error("Error searching for user:", searchError)
-      throw searchError
-    }
-
-    let userId
-
-    if (existingUsers.users.length > 0) {
-      // Если пользователь существует, просто получаем его id
-      console.log("User exists, getting id")
-      userId = existingUsers.users[0].id
-    } else {
-      // Если пользователь не существует, создаем нового
-      console.log("User doesn't exist, creating new user")
-      const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true
-      })
-
-      if (createError) {
-        console.error("Error creating user:", createError)
-        throw createError
-      }
-      if (!user) {
-        throw new Error('Failed to create user')
+    if (authError) {
+      // Если ошибка о том что пользователь уже существует - это нормально
+      if (!authError.message.includes('User already registered')) {
+        console.error("Error creating auth user:", authError)
+        throw authError
       }
       
-      userId = user.id
+      // Получаем существующего пользователя
+      const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+        filter: {
+          email: email
+        }
+      })
+
+      if (getUserError) {
+        console.error("Error getting existing user:", getUserError)
+        throw getUserError
+      }
+
+      if (!users || users.length === 0) {
+        throw new Error('Failed to find existing user')
+      }
+
+      console.log("Found existing user:", users[0].id)
+      return new Response(
+        JSON.stringify({ id: users[0].id }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
     }
 
-    console.log("Operation successful, returning user id:", userId)
+    if (!authUser.user) {
+      throw new Error('Failed to create user')
+    }
+
+    console.log("Created new user:", authUser.user.id)
 
     return new Response(
-      JSON.stringify({ id: userId }),
+      JSON.stringify({ id: authUser.user.id }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
