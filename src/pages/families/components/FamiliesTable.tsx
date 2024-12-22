@@ -8,9 +8,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Star, Diamond } from "lucide-react";
+import { Edit, Star, Diamond, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
+import { localizeParentStatus } from "@/utils/localization";
 
 interface FamiliesTableProps {
   families: ParentProfile[];
@@ -31,6 +32,12 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
   console.log("FamiliesTable received families:", families);
   const navigate = useNavigate();
 
+  const formatPhoneLink = (phone: string | null) => {
+    if (!phone) return null;
+    const cleanPhone = phone.replace(/\D/g, '');
+    return `tel:${cleanPhone}`;
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -38,7 +45,6 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
           <TableHead>ФИО родителя</TableHead>
           <TableHead>Статус</TableHead>
           <TableHead>Контактные номера</TableHead>
-          <TableHead>Адрес</TableHead>
           <TableHead>Дети</TableHead>
           <TableHead>Действия</TableHead>
         </TableRow>
@@ -46,11 +52,13 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
       <TableBody>
         {families.map((family) => {
           console.log("Rendering family:", family);
+          const displayName = family.profiles?.first_name && family.profiles?.last_name
+            ? `${family.profiles.first_name} ${family.profiles.last_name}`
+            : family.profiles?.email;
+
           return (
             <TableRow key={family.id}>
-              <TableCell>
-                {family.profiles?.first_name} {family.profiles?.last_name}
-              </TableCell>
+              <TableCell>{displayName}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <StatusIcon status={family.status} />
@@ -59,25 +67,32 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
                       family.status === "diamond" ? "default" : "secondary"
                     }
                   >
-                    {family.status === "diamond"
-                      ? "Бриллиант"
-                      : family.status === "star"
-                      ? "Звезда"
-                      : "Обычный"}
+                    {localizeParentStatus(family.status)}
                   </Badge>
                 </div>
               </TableCell>
               <TableCell>
                 <div className="space-y-1">
-                  <div>{family.profiles?.phone}</div>
+                  {family.profiles?.phone && (
+                    <a 
+                      href={formatPhoneLink(family.profiles.phone)}
+                      className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {family.profiles.phone}
+                    </a>
+                  )}
                   {family.additional_phone && (
-                    <div className="text-sm text-gray-500">
+                    <a 
+                      href={formatPhoneLink(family.additional_phone)}
+                      className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
+                    >
+                      <Phone className="w-4 h-4" />
                       {family.additional_phone}
-                    </div>
+                    </a>
                   )}
                 </div>
               </TableCell>
-              <TableCell>{family.address}</TableCell>
               <TableCell>
                 {family.children?.map((child) => (
                   <div key={child.id}>{child.first_name}</div>

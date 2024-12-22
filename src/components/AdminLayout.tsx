@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   LogOut
 } from "lucide-react";
+import { localizeUserRole } from "@/utils/localization";
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -136,6 +137,11 @@ const AdminLayout = () => {
             <div className="text-sm text-gray-600 px-2">
               <div>{currentUser.first_name} {currentUser.last_name}</div>
               <div className="truncate">{currentUser.email}</div>
+              {currentUser.user_roles?.[0]?.role && (
+                <div className="text-xs text-gray-500">
+                  {localizeUserRole(currentUser.user_roles[0].role)}
+                </div>
+              )}
             </div>
           )}
           
