@@ -11,6 +11,8 @@ import ContactSection from "./sections/ContactSection";
 import AddressSection from "./sections/AddressSection";
 import StatusSection from "./sections/StatusSection";
 import ChildrenSection from "./ChildrenSection";
+import { setFormMethods } from "@/utils/formTestUtils";
+import { useEffect } from "react";
 
 interface FamilyFormProps {
   initialData?: any;
@@ -32,6 +34,12 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
       status: initialData?.status || "default",
     },
   });
+
+  // Устанавливаем методы формы для тестовых данных
+  useEffect(() => {
+    setFormMethods(form);
+    return () => setFormMethods(null);
+  }, [form]);
 
   const handleSubmit = async (values: FormValues) => {
     try {

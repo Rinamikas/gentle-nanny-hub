@@ -24,7 +24,9 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: children } = useQuery({
+  console.log("ChildrenSection: parentId =", parentId);
+
+  const { data: children = [], isLoading } = useQuery({
     queryKey: ["children", parentId],
     queryFn: async () => {
       console.log("Загрузка списка детей...");
@@ -39,7 +41,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
       }
 
       console.log("Загружены дети:", data);
-      return data;
+      return data || [];
     },
   });
 
@@ -127,6 +129,10 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
     }
   };
 
+  if (isLoading) {
+    return <div>Загрузка...</div>;
+  }
+
   return (
     <div className="mt-8">
       <div className="flex justify-between items-center mb-4">
@@ -143,7 +149,7 @@ const ChildrenSection = ({ parentId }: ChildrenSectionProps) => {
       </div>
 
       <div className="space-y-4">
-        {children?.map((child: any) => (
+        {children.map((child: any) => (
           <div
             key={child.id}
             className="flex items-center justify-between p-4 border rounded-lg"
