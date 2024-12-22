@@ -32,33 +32,14 @@ serve(async (req) => {
     // 1. Проверяем существование пользователя через profiles
     console.log('1. Checking for existing user in profiles...')
     
-    // Логируем параметры запроса
-    console.log('Query params:', {
-      table: 'profiles',
-      select: 'id, email',
-      email: email.toLowerCase()
-    })
-
-    const { data: profile, error: profileError, status, statusText } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id, email')
       .eq('email', email.toLowerCase())
       .maybeSingle()
 
-    // Подробное логирование результата запроса
-    console.log('Query response:', {
-      data: profile,
-      error: profileError,
-      status,
-      statusText
-    })
-
     if (profileError) {
-      console.error('Error checking profile:', {
-        message: profileError.message,
-        code: profileError.code,
-        details: profileError.details
-      })
+      console.error('Error checking profile:', profileError)
       throw new Error('Failed to check existing profile')
     }
 
@@ -67,24 +48,59 @@ serve(async (req) => {
     let userId: string
 
     if (profile) {
-      // 2a. Если профиль существует, обновляем пароль
-      console.log('2a. Profile exists, updating password...')
-      const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
-        .updateUserById(profile.id, {
-          password: code,
-          email_confirm: true
-        })
+      // 2a. Если профиль существует, сначала ищем в auth.users
+      console.log('2a. Profile exists, searching in auth.users...')
+      
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+        filter: {
+          email: email.toLowerCase()
+        }
+      })
 
-      if (updateError) {
-        console.error('Error updating user:', {
-          message: updateError.message,
-          status: updateError.status
-        })
-        throw new Error('Failed to update user')
+      if (listError) {
+        console.error('Error listing users:', listError)
+        throw new Error('Failed to list users')
       }
 
-      userId = profile.id
-      console.log('3a. User password updated successfully:', userId)
+      if (users && users.length > 0) {
+        console.log('Found user in auth.users:', users[0].id)
+        // Теперь обновляем пароль
+        const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
+          .updateUserById(users[0].id, {
+            password: code,
+            email_confirm: true
+          })
+
+        if (updateError) {
+          console.error('Error updating user:', updateError)
+          throw new Error('Failed to update user')
+        }
+
+        userId = users[0].id
+        console.log('3a. User password updated successfully:', userId)
+      } else {
+        // Если пользователь есть в profiles, но нет в auth.users - создаем
+        console.log('2b. User found in profiles but not in auth.users, creating...')
+        const { data: createData, error: createError } = await supabaseAdmin.auth.admin
+          .createUser({
+            email,
+            password: code,
+            email_confirm: true
+          })
+
+        if (createError) {
+          console.error('Error creating user:', createError)
+          throw new Error('Failed to create user')
+        }
+
+        if (!createData.user) {
+          console.error('No user data returned after creation')
+          throw new Error('Failed to create user')
+        }
+
+        userId = createData.user.id
+        console.log('3b. User created successfully:', userId)
+      }
     } else {
       // 2b. Создаем нового пользователя
       console.log('2b. Creating new user...')
