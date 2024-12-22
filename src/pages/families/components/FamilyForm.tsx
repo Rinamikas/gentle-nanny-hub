@@ -16,8 +16,11 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Database } from "@/integrations/supabase/types";
 
-type ParentProfileWithUser = Database['public']['Tables']['parent_profiles']['Row'] & {
-  profiles: Database['public']['Tables']['profiles']['Row'] | null;
+type ParentProfile = Database['public']['Tables']['parent_profiles']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
+
+interface ParentProfileWithUser extends ParentProfile {
+  profiles: Profile | null;
 }
 
 interface FamilyFormProps {
@@ -45,7 +48,11 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
             id,
             first_name,
             last_name,
-            phone
+            phone,
+            email,
+            created_at,
+            updated_at,
+            photo_url
           )
         `)
         .eq('id', familyId)
