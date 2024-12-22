@@ -47,9 +47,9 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         .select("*")
         .eq("user_id", userId)
         .eq("role", selectedRole)
-        .single();
+        .maybeSingle(); // Используем maybeSingle вместо single
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error("Ошибка при проверке существующей роли:", checkError);
         throw checkError;
       }
