@@ -30,7 +30,7 @@ const AdminLayout = () => {
       if (!session?.user?.id) return null;
       
       console.log("Загрузка данных текущего пользователя");
-      const { data: profile, error } = await supabase
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*, user_roles(*)')
         .eq('id', session.user.id)
@@ -41,14 +41,21 @@ const AdminLayout = () => {
         throw error;
       }
 
-      console.log("Загружен профиль:", profile);
-      return profile as Profile;
+      console.log("Загружен профиль:", profileData);
+      
+      // Преобразуем данные в правильный формат
+      const profile: Profile = {
+        ...profileData,
+        user_roles: Array.isArray(profileData.user_roles) 
+          ? profileData.user_roles 
+          : profileData.user_roles ? [profileData.user_roles] : []
+      };
+
+      return profile;
     },
     enabled: !!session?.user?.id
   });
-  
-  console.log("Current location:", location.pathname);
-  
+
   const isFormPage = location.pathname.includes('/create') || 
                      location.pathname.includes('/edit');
 

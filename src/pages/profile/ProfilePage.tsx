@@ -25,12 +25,12 @@ const ProfilePage = () => {
 
       console.log("ID пользователя:", session.user.id);
 
-      // Получаем базовый профиль
+      // Получаем базовый профиль с ролями
       let { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("*, user_roles(*)")
         .eq("id", session.user.id)
-        .maybeSingle();
+        .single();
 
       if (profileError) {
         console.error("Ошибка при загрузке профиля:", profileError);
@@ -48,7 +48,7 @@ const ProfilePage = () => {
             }
           ])
           .select()
-          .maybeSingle();
+          .single();
 
         if (createError) {
           console.error("Ошибка при создании профиля:", createError);
@@ -59,19 +59,6 @@ const ProfilePage = () => {
       }
 
       console.log("Загружен профиль:", profileData);
-
-      // Получаем роли пользователя
-      const { data: rolesData, error: rolesError } = await supabase
-        .rpc('get_user_roles');
-
-      if (rolesError) {
-        console.error("Ошибка при загрузке ролей:", rolesError);
-        throw rolesError;
-      }
-
-      // Фильтруем роли для текущего пользователя
-      const userRoles = rolesData.filter(role => role.user_id === session.user.id);
-      console.log("Роли пользователя:", userRoles);
 
       // Получаем данные няни
       const { data: nannyData, error: nannyError } = await supabase
@@ -97,7 +84,9 @@ const ProfilePage = () => {
 
       const formattedData: Profile = {
         ...profileData,
-        user_roles: userRoles.map(({ role }) => ({ role })),
+        user_roles: Array.isArray(profileData.user_roles) 
+          ? profileData.user_roles 
+          : profileData.user_roles ? [profileData.user_roles] : [],
         nanny_profiles: nannyData ? [nannyData] : [],
         parent_profiles: parentData ? [parentData] : [],
       };
