@@ -8,7 +8,6 @@ const corsHeaders = {
 console.log('Loading create-auth-user function...')
 
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -25,9 +24,9 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Получаем данные из запроса
     const { email, code } = await req.json()
-    console.log('Processing request for:', email)
+    console.log('=== Starting user management process ===')
+    console.log('Email:', email)
 
     try {
       // 1. Проверяем код верификации
@@ -43,7 +42,7 @@ Deno.serve(async (req) => {
         .limit(1)
 
       if (codeError) {
-        console.error('Error checking verification code:', codeError)
+        console.error('Verification code check error:', codeError)
         throw new Error('Failed to verify code')
       }
 
@@ -52,34 +51,31 @@ Deno.serve(async (req) => {
         throw new Error('Invalid or expired verification code')
       }
 
-      console.log('Verification code is valid')
+      console.log('2. Verification code is valid')
 
-      // 2. Проверяем существующего пользователя
-      console.log('2. Checking for existing user...')
-      const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
-        .listUsers({
-          filter: {
-            email: email
-          }
-        })
+      // 2. Проверяем существование пользователя
+      console.log('3. Checking for existing user...')
+      const { data: existingData, error: existingError } = await supabaseAdmin.auth.admin
+        .listUsers()
 
-      if (getUserError) {
-        console.error('Error checking user:', getUserError)
-        throw new Error('Failed to check user existence')
+      if (existingError) {
+        console.error('Error checking existing users:', existingError)
+        throw new Error('Failed to check existing users')
       }
 
-      const existingUser = users?.find(u => u.email === email)
+      const existingUser = existingData.users.find(u => u.email === email)
       console.log('Existing user found:', existingUser?.id || 'none')
 
       let userId
 
       if (existingUser) {
-        // 3a. Обновляем существующего пользователя
-        console.log('3a. Updating existing user...')
+        // 3. Обновляем существующего пользователя
+        console.log('4a. Updating existing user...')
         const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
           .updateUserById(existingUser.id, {
             password: code,
-            email_confirm: true
+            email_confirm: true,
+            user_metadata: { email_verified: true }
           })
 
         if (updateError) {
@@ -88,18 +84,16 @@ Deno.serve(async (req) => {
         }
 
         userId = existingUser.id
-        console.log('User updated successfully:', userId)
+        console.log('5a. User updated successfully:', userId)
       } else {
-        // 3b. Создаем нового пользователя
-        console.log('3b. Creating new user...')
+        // 4. Создаем нового пользователя
+        console.log('4b. Creating new user...')
         const { data: createData, error: createError } = await supabaseAdmin.auth.admin
           .createUser({
             email,
             password: code,
             email_confirm: true,
-            user_metadata: {
-              email_verified: true
-            }
+            user_metadata: { email_verified: true }
           })
 
         if (createError) {
@@ -107,12 +101,17 @@ Deno.serve(async (req) => {
           throw new Error('Failed to create user')
         }
 
+        if (!createData.user) {
+          console.error('No user data returned after creation')
+          throw new Error('Failed to create user')
+        }
+
         userId = createData.user.id
-        console.log('User created successfully:', userId)
+        console.log('5b. User created successfully:', userId)
       }
 
-      // 4. Обновляем статус кода верификации
-      console.log('4. Updating verification code status...')
+      // 5. Обновляем статус кода верификации
+      console.log('6. Updating verification code status...')
       const { error: updateCodeError } = await supabaseAdmin
         .from('verification_codes')
         .update({ status: 'verified' })
@@ -122,6 +121,11 @@ Deno.serve(async (req) => {
         console.error('Error updating verification code:', updateCodeError)
         // Не прерываем процесс, так как пользователь уже создан/обновлен
       }
+
+      // 6. Добавляем задержку перед возвратом результата
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      console.log('=== User management process completed successfully ===')
 
       return new Response(
         JSON.stringify({ 
@@ -135,7 +139,14 @@ Deno.serve(async (req) => {
       )
 
     } catch (error: any) {
-      console.error('Error in user management:', error)
+      console.error('=== Error in user management ===')
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        status: error.status,
+        stack: error.stack
+      })
+      
       return new Response(
         JSON.stringify({ error: error.message }),
         { 
@@ -146,7 +157,7 @@ Deno.serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Fatal error:', error)
+    console.error('=== Fatal error ===', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { 
