@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { profileFormSchema } from "../schemas/profile-form-schema";
+import { profileFormSchema, type ProfileFormValues } from "../schemas/profile-form-schema";
 import type { Profile } from "../types";
 import ContactInfo from "./ContactInfo";
 import UserRoleManager from "./UserRoleManager";
@@ -16,7 +16,7 @@ interface ProfileFormProps {
 
 export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
   const { toast } = useToast();
-  const form = useForm({
+  const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       first_name: profile?.first_name || "",
@@ -25,7 +25,7 @@ export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
     },
   });
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: ProfileFormValues) => {
     try {
       const { error } = await supabase
         .from("profiles")
