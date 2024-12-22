@@ -18,6 +18,11 @@ import {
 } from "lucide-react";
 import { localizeUserRole } from "@/utils/localization";
 import type { Profile } from "@/pages/profile/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type ProfileWithRoles = Database['public']['Tables']['profiles']['Row'] & {
+  user_roles: Database['public']['Tables']['user_roles']['Row'][];
+};
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -54,10 +59,14 @@ const AdminLayout = () => {
         console.log("Загружен профиль с ролями:", profileData);
 
         // Преобразуем данные в соответствии с типом Profile
+        const typedProfileData = profileData as ProfileWithRoles;
+        
         return {
-          ...profileData,
-          user_roles: profileData.user_roles || []
-        };
+          ...typedProfileData,
+          user_roles: Array.isArray(typedProfileData.user_roles) 
+            ? typedProfileData.user_roles 
+            : []
+        } as Profile;
       } catch (error) {
         console.error("Ошибка при загрузке данных пользователя:", error);
         throw error;
