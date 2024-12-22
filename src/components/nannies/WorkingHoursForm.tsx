@@ -24,6 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useQueryClient } from "@tanstack/react-query";
 
 const workingHoursSchema = z.object({
   work_date: z.date(),
@@ -42,6 +43,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<WorkingHoursFormValues>({
     resolver: zodResolver(workingHoursSchema),
@@ -83,6 +85,9 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
         title: "Успешно",
         description: "Рабочие часы сохранены",
       });
+
+      // Инвалидируем кэш после успешного сохранения
+      queryClient.invalidateQueries({ queryKey: ["working-hours", nannyId] });
 
       form.reset();
     } catch (error) {
