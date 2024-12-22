@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -73,13 +72,12 @@ serve(async (req) => {
     let userId
 
     if (existingUser) {
-      // 3a. Обновляем существующего пользователя
-      console.log('4a. Updating existing user...')
+      // 3a. Обновляем пароль существующего пользователя
+      console.log('4a. Updating existing user password...')
       const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin
         .updateUserById(existingUser.id, {
           password: code,
-          email_confirm: true,
-          user_metadata: { email_verified: true }
+          email_confirm: true
         })
 
       if (updateError) {
@@ -88,7 +86,7 @@ serve(async (req) => {
       }
 
       userId = existingUser.id
-      console.log('5a. User updated successfully:', userId)
+      console.log('5a. User password updated successfully:', userId)
     } else {
       // 3b. Создаем нового пользователя
       console.log('4b. Creating new user...')
@@ -96,8 +94,7 @@ serve(async (req) => {
         .createUser({
           email,
           password: code,
-          email_confirm: true,
-          user_metadata: { email_verified: true }
+          email_confirm: true
         })
 
       if (createError) {
