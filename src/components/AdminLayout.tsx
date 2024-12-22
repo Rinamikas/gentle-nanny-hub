@@ -32,19 +32,10 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       
       try {
-        // Сначала получаем базовый профиль
+        // Получаем базовый профиль
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select(`
-            id,
-            email,
-            first_name,
-            last_name,
-            phone,
-            photo_url,
-            created_at,
-            updated_at
-          `)
+          .select('*')
           .eq('id', session.user.id)
           .single();
 
@@ -55,7 +46,7 @@ const AdminLayout = () => {
 
         console.log("Загружен профиль:", profileData);
 
-        // Затем получаем роли пользователя отдельным запросом
+        // Получаем роли отдельным запросом
         const { data: rolesData, error: rolesError } = await supabase
           .from('user_roles')
           .select('id, role, created_at')
@@ -68,7 +59,7 @@ const AdminLayout = () => {
 
         console.log("Загружены роли:", rolesData);
         
-        // Объединяем данные
+        // Объединяем данные в соответствии с типом Profile
         return {
           ...profileData,
           user_roles: rolesData || []

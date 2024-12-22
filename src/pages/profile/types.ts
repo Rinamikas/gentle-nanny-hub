@@ -11,11 +11,8 @@ export interface Profile {
   created_at: string;
   updated_at: string;
   user_roles?: {
-    created_at: string;
     id: string;
     role: UserRole;
-    user_id: string | null;
+    created_at: string;
   }[];
-  nanny_profiles?: Tables<'nanny_profiles'>[] | null;
-  parent_profiles?: Tables<'parent_profiles'>[] | null;
 }
