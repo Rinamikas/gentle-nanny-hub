@@ -41,15 +41,22 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
       setIsLoading(true);
       console.log("Начинаем смену роли...", { currentRole, selectedRole });
 
-      // 1. Удаляем старую роль
-      const { error: deleteError } = await supabase
+      // 1. Проверяем существование роли
+      const { data: existingRole, error: checkError } = await supabase
         .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
+        .select("*")
+        .eq("user_id", userId)
+        .eq("role", selectedRole)
+        .single();
 
-      if (deleteError) {
-        console.error("Ошибка при удалении старой роли:", deleteError);
-        throw deleteError;
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Ошибка при проверке существующей роли:", checkError);
+        throw checkError;
+      }
+
+      if (existingRole) {
+        console.log("Роль уже существует:", existingRole);
+        return;
       }
 
       // 2. Если был родителем - удаляем профиль родителя
@@ -78,7 +85,18 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         }
       }
 
-      // 4. Добавляем новую роль
+      // 4. Удаляем старую роль
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (deleteError) {
+        console.error("Ошибка при удалении старой роли:", deleteError);
+        throw deleteError;
+      }
+
+      // 5. Добавляем новую роль
       const { error: insertError } = await supabase
         .from("user_roles")
         .insert({
@@ -91,7 +109,7 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         throw insertError;
       }
 
-      // 5. Если выбран родитель - создаем профиль родителя
+      // 6. Если выбран родитель - создаем профиль родителя
       if (selectedRole === "parent") {
         const { error: createParentError } = await supabase
           .from("parent_profiles")
@@ -105,7 +123,7 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         }
       }
 
-      // 6. Если выбрана няня - создаем профиль няни
+      // 7. Если выбрана няня - создаем профиль няни
       if (selectedRole === "nanny") {
         const { error: createNannyError } = await supabase
           .from("nanny_profiles")
