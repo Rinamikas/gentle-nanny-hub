@@ -21,6 +21,9 @@ interface FamilyFormProps {
 
 export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
+  
+  console.log("FamilyForm: initialData =", initialData); // Добавим лог для отладки
+
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
     defaultValues: {
@@ -48,6 +51,16 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
         return;
       }
 
+      if (!initialData?.id) {
+        console.error("ID семьи не определен");
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "ID семьи не определен",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("parent_profiles")
         .update({
@@ -58,7 +71,7 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
           status: values.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", initialData?.id);
+        .eq("id", initialData.id);
 
       if (error) throw error;
 
