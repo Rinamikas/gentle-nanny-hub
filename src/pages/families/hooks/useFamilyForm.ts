@@ -2,8 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { familyFormSchema } from "../schemas/family-form-schema";
 import type { FormValues } from "../types/form";
+import type { ParentProfile } from "../types/parent-types";
 import { useEffect } from "react";
-import type { ParentProfile } from "@/integrations/supabase/types";
 
 export const useFamilyForm = (familyData: ParentProfile | null) => {
   console.log("useFamilyForm: инициализация с данными:", familyData);

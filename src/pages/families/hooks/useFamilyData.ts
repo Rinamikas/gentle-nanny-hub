@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { ParentProfile } from "@/integrations/supabase/types";
+import type { ParentProfile } from "../types/parent-types";
 
 export const useFamilyData = (familyId?: string) => {
   console.log("useFamilyData: запрос данных для familyId =", familyId);

@@ -9,7 +9,10 @@ import ContactInfo from "./ContactInfo";
 import AddressSection from "@/pages/families/components/sections/AddressSection";
 import StatusSection from "@/pages/families/components/sections/StatusSection";
 import ChildrenSection from "@/pages/families/components/ChildrenSection";
-import type { ParentProfile, ParentStatus } from "@/integrations/supabase/types";
+import type { ParentProfile } from "@/pages/families/types/parent-types";
+import type { Database } from "@/integrations/supabase/types";
+
+type ParentStatus = Database['public']['Enums']['parent_status'];
 
 interface ParentFormProps {
   profile?: ParentProfile | null;
