@@ -13,48 +13,78 @@ import StatusSection from "./sections/StatusSection";
 import ChildrenSection from "./ChildrenSection";
 import { setFormMethods } from "@/utils/formTestUtils";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface FamilyFormProps {
+  familyId?: string;
   initialData?: any;
   onSubmit?: (data: any) => void;
 }
 
-export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
+export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
   
-  console.log("FamilyForm: начало рендера с initialData =", initialData);
+  console.log("FamilyForm: начало рендера с familyId =", familyId);
 
+  const { data: familyData, isLoading } = useQuery({
+    queryKey: ['family', familyId],
+    queryFn: async () => {
+      console.log("FamilyForm: загрузка данных семьи для id =", familyId);
+      if (!familyId) return null;
+
+      const { data, error } = await supabase
+        .from('parent_profiles')
+        .select(`
+          *,
+          profiles:user_id (
+            first_name,
+            last_name,
+            phone
+          )
+        `)
+        .eq('id', familyId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("FamilyForm: ошибка загрузки данных семьи:", error);
+        throw error;
+      }
+
+      console.log("FamilyForm: получены данные семьи:", data);
+      return data;
+    },
+    enabled: !!familyId
+  });
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
     defaultValues: {
-      first_name: initialData?.profiles?.first_name || "",
-      last_name: initialData?.profiles?.last_name || "",
-      phone: initialData?.profiles?.phone || "",
-      additional_phone: initialData?.additional_phone || "",
-      address: initialData?.address || "",
-      special_requirements: initialData?.special_requirements || "",
-      notes: initialData?.notes || "",
-      status: initialData?.status || "default",
+      first_name: "",
+      last_name: "",
+      phone: "",
+      additional_phone: "",
+      address: "",
+      special_requirements: "",
+      notes: "",
+      status: "default",
     },
   });
 
-  console.log("FamilyForm: defaultValues установлены", form.getValues());
-
   useEffect(() => {
-    if (initialData?.profiles) {
-      console.log("FamilyForm: обновляем значения формы из profiles", initialData.profiles);
+    if (familyData) {
+      console.log("FamilyForm: обновляем значения формы из данных:", familyData);
       form.reset({
-        first_name: initialData.profiles.first_name || "",
-        last_name: initialData.profiles.last_name || "",
-        phone: initialData.profiles.phone || "",
-        additional_phone: initialData.additional_phone || "",
-        address: initialData.address || "",
-        special_requirements: initialData.special_requirements || "",
-        notes: initialData.notes || "",
-        status: initialData.status || "default",
+        first_name: familyData.profiles?.first_name || "",
+        last_name: familyData.profiles?.last_name || "",
+        phone: familyData.profiles?.phone || "",
+        additional_phone: familyData.additional_phone || "",
+        address: familyData.address || "",
+        special_requirements: familyData.special_requirements || "",
+        notes: familyData.notes || "",
+        status: familyData.status || "default",
       });
     }
-  }, [initialData, form]);
+  }, [familyData, form]);
 
   useEffect(() => {
     console.log("FamilyForm: useEffect - установка методов формы");
@@ -74,7 +104,7 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
         return;
       }
 
-      if (!initialData?.id) {
+      if (!familyId) {
         console.error("FamilyForm: ID семьи не определен");
         toast({
           variant: "destructive",
@@ -94,7 +124,7 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
           status: values.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", initialData.id);
+        .eq("id", familyId);
 
       if (error) throw error;
 
@@ -107,7 +137,7 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
           phone: values.phone,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", initialData?.profiles?.id);
+        .eq("id", familyData?.profiles?.id);
 
       if (profileError) throw profileError;
 
@@ -127,6 +157,10 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
     }
   };
 
+  if (isLoading) {
+    return <div>Загрузка...</div>;
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 w-full max-w-2xl mx-auto p-6">
@@ -137,9 +171,9 @@ export default function FamilyForm({ initialData, onSubmit }: FamilyFormProps) {
         
         <Button type="submit" className="w-full">Сохранить</Button>
 
-        {initialData?.id && (
+        {familyId && (
           <div className="mt-8">
-            <ChildrenSection parentId={initialData.id} />
+            <ChildrenSection parentId={familyId} />
           </div>
         )}
       </form>
