@@ -22,17 +22,21 @@ const queryClient = new QueryClient({
       retry: (failureCount, error: any) => {
         console.log("Query error:", error);
         
+        // Проверяем различные варианты ошибок авторизации
         if (error?.message?.includes('Invalid Refresh Token') || 
             error?.message?.includes('refresh_token_not_found') ||
-            error?.status === 412) {
+            error?.status === 412 ||
+            error?.message?.includes('JWT expired')) {
           console.log("Detected auth error, redirecting to auth...");
           
+          // Показываем уведомление
           toast({
             title: "Ошибка авторизации",
             description: "Пожалуйста, войдите снова",
             variant: "destructive"
           });
           
+          // Очищаем локальное хранилище и редиректим
           localStorage.clear();
           window.location.href = '/auth';
           return false;
@@ -43,10 +47,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
 
 // Компонент для отображения состояния загрузки
 const PageLoader = () => (
