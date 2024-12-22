@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 const workingHoursSchema = z.object({
   work_date: z.date(),
@@ -41,6 +42,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   console.log("Rendering WorkingHoursForm for nanny:", nannyId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [date, setDate] = useState<Date>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -55,9 +57,26 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
   const onSubmit = async (values: WorkingHoursFormValues) => {
     try {
       setIsSubmitting(true);
-      console.log("Начинаем сохранение рабочих часов:", values);
+      console.log("=== Начало сохранения рабочих часов ===");
+      console.log("1. Данные формы:", values);
+
+      // Проверяем сессию перед сохранением
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log("2. Проверка сессии:", { session, sessionError });
+
+      if (!session) {
+        console.error("3. Ошибка: Сессия отсутствует");
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Сессия истекла, пожалуйста, войдите снова",
+        });
+        navigate("/auth");
+        return;
+      }
+
       const formattedDate = format(values.work_date, "yyyy-MM-dd");
-      console.log("Форматированная дата:", formattedDate);
+      console.log("4. Форматированная дата:", formattedDate);
 
       const { data, error } = await supabase
         .from("working_hours")
@@ -70,10 +89,10 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
         .select()
         .maybeSingle();
 
-      console.log("Результат сохранения:", { data, error });
+      console.log("5. Результат сохранения:", { data, error });
 
       if (error) {
-        console.error("Ошибка при сохранении:", error);
+        console.error("6. Ошибка при сохранении:", error);
         throw error;
       }
 
@@ -82,13 +101,13 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
         description: "Рабочие часы сохранены",
       });
 
-      console.log("Обновляем кэш запроса working-hours");
+      console.log("7. Обновляем кэш запроса working-hours");
       await queryClient.invalidateQueries({ queryKey: ["working-hours", nannyId] });
       
       form.reset();
       setDate(undefined);
     } catch (error) {
-      console.error("Ошибка при сохранении рабочих часов:", error);
+      console.error("8. Ошибка при сохранении рабочих часов:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
