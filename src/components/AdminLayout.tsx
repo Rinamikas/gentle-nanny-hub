@@ -31,51 +31,52 @@ const AdminLayout = () => {
       
       console.log("Загрузка данных текущего пользователя");
       
-      // Сначала получаем базовый профиль
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          email,
-          first_name,
-          last_name,
-          phone,
-          photo_url,
-          created_at,
-          updated_at
-        `)
-        .eq('id', session.user.id)
-        .single();
+      try {
+        // Сначала получаем базовый профиль
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            email,
+            first_name,
+            last_name,
+            phone,
+            photo_url,
+            created_at,
+            updated_at
+          `)
+          .eq('id', session.user.id)
+          .single();
 
-      if (profileError) {
-        console.error("Ошибка при загрузке профиля:", profileError);
-        throw profileError;
+        if (profileError) {
+          console.error("Ошибка при загрузке профиля:", profileError);
+          throw profileError;
+        }
+
+        console.log("Загружен профиль:", profileData);
+
+        // Затем получаем роли пользователя отдельным запросом
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('id, role, created_at')
+          .eq('user_id', session.user.id);
+
+        if (rolesError) {
+          console.error("Ошибка при загрузке ролей:", rolesError);
+          throw rolesError;
+        }
+
+        console.log("Загружены роли:", rolesData);
+        
+        // Объединяем данные
+        return {
+          ...profileData,
+          user_roles: rolesData || []
+        };
+      } catch (error) {
+        console.error("Ошибка при загрузке данных пользователя:", error);
+        throw error;
       }
-
-      // Затем получаем роли пользователя отдельным запросом
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('id, role, created_at')
-        .eq('user_id', session.user.id);
-
-      if (rolesError) {
-        console.error("Ошибка при загрузке ролей:", rolesError);
-        throw rolesError;
-      }
-
-      console.log("Загружен профиль:", profileData);
-      console.log("Загружены роли:", rolesData);
-      
-      // Объединяем данные
-      const profile: Profile = {
-        ...profileData,
-        user_roles: rolesData.map(role => ({
-          ...role,
-          user_id: profileData.id
-        }))
-      };
-
-      return profile;
     },
     enabled: !!session?.user?.id
   });
