@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useSessionContext } from "@supabase/auth-helpers-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,37 +19,36 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertOctagon, UserCog } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import type { UserRole } from "../types";
+import type { UserRole } from "@/pages/users/types";
 
 interface UserRoleManagerProps {
   currentRole?: string;
-  userId: string;
   onRoleChange: () => void;
 }
 
-export default function UserRoleManager({ currentRole, userId, onRoleChange }: UserRoleManagerProps) {
+export default function UserRoleManager({ currentRole, onRoleChange }: UserRoleManagerProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole | undefined>(
     currentRole as UserRole | undefined
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { session } = useSessionContext();
   const { toast } = useToast();
 
   const handleRoleChange = async () => {
-    if (!userId || !selectedRole || selectedRole === currentRole) return;
+    if (!session?.user?.id || !selectedRole || selectedRole === currentRole) return;
 
     try {
       setIsLoading(true);
       console.log("Начинаем смену роли...", { currentRole, selectedRole });
 
-      // 1. Проверяем существование роли
+      // Проверяем существование роли
       const { data: existingRole, error: checkError } = await supabase
         .from("user_roles")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", session.user.id)
         .eq("role", selectedRole)
-        .maybeSingle(); // Используем maybeSingle вместо single
+        .maybeSingle();
 
       if (checkError) {
         console.error("Ошибка при проверке существующей роли:", checkError);
@@ -59,12 +60,23 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         return;
       }
 
+      // 1. Удаляем старую роль
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", session.user.id);
+
+      if (deleteError) {
+        console.error("Ошибка при удалении старой роли:", deleteError);
+        throw deleteError;
+      }
+
       // 2. Если был родителем - удаляем профиль родителя
       if (currentRole === "parent") {
         const { error: deleteParentError } = await supabase
           .from("parent_profiles")
           .delete()
-          .eq("user_id", userId);
+          .eq("user_id", session.user.id);
 
         if (deleteParentError) {
           console.error("Ошибка при удалении профиля родителя:", deleteParentError);
@@ -77,7 +89,7 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         const { error: deleteNannyError } = await supabase
           .from("nanny_profiles")
           .delete()
-          .eq("user_id", userId);
+          .eq("user_id", session.user.id);
 
         if (deleteNannyError) {
           console.error("Ошибка при удалении профиля няни:", deleteNannyError);
@@ -85,22 +97,11 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         }
       }
 
-      // 4. Удаляем старую роль
-      const { error: deleteError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
-
-      if (deleteError) {
-        console.error("Ошибка при удалении старой роли:", deleteError);
-        throw deleteError;
-      }
-
-      // 5. Добавляем новую роль
+      // 4. Добавляем новую роль
       const { error: insertError } = await supabase
         .from("user_roles")
         .insert({
-          user_id: userId,
+          user_id: session.user.id,
           role: selectedRole,
         });
 
@@ -109,12 +110,12 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         throw insertError;
       }
 
-      // 6. Если выбран родитель - создаем профиль родителя
+      // 5. Если выбран родитель - создаем профиль родителя
       if (selectedRole === "parent") {
         const { error: createParentError } = await supabase
           .from("parent_profiles")
           .insert({
-            user_id: userId,
+            user_id: session.user.id,
           });
 
         if (createParentError) {
@@ -123,12 +124,12 @@ export default function UserRoleManager({ currentRole, userId, onRoleChange }: U
         }
       }
 
-      // 7. Если выбрана няня - создаем профиль няни
+      // 6. Если выбрана няня - создаем профиль няни
       if (selectedRole === "nanny") {
         const { error: createNannyError } = await supabase
           .from("nanny_profiles")
           .insert({
-            user_id: userId,
+            user_id: session.user.id,
           });
 
         if (createNannyError) {
