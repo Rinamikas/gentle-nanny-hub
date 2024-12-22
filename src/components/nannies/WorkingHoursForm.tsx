@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -54,22 +55,10 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
       setIsSubmitting(true);
       console.log("=== Начало сохранения рабочих часов ===");
       console.log("1. Данные формы:", values);
-
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log("2. Проверка сессии:", { session, sessionError });
-
-      if (!session) {
-        console.error("3. Ошибка: Сессия отсутствует");
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Сессия истекла, пожалуйста, войдите снова",
-        });
-        return;
-      }
+      console.log("2. ID няни:", nannyId);
 
       const formattedDate = format(values.work_date, "yyyy-MM-dd");
-      console.log("4. Форматированная дата:", formattedDate);
+      console.log("3. Форматированная дата:", formattedDate);
 
       const { data, error } = await supabase
         .from("working_hours")
@@ -82,10 +71,10 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
         .select()
         .single();
 
-      console.log("5. Результат сохранения:", { data, error });
+      console.log("4. Результат сохранения:", { data, error });
 
       if (error) {
-        console.error("6. Ошибка при сохранении:", error);
+        console.error("5. Ошибка при сохранении:", error);
         throw error;
       }
 
@@ -96,7 +85,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
 
       form.reset();
     } catch (error) {
-      console.error("8. Ошибка при сохранении рабочих часов:", error);
+      console.error("6. Ошибка при сохранении рабочих часов:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
@@ -109,101 +98,92 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4">
-        <FormField
-          control={form.control}
-          name="work_date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Дата</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="work_date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Дата</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        type="button"
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: ru })
+                        ) : (
+                          <span>Выберите дату</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      locale={ru}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="start_time"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Начало рабочего дня</FormLabel>
                   <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                      onClick={(e) => {
-                        e.preventDefault();
-                      }}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: ru })
-                      ) : (
-                        <span>Выберите дату</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
+                    <Input type="time" {...field} />
                   </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={(date) => {
-                      if (date) {
-                        console.log("Выбрана дата:", date);
-                        field.onChange(date);
-                      }
-                    }}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                    locale={ru}
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="start_time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Начало рабочего дня</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+            <FormField
+              control={form.control}
+              name="end_time"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Конец рабочего дня</FormLabel>
+                  <FormControl>
+                    <Input type="time" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Button type="submit" disabled={isSubmitting} className="w-full">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              "Сохранить"
             )}
-          />
-
-          <FormField
-            control={form.control}
-            name="end_time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Конец рабочего дня</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <Button 
-          onClick={form.handleSubmit(onSubmit)} 
-          disabled={isSubmitting} 
-          className="w-full"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Сохранение...
-            </>
-          ) : (
-            "Сохранить"
-          )}
-        </Button>
-      </div>
+          </Button>
+        </form>
+      </Form>
     </div>
   );
 }
