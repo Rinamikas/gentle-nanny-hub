@@ -41,11 +41,10 @@ const AdminLayout = () => {
           photo_url,
           created_at,
           updated_at,
-          user_roles (
+          user_roles!inner (
             id,
             role,
-            created_at,
-            user_id
+            created_at
           )
         `)
         .eq('id', session.user.id)
@@ -63,7 +62,7 @@ const AdminLayout = () => {
         user_roles: Array.isArray(profileData.user_roles) 
           ? profileData.user_roles.map(role => ({
               ...role,
-              user_id: profileData.id // Добавляем user_id из профиля
+              user_id: profileData.id
             }))
           : profileData.user_roles ? [{ ...profileData.user_roles, user_id: profileData.id }] : []
       };
