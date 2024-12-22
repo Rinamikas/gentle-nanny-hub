@@ -48,17 +48,21 @@ serve(async (req) => {
 
     console.log('2. Verification code is valid')
 
-    // 2. Проверяем существование пользователя через getUser
+    // 2. Проверяем существование пользователя через listUsers
     console.log('3. Checking for existing user...')
-    const { data: { user: existingUser }, error: getUserError } = await supabaseAdmin.auth.admin
-      .getUserByEmail(email)
+    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
+      .listUsers({
+        perPage: 1,
+        page: 1,
+      })
 
-    if (getUserError && getUserError.status !== 404) {
-      console.error('Error checking existing user:', getUserError)
-      throw new Error('Failed to check existing user')
+    if (getUserError) {
+      console.error('Error checking existing users:', getUserError)
+      throw new Error('Failed to check existing users')
     }
 
-    console.log('Existing user check result:', existingUser ? 'Found' : 'Not found')
+    const existingUser = users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
+    console.log('Existing user found:', existingUser?.id || 'none')
 
     let userId: string
 
