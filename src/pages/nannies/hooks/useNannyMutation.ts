@@ -13,6 +13,28 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Starting nanny mutation with values:", values);
 
       try {
+        // Сначала создаем пользователя через edge function
+        const { data: userData, error: userError } = await supabase.functions.invoke(
+          'create-user',
+          {
+            body: JSON.stringify({
+              email: values.email
+            })
+          }
+        );
+
+        if (userError) {
+          console.error("Error creating user:", userError);
+          throw userError;
+        }
+
+        if (!userData) {
+          console.error("No user data returned");
+          throw new Error("Failed to create user");
+        }
+
+        console.log("User created/found successfully:", userData);
+
         // Создаем или обновляем няню через функцию
         const { data: nannyData, error: createError } = await supabase
           .rpc('create_nanny_with_user', {
