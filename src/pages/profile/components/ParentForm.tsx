@@ -11,11 +11,12 @@ import StatusSection from "@/pages/families/components/sections/StatusSection";
 import ChildrenSection from "@/pages/families/components/ChildrenSection";
 import type { ParentProfile } from "@/pages/families/types/parent-types";
 import type { Database } from "@/integrations/supabase/types";
+import type { Profile } from "../types";
 
 type ParentStatus = Database['public']['Enums']['parent_status'];
 
 interface ParentFormProps {
-  profile?: ParentProfile | null;
+  profile: Profile;
   onUpdate: () => void;
 }
 
@@ -24,11 +25,11 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
   const form = useForm<ParentFormValues>({
     resolver: zodResolver(parentFormSchema),
     defaultValues: {
-      address: profile?.address || "",
-      additional_phone: profile?.additional_phone || "",
-      special_requirements: profile?.special_requirements || "",
-      notes: profile?.notes || "",
-      status: (profile?.status as ParentStatus) || "default",
+      address: profile?.parent_profiles?.[0]?.address || "",
+      additional_phone: profile?.parent_profiles?.[0]?.additional_phone || "",
+      special_requirements: profile?.parent_profiles?.[0]?.special_requirements || "",
+      notes: profile?.parent_profiles?.[0]?.notes || "",
+      status: (profile?.parent_profiles?.[0]?.status as ParentStatus) || "default",
     },
   });
 
@@ -44,7 +45,7 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
           status: values.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", profile?.id);
+        .eq("user_id", profile.id);
 
       if (error) throw error;
 
@@ -64,6 +65,8 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
     }
   };
 
+  const parentProfile = profile?.parent_profiles?.[0];
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Анкета родителя</h2>
@@ -73,9 +76,9 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
           <AddressSection form={form} />
           <StatusSection form={form} />
           
-          {profile?.id && (
+          {parentProfile?.id && (
             <div className="mt-8">
-              <ChildrenSection parentId={profile.id} />
+              <ChildrenSection parentId={parentProfile.id} />
             </div>
           )}
           

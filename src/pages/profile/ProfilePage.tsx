@@ -10,7 +10,7 @@ import type { Profile } from "./types";
 const ProfilePage = () => {
   const { session } = useSessionContext();
 
-  const { data: profile, isLoading } = useQuery<Profile>({
+  const { data: profile, isLoading, refetch } = useQuery<Profile>({
     queryKey: ['profile', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) {
@@ -19,7 +19,6 @@ const ProfilePage = () => {
 
       console.log('Fetching profile data for user:', session.user.id);
       
-      // Сначала получаем базовый профиль с ролями
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select(`
@@ -46,7 +45,6 @@ const ProfilePage = () => {
 
       console.log('Profile data received:', profileData);
 
-      // Преобразуем данные в правильный формат
       const profile: Profile = {
         ...profileData,
         user_roles: Array.isArray(profileData.user_roles) 
@@ -73,11 +71,11 @@ const ProfilePage = () => {
     <div className="container mx-auto p-6 max-w-4xl">
       <ProfileHeader profile={profile} />
       <div className="mt-8">
-        <ProfileForm profile={profile} />
+        <ProfileForm profile={profile} onUpdate={refetch} />
       </div>
       {isParent && profile && (
         <div className="mt-8">
-          <ParentForm userId={profile.id} />
+          <ParentForm profile={profile} onUpdate={refetch} />
         </div>
       )}
     </div>
