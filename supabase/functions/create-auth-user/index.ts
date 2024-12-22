@@ -1,5 +1,5 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,21 +52,16 @@ serve(async (req) => {
 
     console.log('2. Verification code is valid')
 
-    // 2. Проверяем существование пользователя через auth.users
+    // 2. Проверяем существование пользователя через getUser
     console.log('3. Checking for existing user...')
-    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
-      .listUsers({
-        filters: {
-          email: email
-        }
-      })
+    const { data: { user: existingUser }, error: getUserError } = await supabaseAdmin.auth.admin
+      .getUserByEmail(email)
 
-    if (getUserError) {
-      console.error('Error checking existing users:', getUserError)
-      throw new Error('Failed to check existing users')
+    if (getUserError && getUserError.status !== 404) {
+      console.error('Error checking existing user:', getUserError)
+      throw new Error('Failed to check existing user')
     }
 
-    const existingUser = users.find(u => u.email === email)
     console.log('Existing user found:', existingUser?.id || 'none')
 
     let userId
