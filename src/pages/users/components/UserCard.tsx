@@ -2,6 +2,7 @@ import { User } from "../types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, X, Check } from "lucide-react";
+import UserRoleManager from "./UserRoleManager";
 
 interface UserCardProps {
   user: User;
@@ -16,6 +17,7 @@ interface UserCardProps {
   onCancel: () => void;
   onDelete: () => void;
   onFormChange: (field: string, value: string) => void;
+  onRoleChange: () => void;
 }
 
 export const UserCard = ({
@@ -27,6 +29,7 @@ export const UserCard = ({
   onCancel,
   onDelete,
   onFormChange,
+  onRoleChange,
 }: UserCardProps) => {
   return (
     <div className="p-4 bg-white rounded-lg shadow flex items-center justify-between">
@@ -78,6 +81,11 @@ export const UserCard = ({
           </>
         ) : (
           <>
+            <UserRoleManager 
+              currentRole={user.user_roles?.[0]?.role} 
+              userId={user.id}
+              onRoleChange={onRoleChange}
+            />
             <Button variant="ghost" size="icon" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
             </Button>

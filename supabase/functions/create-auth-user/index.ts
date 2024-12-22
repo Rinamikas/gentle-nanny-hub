@@ -24,10 +24,12 @@ serve(async (req) => {
       }
     )
 
-    const { email, code } = await req.json()
+    const { email, code, firstName, lastName } = await req.json()
     console.log('=== Starting user management process ===')
     console.log('Email:', email)
     console.log('Code:', code)
+    console.log('First Name:', firstName)
+    console.log('Last Name:', lastName)
 
     // 1. Проверяем существование пользователя через profiles
     console.log('1. Checking for existing user in profiles...')
@@ -66,11 +68,15 @@ serve(async (req) => {
 
       console.log('Found user:', user.id)
       
-      // Обновляем пароль
+      // Обновляем пароль и метаданные
       const { error: updateError } = await supabaseAdmin.auth.admin
         .updateUserById(user.id, {
           password: code,
-          email_confirm: true
+          email_confirm: true,
+          user_metadata: {
+            first_name: firstName,
+            last_name: lastName
+          }
         })
 
       if (updateError) {
@@ -79,7 +85,7 @@ serve(async (req) => {
       }
 
       userId = user.id
-      console.log('3a. User password updated successfully:', userId)
+      console.log('3a. User password and metadata updated successfully:', userId)
     } else {
       // Создаем нового пользователя
       console.log('2b. Creating new user...')
@@ -87,7 +93,11 @@ serve(async (req) => {
         .createUser({
           email,
           password: code,
-          email_confirm: true
+          email_confirm: true,
+          user_metadata: {
+            first_name: firstName,
+            last_name: lastName
+          }
         })
 
       if (createError) {
