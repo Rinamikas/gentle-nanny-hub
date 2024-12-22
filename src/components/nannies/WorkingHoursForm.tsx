@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -124,6 +125,9 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
                         "w-[240px] pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                      }}
                     >
                       {field.value ? (
                         format(field.value, "PPP", { locale: ru })
@@ -138,7 +142,12 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
+                    onSelect={(date) => {
+                      if (date) {
+                        console.log("Выбрана дата:", date);
+                        field.onChange(date);
+                      }
+                    }}
                     disabled={(date) => date < new Date()}
                     initialFocus
                     locale={ru}
