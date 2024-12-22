@@ -28,7 +28,7 @@ serve(async (req) => {
     console.log('Email:', email)
     console.log('Code:', code)
 
-    // 1. Проверяем код верификации
+    // 1. Проверяем код верификации через RPC
     console.log('1. Checking verification code...')
     const { data: hasValidCode, error: rpcError } = await supabaseAdmin
       .rpc('check_verification_code', {
@@ -48,26 +48,27 @@ serve(async (req) => {
 
     console.log('2. Verification code is valid')
 
-    // 2. Проверяем существование пользователя
-    console.log('3. Checking for existing user...')
-    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
-      .listUsers()
+    // 2. Получаем текущего пользователя через email
+    console.log('3. Getting user by email...')
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single()
 
-    if (getUserError) {
-      console.error('Error checking existing users:', getUserError)
-      throw new Error('Failed to check existing users')
+    if (userError) {
+      console.error('Error getting user:', userError)
+      throw new Error('Failed to get user')
     }
 
-    const existingUser = users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
-    console.log('Existing user found:', existingUser?.id || 'none')
+    let userId: string
 
-    let userId
-
-    if (existingUser) {
+    if (userData) {
       // 3a. Обновляем пароль существующего пользователя
       console.log('4a. Updating existing user password...')
+      userId = userData.id
       const { error: updateError } = await supabaseAdmin.auth.admin
-        .updateUserById(existingUser.id, {
+        .updateUserById(userId, {
           password: code,
           email_confirm: true
         })
@@ -77,7 +78,6 @@ serve(async (req) => {
         throw new Error('Failed to update user')
       }
 
-      userId = existingUser.id
       console.log('5a. User password updated successfully:', userId)
     } else {
       // 3b. Создаем нового пользователя
