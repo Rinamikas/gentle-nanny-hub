@@ -20,7 +20,7 @@ type ParentProfile = Database['public']['Tables']['parent_profiles']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface ParentProfileWithUser extends ParentProfile {
-  profiles: Profile | null;
+  profiles: Profile;
 }
 
 interface FamilyFormProps {
@@ -40,31 +40,48 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
       console.log("FamilyForm: загрузка данных семьи для id =", familyId);
       if (!familyId) return null;
 
-      const { data, error } = await supabase
+      // Сначала получаем parent_profile
+      const { data: parentProfile, error: parentError } = await supabase
         .from('parent_profiles')
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            first_name,
-            last_name,
-            phone,
-            email,
-            created_at,
-            updated_at,
-            photo_url
-          )
-        `)
+        .select('*')
         .eq('id', familyId)
         .maybeSingle();
 
-      if (error) {
-        console.error("FamilyForm: ошибка загрузки данных семьи:", error);
-        throw error;
+      if (parentError) {
+        console.error("FamilyForm: ошибка загрузки parent_profile:", parentError);
+        throw parentError;
       }
 
-      console.log("FamilyForm: получены данные семьи:", data);
-      return data as ParentProfileWithUser;
+      if (!parentProfile) {
+        console.error("FamilyForm: parent_profile не найден");
+        return null;
+      }
+
+      // Затем получаем связанный profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', parentProfile.user_id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("FamilyForm: ошибка загрузки profile:", profileError);
+        throw profileError;
+      }
+
+      if (!profile) {
+        console.error("FamilyForm: profile не найден");
+        return null;
+      }
+
+      // Объединяем данные
+      const result: ParentProfileWithUser = {
+        ...parentProfile,
+        profiles: profile
+      };
+
+      console.log("FamilyForm: получены данные семьи:", result);
+      return result;
     },
     enabled: !!familyId
   });
