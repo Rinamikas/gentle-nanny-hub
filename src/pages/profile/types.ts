@@ -9,7 +9,7 @@ export interface Profile {
   photo_url: string | null;
   created_at: string;
   updated_at: string;
-  user_roles: Array<{ role: string }>;
-  nanny_profiles: Tables<'nanny_profiles'>[] | null;
-  parent_profiles: Tables<'parent_profiles'>[] | null;
+  user_roles?: Array<{ role: string }>;
+  nanny_profiles?: Tables<'nanny_profiles'>[] | null;
+  parent_profiles?: Tables<'parent_profiles'>[] | null;
 }

@@ -24,6 +24,7 @@ export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
       first_name: profile?.first_name || "",
       last_name: profile?.last_name || "",
       phone: profile?.phone || "",
+      email: profile?.email || "",
     },
   });
 

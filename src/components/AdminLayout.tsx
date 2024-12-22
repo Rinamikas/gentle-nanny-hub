@@ -17,13 +17,14 @@ import {
   LogOut
 } from "lucide-react";
 import { localizeUserRole } from "@/utils/localization";
+import type { Profile } from "@/pages/profile/types";
 
 const AdminLayout = () => {
   const location = useLocation();
   const { handleLogout, isLoading } = useSessionHandler();
   const { session } = useSessionContext();
   
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<Profile>({
     queryKey: ['currentUser', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
@@ -31,7 +32,7 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, user_roles(*)')
         .eq('id', session.user.id)
         .single();
 
