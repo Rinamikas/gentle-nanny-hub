@@ -9,7 +9,8 @@ import ContactInfo from "./ContactInfo";
 import AddressSection from "@/pages/families/components/sections/AddressSection";
 import StatusSection from "@/pages/families/components/sections/StatusSection";
 import ChildrenSection from "@/pages/families/components/ChildrenSection";
-import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
+import type { ParentProfile } from "@/integrations/supabase/types";
+import type { ParentStatus } from "@/integrations/supabase/types";
 
 interface ParentFormProps {
   profile?: ParentProfile | null;
@@ -25,7 +26,7 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
       additional_phone: profile?.additional_phone || "",
       special_requirements: profile?.special_requirements || "",
       notes: profile?.notes || "",
-      status: profile?.status || "default",
+      status: (profile?.status as ParentStatus) || "default",
     },
   });
 

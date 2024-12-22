@@ -6,6 +6,8 @@ import { useEffect } from "react";
 import type { ParentProfile } from "@/integrations/supabase/types";
 
 export const useFamilyForm = (familyData: ParentProfile | null) => {
+  console.log("useFamilyForm: инициализация с данными:", familyData);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(familyFormSchema),
     defaultValues: {
@@ -23,7 +25,7 @@ export const useFamilyForm = (familyData: ParentProfile | null) => {
 
   useEffect(() => {
     if (familyData?.profiles) {
-      console.log("FamilyForm: обновляем значения формы из данных:", familyData);
+      console.log("useFamilyForm: обновляем значения формы из данных:", familyData);
       form.reset({
         first_name: familyData.profiles.first_name || "",
         last_name: familyData.profiles.last_name || "",
