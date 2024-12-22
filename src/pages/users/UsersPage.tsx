@@ -53,6 +53,12 @@ const UsersPage = () => {
     setEditForm({ ...editForm, [field]: value });
   };
 
+  const handleRoleChange = () => {
+    // Перезагружаем список пользователей после изменения роли
+    console.log("Обновляем список пользователей после изменения роли");
+    window.location.reload();
+  };
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -76,6 +82,7 @@ const UsersPage = () => {
             onCancel={() => setEditingUser(null)}
             onDelete={() => handleDelete(user.id)}
             onFormChange={handleFormChange}
+            onRoleChange={handleRoleChange}
           />
         ))}
       </div>
