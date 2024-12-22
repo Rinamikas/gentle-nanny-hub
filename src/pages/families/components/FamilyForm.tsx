@@ -14,6 +14,11 @@ import ChildrenSection from "./ChildrenSection";
 import { setFormMethods } from "@/utils/formTestUtils";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Database } from "@/integrations/supabase/types";
+
+type ParentProfileWithUser = Database['public']['Tables']['parent_profiles']['Row'] & {
+  profiles: Database['public']['Tables']['profiles']['Row'] | null;
+}
 
 interface FamilyFormProps {
   familyId?: string;
@@ -37,6 +42,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         .select(`
           *,
           profiles:user_id (
+            id,
             first_name,
             last_name,
             phone
@@ -51,7 +57,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
       }
 
       console.log("FamilyForm: получены данные семьи:", data);
-      return data;
+      return data as ParentProfileWithUser;
     },
     enabled: !!familyId
   });
