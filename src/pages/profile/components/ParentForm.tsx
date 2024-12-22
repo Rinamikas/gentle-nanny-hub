@@ -9,8 +9,7 @@ import ContactInfo from "./ContactInfo";
 import AddressSection from "@/pages/families/components/sections/AddressSection";
 import StatusSection from "@/pages/families/components/sections/StatusSection";
 import ChildrenSection from "@/pages/families/components/ChildrenSection";
-import type { ParentProfile } from "@/integrations/supabase/types";
-import type { ParentStatus } from "@/integrations/supabase/types";
+import type { ParentProfile, ParentStatus } from "@/integrations/supabase/types";
 
 interface ParentFormProps {
   profile?: ParentProfile | null;
