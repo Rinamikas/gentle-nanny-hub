@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -55,7 +56,11 @@ serve(async (req) => {
     // 2. Проверяем существование пользователя
     console.log('3. Checking for existing user...')
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin
-      .listUsers()
+      .listUsers({
+        filters: {
+          email: email
+        }
+      })
 
     if (getUserError) {
       console.error('Error checking existing users:', getUserError)
