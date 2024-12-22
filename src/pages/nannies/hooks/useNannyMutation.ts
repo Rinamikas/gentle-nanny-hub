@@ -14,6 +14,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
       try {
         // Сначала создаем пользователя через edge function
+        console.log("Creating user via edge function...");
         const { data: userData, error: userError } = await supabase.functions.invoke(
           'create-user',
           {
@@ -28,14 +29,18 @@ export const useNannyMutation = (onSuccess: () => void) => {
           throw userError;
         }
 
-        if (!userData) {
+        if (!userData?.id) {
           console.error("No user data returned");
           throw new Error("Failed to create user");
         }
 
         console.log("User created/found successfully:", userData);
 
+        // Добавляем небольшую задержку, чтобы убедиться, что пользователь создан
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // Создаем или обновляем няню через функцию
+        console.log("Creating nanny profile...");
         const { data: nannyData, error: createError } = await supabase
           .rpc('create_nanny_with_user', {
             p_email: values.email,
@@ -87,6 +92,8 @@ export const useNannyMutation = (onSuccess: () => void) => {
           },
         ].filter((doc) => doc.file_url);
 
+        console.log("Creating documents:", documents);
+
         for (const doc of documents) {
           const { error: docError } = await supabase
             .from("nanny_documents")
@@ -106,6 +113,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         // Создаем этап обучения
         if (values.training_stage) {
+          console.log("Creating training stage:", values.training_stage);
           const { error: trainingError } = await supabase
             .from("nanny_training")
             .insert({
@@ -122,8 +130,13 @@ export const useNannyMutation = (onSuccess: () => void) => {
         }
 
         return nannyData;
-      } catch (error) {
-        console.error("Error in mutation:", error);
+      } catch (error: any) {
+        console.error("Error in mutation:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
     },
@@ -135,8 +148,13 @@ export const useNannyMutation = (onSuccess: () => void) => {
       });
       onSuccess();
     },
-    onError: (error) => {
-      console.error("Error saving nanny:", error);
+    onError: (error: any) => {
+      console.error("Error saving nanny:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       toast({
         variant: "destructive",
         title: "Ошибка",
