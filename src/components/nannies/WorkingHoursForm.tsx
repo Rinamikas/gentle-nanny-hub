@@ -57,12 +57,16 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
       const formattedDate = format(values.work_date, "yyyy-MM-dd");
       console.log("Форматированная дата:", formattedDate);
 
-      const { data, error } = await supabase.from("working_hours").insert({
-        nanny_id: nannyId,
-        work_date: formattedDate,
-        start_time: values.start_time,
-        end_time: values.end_time,
-      }).select();
+      const { data, error } = await supabase
+        .from("working_hours")
+        .insert({
+          nanny_id: nannyId,
+          work_date: formattedDate,
+          start_time: values.start_time,
+          end_time: values.end_time,
+        })
+        .select()
+        .maybeSingle();
 
       console.log("Результат сохранения:", { data, error });
 
@@ -93,106 +97,101 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
 
   return (
     <div className="space-y-4">
-      <div {...form.formState}>
-        <div onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="work_date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Дата</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP", { locale: ru })
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={(date) => {
+                      if (date) {
+                        console.log("Выбрана дата:", date);
+                        setDate(date);
+                        field.onChange(date);
+                      }
+                    }}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="work_date"
+            name="start_time"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Дата</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[240px] pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: ru })
-                        ) : (
-                          <span>Выберите дату</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={(date) => {
-                        if (date) {
-                          console.log("Выбрана дата:", date);
-                          setDate(date);
-                          field.onChange(date);
-                        }
-                      }}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <FormItem>
+                <FormLabel>Начало рабочего дня</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="time" 
+                    {...field} 
+                    onChange={(e) => {
+                      console.log("Изменено время начала:", e.target.value);
+                      field.onChange(e);
+                    }}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="start_time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Начало рабочего дня</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="time" 
-                      {...field} 
-                      onChange={(e) => {
-                        console.log("Изменено время начала:", e.target.value);
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="end_time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Конец рабочего дня</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="time" 
-                      {...field}
-                      onChange={(e) => {
-                        console.log("Изменено время окончания:", e.target.value);
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <Button 
-            type="button" 
-            onClick={form.handleSubmit(onSubmit)}
-          >
-            Сохранить
-          </Button>
+          <FormField
+            control={form.control}
+            name="end_time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Конец рабочего дня</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="time" 
+                    {...field}
+                    onChange={(e) => {
+                      console.log("Изменено время окончания:", e.target.value);
+                      field.onChange(e);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </div>
+
+        <Button type="submit">
+          Сохранить
+        </Button>
+      </form>
     </div>
   );
 }

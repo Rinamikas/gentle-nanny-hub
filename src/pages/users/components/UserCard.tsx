@@ -83,7 +83,6 @@ export const UserCard = ({
           <>
             <UserRoleManager 
               currentRole={user.user_roles?.[0]?.role} 
-              userId={user.id}
               onRoleChange={onRoleChange}
             />
             <Button variant="ghost" size="icon" onClick={onEdit}>
