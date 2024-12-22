@@ -51,7 +51,8 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
     },
   });
 
-  const onSubmit = async (values: WorkingHoursFormValues) => {
+  const onSubmit = async (values: WorkingHoursFormValues, e: React.FormEvent) => {
+    e.preventDefault(); // Предотвращаем стандартное поведение формы
     try {
       setIsSubmitting(true);
       console.log("=== Начало сохранения рабочих часов ===");
@@ -99,7 +100,7 @@ export function WorkingHoursForm({ nannyId }: WorkingHoursFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={(e) => form.handleSubmit((values) => onSubmit(values, e))(e)} className="space-y-4">
         <FormField
           control={form.control}
           name="work_date"
