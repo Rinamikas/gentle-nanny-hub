@@ -1,10 +1,7 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { familyFormSchema } from "../schemas/family-form-schema";
 import type { FormValues } from "../types/form";
 import PersonalSection from "./sections/PersonalSection";
 import ContactSection from "./sections/ContactSection";
@@ -13,16 +10,9 @@ import StatusSection from "./sections/StatusSection";
 import ChildrenSection from "./ChildrenSection";
 import { setFormMethods } from "@/utils/formTestUtils";
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Database } from "@/integrations/supabase/types";
-import { useNavigate } from "react-router-dom";
-
-type ParentProfile = Database['public']['Tables']['parent_profiles']['Row'];
-type Profile = Database['public']['Tables']['profiles']['Row'];
-
-interface ParentProfileWithUser extends ParentProfile {
-  profiles: Profile;
-}
+import { useNavigate, useParams } from "react-router-dom";
+import { useFamilyData } from "../hooks/useFamilyData";
+import { useFamilyForm } from "../hooks/useFamilyForm";
 
 interface FamilyFormProps {
   familyId?: string;
@@ -30,92 +20,18 @@ interface FamilyFormProps {
   onSubmit?: (data: any) => void;
 }
 
-export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFormProps) {
+export default function FamilyForm({ familyId: propsFamilyId, initialData, onSubmit }: FamilyFormProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { id: routeFamilyId } = useParams();
   
-  console.log("FamilyForm: начало рендера с familyId =", familyId);
-
-  const { data: familyData, isLoading } = useQuery({
-    queryKey: ['family', familyId],
-    queryFn: async () => {
-      console.log("FamilyForm: загрузка данных семьи для id =", familyId);
-      if (!familyId) return null;
-
-      const { data: parentProfile, error: parentError } = await supabase
-        .from('parent_profiles')
-        .select('*')
-        .eq('id', familyId)
-        .maybeSingle();
-
-      if (parentError) {
-        console.error("FamilyForm: ошибка загрузки parent_profile:", parentError);
-        throw parentError;
-      }
-
-      if (!parentProfile) {
-        console.error("FamilyForm: parent_profile не найден");
-        return null;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', parentProfile.user_id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("FamilyForm: ошибка загрузки profile:", profileError);
-        throw profileError;
-      }
-
-      if (!profile) {
-        console.error("FamilyForm: profile не найден");
-        return null;
-      }
-
-      const result: ParentProfileWithUser = {
-        ...parentProfile,
-        profiles: profile
-      };
-
-      console.log("FamilyForm: получены данные семьи:", result);
-      return result;
-    },
-    enabled: !!familyId
-  });
+  // Используем ID из пропсов или из URL
+  const currentFamilyId = propsFamilyId || routeFamilyId;
   
-  const form = useForm<FormValues>({
-    resolver: zodResolver(familyFormSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      additional_phone: "",
-      address: "",
-      special_requirements: "",
-      notes: "",
-      status: "default",
-    },
-  });
+  console.log("FamilyForm: начало рендера с familyId =", currentFamilyId);
 
-  useEffect(() => {
-    if (familyData) {
-      console.log("FamilyForm: обновляем значения формы из данных:", familyData);
-      form.reset({
-        first_name: familyData.profiles?.first_name || "",
-        last_name: familyData.profiles?.last_name || "",
-        email: familyData.profiles?.email || "",
-        phone: familyData.profiles?.phone || "",
-        additional_phone: familyData.additional_phone || "",
-        address: familyData.address || "",
-        special_requirements: familyData.special_requirements || "",
-        notes: familyData.notes || "",
-        status: familyData.status || "default",
-      });
-    }
-  }, [familyData, form]);
+  const { data: familyData, isLoading } = useFamilyData(currentFamilyId);
+  const form = useFamilyForm(familyData);
 
   useEffect(() => {
     console.log("FamilyForm: useEffect - установка методов формы");
@@ -135,7 +51,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         return;
       }
 
-      if (familyId) {
+      if (currentFamilyId) {
         // Обновление существующей семьи
         const { error: parentError } = await supabase
           .from("parent_profiles")
@@ -147,7 +63,7 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
             status: values.status,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", familyId);
+          .eq("id", currentFamilyId);
 
         if (parentError) throw parentError;
 
@@ -171,6 +87,8 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
           title: "Успешно",
           description: "Данные семьи обновлены",
         });
+        
+        navigate("/families");
       } else {
         // Создание новой семьи
         console.log("FamilyForm: создание новой семьи");
@@ -186,9 +104,6 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         if (!authData.user) {
           throw new Error("Не удалось создать пользователя");
         }
-
-        // Триггер handle_new_user() автоматически создаст записи в profiles и parent_profiles
-        // Нам нужно только обновить созданные записи
 
         // Ждем немного, чтобы триггер успел отработать
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -235,8 +150,8 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
           description: "Новая семья создана",
         });
 
-        // Перенаправляем на страницу редактирования
-        navigate(`/families/${parentProfile.id}/edit`);
+        // Перенаправляем на список семей
+        navigate("/families");
       }
     } catch (error) {
       console.error("FamilyForm: ошибка при сохранении семьи:", error);
@@ -262,9 +177,9 @@ export default function FamilyForm({ familyId, initialData, onSubmit }: FamilyFo
         
         <Button type="submit" className="w-full">Сохранить</Button>
 
-        {familyId && (
+        {currentFamilyId && (
           <div className="mt-8">
-            <ChildrenSection parentId={familyId} />
+            <ChildrenSection parentId={currentFamilyId} />
           </div>
         )}
       </form>
