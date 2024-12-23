@@ -23,46 +23,45 @@ serve(async (req) => {
       throw new Error('Email is required')
     }
 
-    console.log("Creating/updating user with email:", email)
+    console.log("Checking existing user with email:", email)
 
-    // Создаем пользователя в auth.users если его нет
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      email_confirm: true,
-      password: Math.random().toString(36).slice(-8), // Временный пароль
+    // Сначала проверяем существование пользователя
+    const { data: existingUsers, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+      filter: {
+        email: email
+      }
     })
 
-    if (authError) {
-      // Если ошибка о том что пользователь уже существует - это нормально
-      if (!authError.message.includes('User already registered')) {
-        console.error("Error creating auth user:", authError)
-        throw authError
-      }
-      
-      // Получаем существующего пользователя
-      const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
-        filter: {
-          email: email
-        }
-      })
+    if (getUserError) {
+      console.error("Error checking existing user:", getUserError)
+      throw getUserError
+    }
 
-      if (getUserError) {
-        console.error("Error getting existing user:", getUserError)
-        throw getUserError
-      }
-
-      if (!users || users.length === 0) {
-        throw new Error('Failed to find existing user')
-      }
-
-      console.log("Found existing user:", users[0].id)
+    // Если пользователь найден, возвращаем его данные
+    if (existingUsers.users && existingUsers.users.length > 0) {
+      const existingUser = existingUsers.users[0]
+      console.log("Found existing user:", existingUser.id)
       return new Response(
-        JSON.stringify({ id: users[0].id }),
+        JSON.stringify({ id: existingUser.id }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200 
         }
       )
+    }
+
+    console.log("No existing user found, creating new user...")
+
+    // Создаем нового пользователя
+    const { data: authUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      email_confirm: true,
+      password: Math.random().toString(36).slice(-8), // Временный пароль
+    })
+
+    if (createError) {
+      console.error("Error creating user:", createError)
+      throw createError
     }
 
     if (!authUser.user) {
@@ -82,7 +81,10 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in create-user function:", error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error instanceof Error ? error.stack : undefined 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 
