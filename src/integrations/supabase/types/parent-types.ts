@@ -11,6 +11,7 @@ export interface ParentProfile {
   updated_at: string;
   status: ParentStatus | null;
   emergency_phone: string | null;
+  additional_phone: string | null;
   notes: string | null;
   is_deleted: boolean | null;
   deleted_at: string | null;

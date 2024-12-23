@@ -6,6 +6,7 @@ export interface ProfileRow {
   photo_url: string | null;
   created_at: string;
   updated_at: string;
+  email?: string;
 }
 
 export interface Profile extends ProfileRow {

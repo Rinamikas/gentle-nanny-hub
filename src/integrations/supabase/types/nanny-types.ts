@@ -18,6 +18,7 @@ export interface NannyProfile {
   camera_number: string | null;
   address: string | null;
   emergency_phone: string | null;
+  relative_phone: string | null;
   profiles?: ProfileRow & { email?: string };
 }
 
