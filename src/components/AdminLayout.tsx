@@ -17,12 +17,7 @@ import {
   LogOut
 } from "lucide-react";
 import { localizeUserRole } from "@/utils/localization";
-import type { Database } from "@/integrations/supabase/types";
 import type { Profile } from "@/integrations/supabase/types/profile-types";
-
-type Profile = Database['public']['Tables']['profiles']['Row'] & {
-  user_roles?: Database['public']['Tables']['user_roles']['Row'][];
-};
 
 const AdminLayout = () => {
   const location = useLocation();
