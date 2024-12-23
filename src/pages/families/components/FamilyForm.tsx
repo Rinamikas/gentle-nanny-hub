@@ -52,6 +52,28 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
 
       if (currentFamilyId) {
         // Обновление существующей семьи
+        console.log("FamilyForm: обновление существующей семьи");
+
+        // Сначала обновляем базовый профиль в profiles
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            first_name: values.first_name,
+            last_name: values.last_name,
+            email: values.email,
+            phone: values.phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", familyData?.profiles?.id);
+
+        if (profileError) {
+          console.error("FamilyForm: ошибка обновления profiles:", profileError);
+          throw profileError;
+        }
+
+        console.log("FamilyForm: profiles успешно обновлен");
+
+        // Затем обновляем данные родителя
         const { error: parentError } = await supabase
           .from("parent_profiles")
           .update({
@@ -64,24 +86,13 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
           })
           .eq("id", currentFamilyId);
 
-        if (parentError) throw parentError;
+        if (parentError) {
+          console.error("FamilyForm: ошибка обновления parent_profiles:", parentError);
+          throw parentError;
+        }
 
-        // Обновляем базовый профиль
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({
-            first_name: values.first_name,
-            last_name: values.last_name,
-            email: values.email,
-            phone: values.phone,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", familyData?.profiles?.id);
+        console.log("FamilyForm: parent_profiles успешно обновлен");
 
-        if (profileError) throw profileError;
-
-        console.log("FamilyForm: данные успешно обновлены");
-        
         toast({
           title: "Успешно",
           description: "Данные семьи обновлены",
@@ -92,23 +103,28 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         // Создание новой семьи
         console.log("FamilyForm: создание новой семьи");
 
-        // Создаем пользователя в auth.users через API, но без автоматического входа
+        // Создаем пользователя в auth.users через API
         const { data: authData, error: authError } = await supabase.functions.invoke(
           'create-auth-user',
           {
             body: JSON.stringify({ 
               email: values.email,
-              code: Math.random().toString(36).slice(-8), // Временный пароль
-              shouldSignIn: false // Важно! Не выполняем автоматический вход
+              code: Math.random().toString(36).slice(-8),
+              shouldSignIn: false
             })
           }
         );
 
-        if (authError) throw authError;
+        if (authError) {
+          console.error("FamilyForm: ошибка создания auth user:", authError);
+          throw authError;
+        }
 
         if (!authData.id) {
           throw new Error("Не удалось создать пользователя");
         }
+
+        console.log("FamilyForm: пользователь создан в auth.users:", authData.id);
 
         // Ждем немного, чтобы триггер успел отработать
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -123,7 +139,12 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
           })
           .eq("id", authData.id);
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("FamilyForm: ошибка обновления profiles:", profileError);
+          throw profileError;
+        }
+
+        console.log("FamilyForm: profiles успешно создан");
 
         // Обновляем профиль родителя
         const { error: parentUpdateError } = await supabase
@@ -137,7 +158,12 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
           })
           .eq("user_id", authData.id);
 
-        if (parentUpdateError) throw parentUpdateError;
+        if (parentUpdateError) {
+          console.error("FamilyForm: ошибка обновления parent_profiles:", parentUpdateError);
+          throw parentUpdateError;
+        }
+
+        console.log("FamilyForm: parent_profiles успешно создан");
 
         toast({
           title: "Успешно",
@@ -151,7 +177,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось сохранить данные семьи",
+        description: error instanceof Error ? error.message : "Не удалось сохранить данные семьи",
       });
     }
   };
