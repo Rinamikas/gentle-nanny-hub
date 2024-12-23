@@ -176,58 +176,58 @@ export type Database = {
           address: string | null
           age_group: string | null
           birth_date: string | null
-          camera_number: string | null
-          camera_phone: string | null
           certifications: string[] | null
           created_at: string
           education: string | null
+          emergency_phone: string | null
           experience_years: number | null
           hourly_rate: number | null
           id: string
           photo_url: string | null
           position: string | null
-          relative_phone: string | null
           specializations: string[] | null
           updated_at: string
           user_id: string | null
+          work_phone: string | null
+          work_phone_ext: string | null
         }
         Insert: {
           address?: string | null
           age_group?: string | null
           birth_date?: string | null
-          camera_number?: string | null
-          camera_phone?: string | null
           certifications?: string[] | null
           created_at?: string
           education?: string | null
+          emergency_phone?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
           photo_url?: string | null
           position?: string | null
-          relative_phone?: string | null
           specializations?: string[] | null
           updated_at?: string
           user_id?: string | null
+          work_phone?: string | null
+          work_phone_ext?: string | null
         }
         Update: {
           address?: string | null
           age_group?: string | null
           birth_date?: string | null
-          camera_number?: string | null
-          camera_phone?: string | null
           certifications?: string[] | null
           created_at?: string
           education?: string | null
+          emergency_phone?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
           photo_url?: string | null
           position?: string | null
-          relative_phone?: string | null
           specializations?: string[] | null
           updated_at?: string
           user_id?: string | null
+          work_phone?: string | null
+          work_phone_ext?: string | null
         }
         Relationships: [
           {
@@ -311,11 +311,11 @@ export type Database = {
       }
       parent_profiles: {
         Row: {
-          additional_phone: string | null
           address: string | null
           children_count: number | null
           created_at: string
           deleted_at: string | null
+          emergency_phone: string | null
           id: string
           is_deleted: boolean | null
           notes: string | null
@@ -325,11 +325,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          additional_phone?: string | null
           address?: string | null
           children_count?: number | null
           created_at?: string
           deleted_at?: string | null
+          emergency_phone?: string | null
           id?: string
           is_deleted?: boolean | null
           notes?: string | null
@@ -339,11 +339,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          additional_phone?: string | null
           address?: string | null
           children_count?: number | null
           created_at?: string
           deleted_at?: string | null
+          emergency_phone?: string | null
           id?: string
           is_deleted?: boolean | null
           notes?: string | null
@@ -365,31 +365,28 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
-          email: string | null
           first_name: string | null
           id: string
           last_name: string | null
-          phone: string | null
+          main_phone: string | null
           photo_url: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          email?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
-          phone?: string | null
+          main_phone?: string | null
           photo_url?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
-          phone?: string | null
+          main_phone?: string | null
           photo_url?: string | null
           updated_at?: string
         }

@@ -14,10 +14,10 @@ export default function ContactSection({ form }: ContactSectionProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="phone"
+          name="main_phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Телефон</FormLabel>
+              <FormLabel>Основной телефон</FormLabel>
               <FormControl>
                 <Input placeholder="+7 (999) 999-99-99" {...field} />
               </FormControl>
@@ -27,10 +27,10 @@ export default function ContactSection({ form }: ContactSectionProps) {
         />
         <FormField
           control={form.control}
-          name="additional_phone"
+          name="emergency_phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Дополнительный телефон</FormLabel>
+              <FormLabel>Экстренный контакт</FormLabel>
               <FormControl>
                 <Input placeholder="+7 (999) 999-99-99" {...field} />
               </FormControl>

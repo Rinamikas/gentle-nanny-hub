@@ -60,8 +60,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
           .update({
             first_name: values.first_name,
             last_name: values.last_name,
-            email: values.email,
-            phone: values.phone,
+            main_phone: values.main_phone,
             updated_at: new Date().toISOString(),
           })
           .eq("id", familyData?.profiles?.id);
@@ -77,7 +76,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         const { error: parentError } = await supabase
           .from("parent_profiles")
           .update({
-            additional_phone: values.additional_phone,
+            emergency_phone: values.emergency_phone,
             address: values.address,
             special_requirements: values.special_requirements,
             notes: values.notes,
@@ -135,7 +134,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
           .update({
             first_name: values.first_name,
             last_name: values.last_name,
-            phone: values.phone,
+            main_phone: values.main_phone,
           })
           .eq("id", authData.id);
 
@@ -150,7 +149,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         const { error: parentUpdateError } = await supabase
           .from("parent_profiles")
           .update({
-            additional_phone: values.additional_phone,
+            emergency_phone: values.emergency_phone,
             address: values.address,
             special_requirements: values.special_requirements,
             notes: values.notes,

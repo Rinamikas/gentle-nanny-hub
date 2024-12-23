@@ -14,8 +14,8 @@ export const useFamilyForm = (familyData: ParentProfile | null) => {
       first_name: "",
       last_name: "",
       email: "",
-      phone: "",
-      additional_phone: "",
+      main_phone: "",
+      emergency_phone: "",
       address: "",
       special_requirements: "",
       notes: "",
@@ -29,9 +29,9 @@ export const useFamilyForm = (familyData: ParentProfile | null) => {
       form.reset({
         first_name: familyData.profiles.first_name || "",
         last_name: familyData.profiles.last_name || "",
-        email: familyData.profiles.email || "",
-        phone: familyData.profiles.phone || "",
-        additional_phone: familyData.additional_phone || "",
+        email: "", // email не хранится в profiles
+        main_phone: familyData.profiles.main_phone || "",
+        emergency_phone: familyData.emergency_phone || "",
         address: familyData.address || "",
         special_requirements: familyData.special_requirements || "",
         notes: familyData.notes || "",
