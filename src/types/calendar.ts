@@ -8,6 +8,20 @@ export interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
+  type: 'appointment' | 'schedule_event' | 'working_hours';
   status?: AppointmentStatus;
-  type?: ScheduleEventType;
+  eventType?: ScheduleEventType;
+  nannyId?: string;
+  parentId?: string;
+  notes?: string;
+  color?: string;
+  serviceId?: string;
+  totalPrice?: number;
+  photoUrl?: string;
+  bookingExpiresAt?: Date;
+}
+
+export interface EventModalData {
+  isOpen: boolean;
+  event: CalendarEvent | null;
 }
