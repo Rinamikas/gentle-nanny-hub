@@ -19,7 +19,17 @@ export interface NannyProfile {
   address: string | null;
   emergency_phone: string | null;
   relative_phone: string | null;
-  profiles?: ProfileRow & { email?: string };
+  profiles?: ProfileRow & { 
+    email?: string;
+    phone?: string;
+  };
+  nanny_training?: {
+    stage: string;
+  };
+  nanny_documents?: {
+    type: string;
+    file_url: string;
+  }[];
 }
 
 export interface NannyTables {
