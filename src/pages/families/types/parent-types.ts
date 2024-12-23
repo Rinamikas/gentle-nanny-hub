@@ -1,4 +1,3 @@
-import { Database } from '@/integrations/supabase/types';
 import { ProfileRow } from '@/integrations/supabase/types/profile-types';
 import { ParentStatus } from '@/integrations/supabase/types/enums';
 
@@ -28,4 +27,12 @@ export interface ParentProfile {
     medical_conditions: string | null;
     notes: string | null;
   }[];
+}
+
+export interface ParentTables {
+  parent_profiles: {
+    Row: ParentProfile;
+    Insert: Partial<ParentProfile>;
+    Update: Partial<ParentProfile>;
+  }
 }

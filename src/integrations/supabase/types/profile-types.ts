@@ -21,3 +21,11 @@ export interface Profile extends ProfileRow {
     created_at: string;
   }[];
 }
+
+export interface ProfileTables {
+  profiles: {
+    Row: ProfileRow;
+    Insert: Partial<ProfileRow>;
+    Update: Partial<ProfileRow>;
+  }
+}

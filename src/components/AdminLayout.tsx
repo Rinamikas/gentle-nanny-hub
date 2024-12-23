@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { localizeUserRole } from "@/utils/localization";
 import type { Database } from "@/integrations/supabase/types";
+import type { Profile } from "@/integrations/supabase/types/profile-types";
 
 type Profile = Database['public']['Tables']['profiles']['Row'] & {
   user_roles?: Database['public']['Tables']['user_roles']['Row'][];
@@ -36,10 +37,12 @@ const AdminLayout = () => {
       console.log("Загрузка данных текущего пользователя");
       
       try {
-        // Получаем профиль
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select(`
+            *,
+            user_roles (*)
+          `)
           .eq('id', session.user.id)
           .single();
 
@@ -48,25 +51,13 @@ const AdminLayout = () => {
           throw profileError;
         }
 
-        // Получаем роли отдельным запросом
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', session.user.id);
-
-        if (rolesError) {
-          console.error("Ошибка при загрузке ролей:", rolesError);
-          throw rolesError;
-        }
-
-        console.log("Загружен профиль:", profileData);
-        console.log("Загружены роли:", rolesData);
-
-        // Объединяем данные
         return {
           ...profileData,
-          user_roles: rolesData
-        };
+          email: session.user.email || '',
+          user_roles: Array.isArray(profileData.user_roles) 
+            ? profileData.user_roles 
+            : profileData.user_roles ? [profileData.user_roles] : []
+        } as Profile;
       } catch (error) {
         console.error("Ошибка при загрузке данных пользователя:", error);
         throw error;
