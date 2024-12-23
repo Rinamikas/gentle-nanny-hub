@@ -113,6 +113,17 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         // Ждем немного, чтобы триггер успел отработать
         await new Promise(resolve => setTimeout(resolve, 1000));
 
+        // Проверяем существование профиля родителя
+        const { data: existingParentProfile, error: checkError } = await supabase
+          .from("parent_profiles")
+          .select("id")
+          .eq("user_id", authData.id)
+          .single();
+
+        if (checkError && checkError.code !== "PGRST116") { // PGRST116 = не найдено
+          throw checkError;
+        }
+
         // Обновляем базовый профиль
         const { error: profileError } = await supabase
           .from("profiles")
@@ -125,24 +136,44 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
 
         if (profileError) throw profileError;
 
-        // Создаем профиль родителя
-        const { data: parentProfile, error: parentCreateError } = await supabase
-          .from("parent_profiles")
-          .insert({
-            user_id: authData.id,
-            additional_phone: values.additional_phone,
-            address: values.address,
-            special_requirements: values.special_requirements,
-            notes: values.notes,
-            status: values.status,
-          })
-          .select()
-          .single();
+        if (existingParentProfile) {
+          // Обновляем существующий профиль родителя
+          const { error: updateError } = await supabase
+            .from("parent_profiles")
+            .update({
+              additional_phone: values.additional_phone,
+              address: values.address,
+              special_requirements: values.special_requirements,
+              notes: values.notes,
+              status: values.status,
+              is_deleted: false,
+              deleted_at: null
+            })
+            .eq("id", existingParentProfile.id);
 
-        if (parentCreateError) throw parentCreateError;
+          if (updateError) throw updateError;
 
-        console.log("FamilyForm: семья успешно создана:", parentProfile);
-        
+          console.log("FamilyForm: профиль родителя обновлен:", existingParentProfile.id);
+        } else {
+          // Создаем новый профиль родителя
+          const { data: parentProfile, error: parentCreateError } = await supabase
+            .from("parent_profiles")
+            .insert({
+              user_id: authData.id,
+              additional_phone: values.additional_phone,
+              address: values.address,
+              special_requirements: values.special_requirements,
+              notes: values.notes,
+              status: values.status,
+            })
+            .select()
+            .single();
+
+          if (parentCreateError) throw parentCreateError;
+
+          console.log("FamilyForm: создан новый профиль родителя:", parentProfile);
+        }
+
         toast({
           title: "Успешно",
           description: "Новая семья создана",
