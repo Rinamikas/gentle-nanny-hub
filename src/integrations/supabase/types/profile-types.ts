@@ -1,3 +1,5 @@
+import { UserRole } from './enums';
+
 export interface ProfileRow {
   id: string;
   first_name: string | null;
@@ -11,18 +13,11 @@ export interface ProfileRow {
 }
 
 export interface Profile extends ProfileRow {
-  email?: string;
+  email: string;
+  phone?: string;
   user_roles?: {
     id: string;
-    role: string;
+    role: UserRole;
     created_at: string;
   }[];
-}
-
-export interface ProfileTables {
-  profiles: {
-    Row: ProfileRow;
-    Insert: Partial<ProfileRow>;
-    Update: Partial<ProfileRow>;
-  }
 }

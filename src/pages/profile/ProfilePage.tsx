@@ -5,7 +5,7 @@ import ProfileForm from "./components/ProfileForm";
 import ProfileHeader from "./components/ProfileHeader";
 import ParentForm from "./components/ParentForm";
 import { toast } from "@/hooks/use-toast";
-import type { Profile } from "./types";
+import type { Profile } from "@/integrations/supabase/types/profile-types";
 
 const ProfilePage = () => {
   const { session } = useSessionContext();
@@ -47,6 +47,7 @@ const ProfilePage = () => {
 
       const profile: Profile = {
         ...profileData,
+        email: session.user.email || '',
         user_roles: Array.isArray(profileData.user_roles) 
           ? profileData.user_roles 
           : profileData.user_roles ? [profileData.user_roles] : []

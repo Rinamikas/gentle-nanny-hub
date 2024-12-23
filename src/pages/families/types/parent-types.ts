@@ -16,7 +16,10 @@ export interface ParentProfile {
   notes: string | null;
   is_deleted: boolean | null;
   deleted_at: string | null;
-  profiles?: ProfileRow & { email?: string; phone?: string };
+  profiles?: ProfileRow & { 
+    email?: string; 
+    phone?: string;
+  };
   children?: {
     id: string;
     first_name: string;
