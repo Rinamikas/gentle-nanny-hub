@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SessionContextProvider } from "@supabase/auth-helpers-react";
+import { SessionContextProvider, useSessionContext } from "@supabase/auth-helpers-react";
 import { Suspense } from "react";
 import AdminLayout from "./components/AdminLayout";
 import AuthPage from "./pages/auth/AuthPage";
@@ -22,21 +22,18 @@ const queryClient = new QueryClient({
       retry: (failureCount, error: any) => {
         console.log("Query error:", error);
         
-        // Проверяем различные варианты ошибок авторизации
         if (error?.message?.includes('Invalid Refresh Token') || 
             error?.message?.includes('refresh_token_not_found') ||
             error?.status === 412 ||
             error?.message?.includes('JWT expired')) {
           console.log("Detected auth error, redirecting to auth...");
           
-          // Показываем уведомление
           toast({
             title: "Ошибка авторизации",
             description: "Пожалуйста, войдите снова",
             variant: "destructive"
           });
           
-          // Очищаем локальное хранилище и редиректим
           localStorage.clear();
           window.location.href = '/auth';
           return false;
@@ -50,13 +47,16 @@ const queryClient = new QueryClient({
 
 // Компонент для защищенных маршрутов
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const session = supabase.auth.getSession();
+  const { session } = useSessionContext();
+  
+  console.log("ProtectedRoute: Checking session...", session);
   
   if (!session) {
-    console.log("No session found, redirecting to auth...");
+    console.log("ProtectedRoute: No session found, redirecting to auth...");
     return <Navigate to="/auth" replace />;
   }
   
+  console.log("ProtectedRoute: Session found, rendering children");
   return <>{children}</>;
 };
 
