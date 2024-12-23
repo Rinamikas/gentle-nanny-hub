@@ -48,6 +48,18 @@ const queryClient = new QueryClient({
   },
 });
 
+// Компонент для защищенных маршрутов
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const session = supabase.auth.getSession();
+  
+  if (!session) {
+    console.log("No session found, redirecting to auth...");
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 // Компонент для отображения состояния загрузки
 const PageLoader = () => (
   <div className="flex-1 flex items-center justify-center">
