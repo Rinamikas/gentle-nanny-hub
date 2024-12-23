@@ -28,6 +28,15 @@ export interface ProfileUpdate {
   updated_at?: string;
 }
 
+export interface Profile extends ProfileRow {
+  email?: string; // из auth.users
+  user_roles?: {
+    id: string;
+    role: string;
+    created_at: string;
+  }[];
+}
+
 export interface ProfileTables {
   profiles: {
     Row: ProfileRow;

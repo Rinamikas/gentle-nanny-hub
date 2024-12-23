@@ -14,19 +14,19 @@ const FamiliesPage = () => {
     queryKey: ["families"],
     queryFn: async () => {
       console.log("Loading families list...");
-      const { data, error } = await supabase
+      const { data: familiesData, error } = await supabase
         .from("parent_profiles")
         .select(`
           *,
-          profiles (
+          profiles:user_id (
             id,
-            email,
             first_name,
             last_name,
-            phone,
+            main_phone,
             photo_url,
             created_at,
-            updated_at
+            updated_at,
+            email:id(email)
           ),
           children (*)
         `);
@@ -36,8 +36,8 @@ const FamiliesPage = () => {
         throw error;
       }
 
-      console.log("Loaded families data:", data);
-      return data as ParentProfile[];
+      console.log("Loaded families data:", familiesData);
+      return familiesData as ParentProfile[];
     },
   });
 

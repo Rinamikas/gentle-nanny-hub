@@ -6,7 +6,7 @@ export interface Profile {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
-  phone: string | null;
+  main_phone: string | null;
   photo_url: string | null;
   created_at: string;
   updated_at: string;
