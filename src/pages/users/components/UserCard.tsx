@@ -1,11 +1,17 @@
+import { useState } from "react";
 import { User } from "@/pages/users/types";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import UserRoleManager from "./UserRoleManager";
+import DeleteUserDialog from "./DeleteUserDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { deleteUserProfile } from "../api/userApi";
 
 export function UserCard({ user }: { user: User }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -16,6 +22,20 @@ export function UserCard({ user }: { user: User }) {
       description: "Роль пользователя обновлена",
     });
   };
+
+  const handleDelete = async () => {
+    try {
+      await deleteUserProfile(user.id);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Ошибка при удалении пользователя:", error);
+    }
+  };
+
+  const displayName = user.first_name && user.last_name 
+    ? `${user.first_name} ${user.last_name}`
+    : user.email;
 
   return (
     <Card className="w-full">
@@ -29,15 +49,32 @@ export function UserCard({ user }: { user: User }) {
         </Avatar>
         <div className="flex-1">
           <CardTitle className="text-lg">
-            {user.first_name} {user.last_name}
+            {displayName}
           </CardTitle>
           <CardDescription>{user.email}</CardDescription>
         </div>
-        <UserRoleManager
-          currentRole={user.user_roles?.[0]?.role}
-          onRoleChange={handleRoleChange}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <UserRoleManager
+            currentRole={user.user_roles?.[0]?.role}
+            onRoleChange={handleRoleChange}
+          />
+        </div>
       </CardHeader>
+
+      <DeleteUserDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+        userName={displayName}
+      />
     </Card>
   );
 }

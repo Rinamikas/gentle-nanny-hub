@@ -121,6 +121,17 @@ export const deleteUserProfile = async (id: string) => {
   console.log("Удаляем пользователя с ID:", id);
   
   try {
+    // Проверяем наличие связанных записей
+    const { data: appointments } = await supabase
+      .from("appointments")
+      .select("id")
+      .or(`parent_id.eq.${id},nanny_id.eq.${id}`)
+      .limit(1);
+
+    if (appointments && appointments.length > 0) {
+      throw new Error("Невозможно удалить пользователя с активными записями");
+    }
+
     // Удаляем из auth.users через Edge Function
     const { error: authError } = await supabase.functions.invoke('delete-user', {
       body: { id }
@@ -143,12 +154,26 @@ export const deleteUserProfile = async (id: string) => {
     }
 
     console.log("Пользователь успешно удален из обеих таблиц");
-  } catch (error) {
+    
+    toast({
+      title: "Успешно",
+      description: "Пользователь удален",
+    });
+  } catch (error: any) {
     console.error("Критическая ошибка при удалении пользователя:", error);
+    
+    let errorMessage = "Не удалось удалить пользователя";
+    
+    if (error.message.includes("активными записями")) {
+      errorMessage = error.message;
+    } else if (error.code === "23503") {
+      errorMessage = "Невозможно удалить пользователя, так как есть связанные данные";
+    }
+    
     toast({
       variant: "destructive",
       title: "Ошибка",
-      description: "Не удалось удалить пользователя"
+      description: errorMessage
     });
     throw error;
   }
