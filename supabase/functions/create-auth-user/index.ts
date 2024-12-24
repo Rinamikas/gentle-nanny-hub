@@ -30,46 +30,36 @@ serve(async (req) => {
     console.log('Code:', code)
     console.log('Should Sign In:', shouldSignIn)
 
-    // 1. Проверяем существование пользователя через profiles
-    console.log('1. Checking for existing user in profiles...')
+    // 1. Проверяем существование пользователя через auth.users
+    console.log('1. Checking for existing user in auth.users...')
     
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email')
-      .eq('email', email.toLowerCase())
-      .maybeSingle()
+    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+      filter: {
+        email: email.toLowerCase()
+      }
+    })
 
-    if (profileError) {
-      console.error('Error checking profile:', profileError)
-      throw new Error('Failed to check existing profile')
+    if (getUserError) {
+      console.error('Error checking users:', getUserError)
+      throw new Error('Failed to check existing users')
     }
 
-    console.log('Profile search result:', profile)
+    console.log('Users search result:', users)
 
     let userId: string
 
-    if (profile) {
-      // Пользователь существует, получаем его через getUser
-      console.log('2a. Profile exists, getting user directly...')
+    if (users && users.length > 0) {
+      // Пользователь существует
+      console.log('2a. User exists, getting user directly...')
       
-      const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin
-        .getUserById(profile.id)
+      const user = users[0]
+      userId = user.id
 
-      if (getUserError) {
-        console.error('Error getting user:', getUserError)
-        throw getUserError
-      }
-
-      if (!user) {
-        console.error('User not found despite having profile')
-        throw new Error('User not found')
-      }
-
-      console.log('Found user:', user.id)
+      console.log('Found user:', userId)
       
-      // Обновляем пароль и метаданные
+      // Обновляем пароль
       const { error: updateError } = await supabaseAdmin.auth.admin
-        .updateUserById(user.id, {
+        .updateUserById(userId, {
           password: code,
           email_confirm: true,
         })
@@ -79,7 +69,6 @@ serve(async (req) => {
         throw updateError
       }
 
-      userId = user.id
       console.log('3a. User password updated successfully:', userId)
     } else {
       // Создаем нового пользователя
