@@ -21,8 +21,7 @@ export const useNannyData = (id?: string) => {
             last_name,
             main_phone,
             photo_url,
-            email,
-            phone
+            email
           ),
           nanny_documents (
             type,
