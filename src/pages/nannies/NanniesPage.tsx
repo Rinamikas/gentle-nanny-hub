@@ -21,8 +21,8 @@ const NanniesPage = () => {
             id,
             first_name,
             last_name,
-            email,
-            phone
+            main_phone,
+            photo_url
           )
         `);
 
