@@ -15,3 +15,5 @@ export interface Database {
     }
   }
 }
+
+export type { Tables };

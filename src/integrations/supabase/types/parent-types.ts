@@ -1,10 +1,9 @@
 import type { Database } from './database';
 import type { ProfileRow } from './profile-types';
-import type { ParentStatus } from './enums';
 
 type ParentRow = Database['public']['Tables']['parent_profiles']['Row'];
 
-export interface ParentProfile extends ParentRow {
+export interface ParentProfile extends Omit<ParentRow, 'additional_phone'> {
   profiles?: ProfileRow & { 
     email?: string;
     phone?: string;
