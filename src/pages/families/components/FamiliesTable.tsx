@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Star, Diamond, Phone } from "lucide-react";
-import type { ParentProfile } from "@/integrations/supabase/types";
+import type { ParentProfile } from "../types/parent-types";
 import { localizeParentStatus } from "@/utils/localization";
 
 interface FamiliesTableProps {
