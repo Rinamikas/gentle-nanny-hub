@@ -1,7 +1,6 @@
 import { ProfileTables } from './profile-types';
 import { NannyTables } from './nanny-types';
 import { VerificationTables } from './verification-types';
-import { ParentProfile } from './parent-types';
 
 export interface Tables extends 
   ProfileTables,
