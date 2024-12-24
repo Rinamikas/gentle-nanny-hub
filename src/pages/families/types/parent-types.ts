@@ -3,12 +3,11 @@ import type { ProfileRow } from '@/integrations/supabase/types/profile-types';
 
 type ParentRow = Database['public']['Tables']['parent_profiles']['Row'];
 
-export interface ParentProfile extends Omit<ParentRow, 'emergency_phone'> {
+export interface ParentProfile extends ParentRow {
   profiles?: ProfileRow & { 
     email?: string;
     phone?: string;
   };
-  emergency_phone?: string;
   children?: {
     id: string;
     first_name: string;

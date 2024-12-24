@@ -28,7 +28,14 @@ const FamiliesPage = () => {
             updated_at,
             email
           ),
-          children (*)
+          children (
+            id,
+            first_name,
+            gender,
+            birth_date,
+            medical_conditions,
+            notes
+          )
         `);
 
       if (error) {
