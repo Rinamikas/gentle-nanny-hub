@@ -43,7 +43,7 @@ const ContactInfo = ({ form }: ContactInfoProps) => {
 
           <FormField
             control={form.control}
-            name="phone"
+            name="main_phone"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Телефон</FormLabel>

@@ -23,19 +23,21 @@ export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
     defaultValues: {
       first_name: profile?.first_name || "",
       last_name: profile?.last_name || "",
-      phone: profile?.phone || "",
+      main_phone: profile?.main_phone || "",
       email: profile?.email || "",
     },
   });
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
+      console.log("Обновление профиля с данными:", values);
+      
       const { error } = await supabase
         .from("profiles")
         .update({
           first_name: values.first_name,
           last_name: values.last_name,
-          phone: values.phone,
+          main_phone: values.main_phone,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile?.id);
