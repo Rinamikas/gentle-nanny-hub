@@ -8,12 +8,10 @@ export interface ProfileRow {
   photo_url: string | null;
   created_at: string;
   updated_at: string;
-  email?: string;
-  phone?: string;
 }
 
 export interface Profile extends ProfileRow {
-  email: string;
+  email?: string;
   phone?: string;
   user_roles?: {
     id: string;

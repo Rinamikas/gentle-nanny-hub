@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
 import FamiliesTable from "./components/FamiliesTable";
-import type { ParentProfile } from "./types/parent-types";
+import type { ParentProfile } from "@/integrations/supabase/types";
 
 const FamiliesPage = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const FamiliesPage = () => {
         .from("parent_profiles")
         .select(`
           *,
-          profiles:user_id (
+          profiles (
             id,
             first_name,
             last_name,
@@ -37,7 +37,7 @@ const FamiliesPage = () => {
       }
 
       console.log("Loaded families data:", familiesData);
-      return familiesData as unknown as ParentProfile[];
+      return familiesData as ParentProfile[];
     },
   });
 
