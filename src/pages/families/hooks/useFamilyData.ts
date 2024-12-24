@@ -17,10 +17,9 @@ export const useFamilyData = (familyId?: string) => {
           *,
           profiles (
             id,
-            email,
             first_name,
             last_name,
-            phone,
+            main_phone,
             photo_url,
             created_at,
             updated_at
@@ -35,7 +34,7 @@ export const useFamilyData = (familyId?: string) => {
       }
 
       console.log("useFamilyData: получены данные семьи:", parentProfile);
-      return parentProfile as unknown as ParentProfile;
+      return parentProfile as ParentProfile;
     },
     enabled: !!familyId
   });
