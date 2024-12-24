@@ -22,7 +22,6 @@ interface ParentFormProps {
 export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
   const { toast } = useToast();
 
-  // Получаем данные профиля родителя
   const { data: parentProfile, isLoading } = useQuery({
     queryKey: ['parentProfile', profile.id],
     queryFn: async () => {
@@ -49,7 +48,7 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
     resolver: zodResolver(parentFormSchema),
     defaultValues: {
       address: parentProfile?.address || "",
-      additional_phone: parentProfile?.additional_phone || "",
+      emergency_phone: parentProfile?.emergency_phone || "",
       special_requirements: parentProfile?.special_requirements || "",
       notes: parentProfile?.notes || "",
       status: (parentProfile?.status as ParentStatus) || "default",
@@ -65,7 +64,7 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
           .insert({
             user_id: profile.id,
             address: values.address,
-            additional_phone: values.additional_phone,
+            emergency_phone: values.emergency_phone,
             special_requirements: values.special_requirements,
             notes: values.notes,
             status: values.status,
@@ -83,7 +82,7 @@ export default function ParentForm({ profile, onUpdate }: ParentFormProps) {
           .from("parent_profiles")
           .update({
             address: values.address,
-            additional_phone: values.additional_phone,
+            emergency_phone: values.emergency_phone,
             special_requirements: values.special_requirements,
             notes: values.notes,
             status: values.status,
