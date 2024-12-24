@@ -18,7 +18,7 @@ interface RequestBody {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -35,14 +35,9 @@ serve(async (req) => {
 
     const { email, code, shouldSignIn = true, userData } = await req.json() as RequestBody
 
-    console.log('Email:', email)
-    console.log('Code:', code)
-    console.log('Should Sign In:', shouldSignIn)
-    console.log('User Data:', userData)
+    console.log('Creating/updating user with data:', { email, userData })
 
     // 1. Проверяем существование пользователя через auth.users
-    console.log('1. Checking for existing user in auth.users...')
-    
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
         email: email.toLowerCase()
@@ -54,19 +49,15 @@ serve(async (req) => {
       throw new Error('Failed to check existing users')
     }
 
-    console.log('Users search result:', users)
-
     let userId: string
 
     if (users && users.length > 0) {
       // Пользователь существует
-      console.log('2a. User exists, getting user directly...')
+      console.log('User exists, updating...')
       
       const user = users[0]
       userId = user.id
 
-      console.log('Found user:', userId)
-      
       // Обновляем пароль и метаданные
       const { error: updateError } = await supabaseAdmin.auth.admin
         .updateUserById(userId, {
@@ -80,10 +71,25 @@ serve(async (req) => {
         throw updateError
       }
 
-      console.log('3a. User password updated successfully:', userId)
+      // Обновляем профиль используя service role
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          first_name: userData?.first_name,
+          last_name: userData?.last_name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError)
+        throw profileError
+      }
+
+      console.log('User and profile updated successfully')
     } else {
       // Создаем нового пользователя
-      console.log('2b. Creating new user...')
+      console.log('Creating new user...')
       
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: email.toLowerCase(),
@@ -102,13 +108,30 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id
-      console.log('3b. New user created successfully:', userId)
+
+      // Создаем профиль используя service role
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          first_name: userData?.first_name,
+          last_name: userData?.last_name,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+        throw profileError
+      }
+
+      console.log('User and profile created successfully')
     }
 
-    // 4. Если нужно, создаем сессию
+    // Создаем сессию если нужно
     let session = null
     if (shouldSignIn) {
-      console.log('4. Creating session...')
+      console.log('Creating session...')
       const { data: { session: newSession }, error: signInError } = await supabaseAdmin.auth.admin
         .createSession({ userId })
 
@@ -118,7 +141,7 @@ serve(async (req) => {
       }
 
       session = newSession
-      console.log('5. Session created successfully')
+      console.log('Session created successfully')
     }
 
     return new Response(

@@ -56,25 +56,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         // Обновление существующей семьи
         console.log("FamilyForm: обновление существующей семьи");
 
-        // Сначала обновляем базовый профиль в profiles
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({
-            first_name: values.first_name,
-            last_name: values.last_name,
-            main_phone: values.main_phone,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", familyData?.profiles?.id);
-
-        if (profileError) {
-          console.error("FamilyForm: ошибка обновления profiles:", profileError);
-          throw profileError;
-        }
-
-        console.log("FamilyForm: profiles успешно обновлен");
-
-        // Затем обновляем данные родителя
+        // Обновляем данные родителя
         const { error: parentError } = await supabase
           .from("parent_profiles")
           .update({
@@ -138,35 +120,6 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         // Ждем немного, чтобы триггер успел отработать
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Обновляем базовый профиль
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({
-            first_name: values.first_name,
-            last_name: values.last_name,
-            main_phone: values.main_phone,
-          })
-          .eq("id", authData.id);
-
-        if (profileError) {
-          console.error("FamilyForm: ошибка обновления profiles:", profileError);
-          throw profileError;
-        }
-
-        console.log("FamilyForm: profiles успешно создан");
-
-        // Получаем ID созданного профиля родителя
-        const { data: parentData, error: parentError } = await supabase
-          .from("parent_profiles")
-          .select("id")
-          .eq("user_id", authData.id)
-          .single();
-
-        if (parentError || !parentData) {
-          console.error("FamilyForm: ошибка получения parent_profiles:", parentError);
-          throw parentError || new Error("Не удалось получить ID профиля родителя");
-        }
-
         // Обновляем профиль родителя
         const { error: parentUpdateError } = await supabase
           .from("parent_profiles")
@@ -177,7 +130,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
             notes: values.notes,
             status: values.status,
           })
-          .eq("id", parentData.id);
+          .eq("user_id", authData.id);
 
         if (parentUpdateError) {
           console.error("FamilyForm: ошибка обновления parent_profiles:", parentUpdateError);
