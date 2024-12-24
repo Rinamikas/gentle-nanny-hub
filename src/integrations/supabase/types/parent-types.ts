@@ -1,4 +1,4 @@
-import type { Database } from './database';
+import type { Database } from './database-types';
 import type { ProfileRow } from './profile-types';
 
 type ParentRow = Database['public']['Tables']['parent_profiles']['Row'];
