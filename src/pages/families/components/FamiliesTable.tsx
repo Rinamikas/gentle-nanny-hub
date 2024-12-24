@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -9,8 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Star, Diamond, Phone } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
+import type { ParentProfile } from "@/integrations/supabase/types";
 import { localizeParentStatus } from "@/utils/localization";
 
 interface FamiliesTableProps {
@@ -54,7 +54,7 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
           console.log("Rendering family:", family);
           const displayName = family.profiles?.first_name && family.profiles?.last_name
             ? `${family.profiles.first_name} ${family.profiles.last_name}`
-            : family.profiles?.email;
+            : "Имя не указано";
 
           return (
             <TableRow key={family.id}>
@@ -73,22 +73,22 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
               </TableCell>
               <TableCell>
                 <div className="space-y-1">
-                  {family.profiles?.phone && (
+                  {family.profiles?.main_phone && (
                     <a 
-                      href={formatPhoneLink(family.profiles.phone)}
+                      href={formatPhoneLink(family.profiles.main_phone)}
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
                     >
                       <Phone className="w-4 h-4" />
-                      {family.profiles.phone}
+                      {family.profiles.main_phone}
                     </a>
                   )}
-                  {family.additional_phone && (
+                  {family.emergency_phone && (
                     <a 
-                      href={formatPhoneLink(family.additional_phone)}
+                      href={formatPhoneLink(family.emergency_phone)}
                       className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
                     >
                       <Phone className="w-4 h-4" />
-                      {family.additional_phone}
+                      {family.emergency_phone}
                     </a>
                   )}
                 </div>
