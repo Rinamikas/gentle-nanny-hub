@@ -15,17 +15,19 @@ export const useNannyData = (id?: string) => {
         .from("nanny_profiles")
         .select(`
           *,
-          profiles(
+          profiles (
+            id,
             first_name,
             last_name,
+            main_phone,
             email,
             phone
           ),
-          nanny_documents(
+          nanny_documents (
             type,
             file_url
           ),
-          nanny_training(
+          nanny_training (
             stage
           )
         `)
