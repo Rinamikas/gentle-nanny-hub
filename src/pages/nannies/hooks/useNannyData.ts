@@ -14,6 +14,7 @@ type NannyWithDetails = Database['public']['Tables']['nanny_profiles']['Row'] & 
   nanny_training?: {
     stage: Database['public']['Enums']['training_stage'];
   };
+  relative_phone?: string;
 };
 
 export const useNannyData = (id?: string) => {
@@ -57,7 +58,7 @@ export const useNannyData = (id?: string) => {
       }
       
       console.log("Received nanny data:", data);
-      return data as NannyWithDetails;
+      return data as unknown as NannyWithDetails;
     },
     enabled: !!id && id !== ":id",
   });

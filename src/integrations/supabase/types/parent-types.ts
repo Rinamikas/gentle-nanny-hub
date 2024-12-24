@@ -1,24 +1,15 @@
-import { ProfileRow } from './profile-types';
-import { ParentStatus } from './enums';
+import type { Database } from './database';
+import type { ProfileRow } from './profile-types';
+import type { ParentStatus } from './enums';
 
-export interface ParentProfile {
-  id: string;
-  user_id: string | null;
-  children_count: number | null;
-  address: string | null;
-  special_requirements: string | null;
-  created_at: string;
-  updated_at: string;
-  status: ParentStatus | null;
-  emergency_phone: string | null;
-  additional_phone: string | null;
-  notes: string | null;
-  is_deleted: boolean | null;
-  deleted_at: string | null;
+type ParentRow = Database['public']['Tables']['parent_profiles']['Row'];
+
+export interface ParentProfile extends ParentRow {
   profiles?: ProfileRow & { 
     email?: string;
     phone?: string;
   };
+  additional_phone?: string;
   children?: {
     id: string;
     first_name: string;
@@ -27,12 +18,4 @@ export interface ParentProfile {
     medical_conditions: string | null;
     notes: string | null;
   }[];
-}
-
-export interface ParentTables {
-  parent_profiles: {
-    Row: ParentProfile;
-    Insert: Partial<ParentProfile>;
-    Update: Partial<ParentProfile>;
-  }
 }
