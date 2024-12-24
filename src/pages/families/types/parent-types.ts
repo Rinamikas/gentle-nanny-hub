@@ -1,6 +1,5 @@
 import type { Database } from '@/integrations/supabase/types';
 import type { ProfileRow } from '@/integrations/supabase/types/profile-types';
-import type { ParentStatus } from '@/integrations/supabase/types/enums';
 
 type ParentRow = Database['public']['Tables']['parent_profiles']['Row'];
 
