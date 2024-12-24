@@ -1,24 +1,9 @@
-import { ProfileRow } from '@/integrations/supabase/types/profile-types';
+import type { Database } from '@/integrations/supabase/types';
+import type { ProfileRow } from '@/integrations/supabase/types/profile-types';
 
-export interface NannyProfile {
-  id: string;
-  user_id: string | null;
-  experience_years: number | null;
-  education: string | null;
-  specializations: string[] | null;
-  certifications: string[] | null;
-  hourly_rate: number | null;
-  created_at: string;
-  updated_at: string;
-  birth_date: string | null;
-  photo_url: string | null;
-  position: string | null;
-  age_group: string | null;
-  camera_phone: string | null;
-  camera_number: string | null;
-  address: string | null;
-  emergency_phone: string | null;
-  relative_phone?: string | null;
+type NannyRow = Database['public']['Tables']['nanny_profiles']['Row'];
+
+export interface NannyProfile extends NannyRow {
   profiles?: ProfileRow & { 
     email?: string;
     phone?: string;
@@ -30,4 +15,5 @@ export interface NannyProfile {
     type: string;
     file_url: string;
   }[];
+  relative_phone?: string;
 }

@@ -1,5 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type NannyWithDetails = Database['public']['Tables']['nanny_profiles']['Row'] & {
+  profiles: Database['public']['Tables']['profiles']['Row'] & {
+    email?: string;
+  };
+  nanny_documents?: {
+    type: string;
+    file_url: string;
+  }[];
+  nanny_training?: {
+    stage: string;
+  };
+};
 
 export const useNannyData = (id?: string) => {
   return useQuery({
@@ -40,7 +54,7 @@ export const useNannyData = (id?: string) => {
       }
       
       console.log("Received nanny data:", data);
-      return data;
+      return data as NannyWithDetails;
     },
     enabled: !!id && id !== ":id",
   });
