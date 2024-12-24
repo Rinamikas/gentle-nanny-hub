@@ -20,6 +20,7 @@ export const useNannyData = (id?: string) => {
             first_name,
             last_name,
             main_phone,
+            photo_url,
             email,
             phone
           ),
