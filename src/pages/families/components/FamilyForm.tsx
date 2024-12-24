@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFamilyData } from "../hooks/useFamilyData";
 import { useFamilyForm } from "../hooks/useFamilyForm";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FamilyFormProps {
   familyId?: string;
@@ -24,6 +25,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id: routeFamilyId } = useParams();
+  const queryClient = useQueryClient();
   
   const currentFamilyId = propsFamilyId || routeFamilyId;
   
@@ -92,6 +94,10 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
 
         console.log("FamilyForm: parent_profiles успешно обновлен");
 
+        // Инвалидируем кэш
+        await queryClient.invalidateQueries({ queryKey: ['families'] });
+        await queryClient.invalidateQueries({ queryKey: ['family', currentFamilyId] });
+
         toast({
           title: "Успешно",
           description: "Данные семьи обновлены",
@@ -109,7 +115,11 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
             body: JSON.stringify({ 
               email: values.email,
               code: Math.random().toString(36).slice(-8),
-              shouldSignIn: false
+              shouldSignIn: false,
+              userData: {
+                first_name: values.first_name,
+                last_name: values.last_name
+              }
             })
           }
         );
@@ -145,6 +155,18 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
 
         console.log("FamilyForm: profiles успешно создан");
 
+        // Получаем ID созданного профиля родителя
+        const { data: parentData, error: parentError } = await supabase
+          .from("parent_profiles")
+          .select("id")
+          .eq("user_id", authData.id)
+          .single();
+
+        if (parentError || !parentData) {
+          console.error("FamilyForm: ошибка получения parent_profiles:", parentError);
+          throw parentError || new Error("Не удалось получить ID профиля родителя");
+        }
+
         // Обновляем профиль родителя
         const { error: parentUpdateError } = await supabase
           .from("parent_profiles")
@@ -155,7 +177,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
             notes: values.notes,
             status: values.status,
           })
-          .eq("user_id", authData.id);
+          .eq("id", parentData.id);
 
         if (parentUpdateError) {
           console.error("FamilyForm: ошибка обновления parent_profiles:", parentUpdateError);
@@ -163,6 +185,9 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         }
 
         console.log("FamilyForm: parent_profiles успешно создан");
+
+        // Инвалидируем кэш
+        await queryClient.invalidateQueries({ queryKey: ['families'] });
 
         toast({
           title: "Успешно",

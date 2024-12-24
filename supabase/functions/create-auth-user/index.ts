@@ -1,34 +1,44 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface RequestBody {
+  email: string
+  code: string
+  shouldSignIn?: boolean
+  userData?: {
+    first_name?: string
+    last_name?: string
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Создаем клиент с service_role ключом
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
           autoRefreshToken: false,
-          persistSession: false
-        }
+          persistSession: false,
+        },
       }
     )
 
-    const { email, code, shouldSignIn = false } = await req.json()
-    console.log('=== Starting user management process ===')
+    const { email, code, shouldSignIn = true, userData } = await req.json() as RequestBody
+
     console.log('Email:', email)
     console.log('Code:', code)
     console.log('Should Sign In:', shouldSignIn)
+    console.log('User Data:', userData)
 
     // 1. Проверяем существование пользователя через auth.users
     console.log('1. Checking for existing user in auth.users...')
@@ -57,11 +67,12 @@ serve(async (req) => {
 
       console.log('Found user:', userId)
       
-      // Обновляем пароль
+      // Обновляем пароль и метаданные
       const { error: updateError } = await supabaseAdmin.auth.admin
         .updateUserById(userId, {
           password: code,
           email_confirm: true,
+          user_metadata: userData
         })
 
       if (updateError) {
@@ -73,58 +84,61 @@ serve(async (req) => {
     } else {
       // Создаем нового пользователя
       console.log('2b. Creating new user...')
-      const { data: createData, error: createError } = await supabaseAdmin.auth.admin
-        .createUser({
-          email,
-          password: code,
-          email_confirm: true,
-        })
+      
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: email.toLowerCase(),
+        password: code,
+        email_confirm: true,
+        user_metadata: userData
+      })
 
       if (createError) {
         console.error('Error creating user:', createError)
         throw createError
       }
 
-      if (!createData.user) {
-        console.error('No user data returned after creation')
-        throw new Error('Failed to create user')
+      if (!newUser?.user) {
+        throw new Error('User creation failed')
       }
 
-      userId = createData.user.id
-      console.log('3b. User created successfully:', userId)
+      userId = newUser.user.id
+      console.log('3b. New user created successfully:', userId)
     }
 
-    // Если нужно выполнить вход, возвращаем пароль
-    const response: { id: string; password?: string } = { id: userId }
+    // 4. Если нужно, создаем сессию
+    let session = null
     if (shouldSignIn) {
-      response.password = code
+      console.log('4. Creating session...')
+      const { data: { session: newSession }, error: signInError } = await supabaseAdmin.auth.admin
+        .createSession({ userId })
+
+      if (signInError) {
+        console.error('Error creating session:', signInError)
+        throw signInError
+      }
+
+      session = newSession
+      console.log('5. Session created successfully')
     }
 
-    console.log('=== User management process completed successfully ===')
-
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        id: userId,
+        session
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+        status: 200,
+      },
     )
-
   } catch (error) {
-    console.error('=== Error in user management ===')
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      status: error.status,
-      stack: error.stack
-    })
-    
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to manage user' }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
-      }
+        status: 400,
+      },
     )
   }
 })
