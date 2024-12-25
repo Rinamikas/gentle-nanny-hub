@@ -9,14 +9,18 @@ export const checkUserExists = async (userId: string): Promise<boolean> => {
   console.log("Проверяем существование пользователя с ID:", userId);
   
   try {
-    const { data, error } = await supabase.auth.admin.getUserById(userId);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
 
     if (error) {
       console.error("Ошибка при проверке пользователя:", error);
       return false;
     }
 
-    const exists = Boolean(data?.user);
+    const exists = Boolean(data);
     console.log("Результат проверки:", exists ? "Пользователь найден" : "Пользователь не найден");
     return exists;
 
