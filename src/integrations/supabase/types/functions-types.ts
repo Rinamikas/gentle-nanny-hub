@@ -31,4 +31,10 @@ export interface Functions {
       role: string
     }[]
   }
+  get_user_id_by_email: {
+    Args: {
+      email_param: string
+    }
+    Returns: string | null
+  }
 }

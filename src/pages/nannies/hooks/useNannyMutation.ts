@@ -10,19 +10,18 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // Функция для проверки существования пользователя
 const waitForUser = async (email: string, maxAttempts = 10): Promise<string | null> => {
   for (let i = 0; i < maxAttempts; i++) {
-    console.log(`Attempt ${i + 1} of ${maxAttempts} to check user existence`);
+    console.log(`Попытка ${i + 1} из ${maxAttempts} проверки существования пользователя`);
     
-    // Используем RPC функцию вместо админского API
     const { data: userId, error } = await supabase
       .rpc('get_user_id_by_email', { email_param: email.toLowerCase() });
 
     if (error) {
-      console.error("Error checking user existence:", error);
+      console.error("Ошибка при проверке существования пользователя:", error);
       continue;
     }
 
     if (userId) {
-      console.log("User found:", userId);
+      console.log("Пользователь найден:", userId);
       return userId;
     }
 
@@ -38,11 +37,11 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
   return useMutation({
     mutationFn: async (values: FormValues) => {
-      console.log("Starting nanny mutation with values:", values);
+      console.log("Начинаем мутацию няни со значениями:", values);
 
       try {
         // Создаем пользователя через edge function
-        console.log("Creating user via edge function...");
+        console.log("Создаем пользователя через edge function...");
         const { data: userData, error: userError } = await supabase.functions.invoke(
           'create-user',
           {
@@ -56,22 +55,22 @@ export const useNannyMutation = (onSuccess: () => void) => {
         );
 
         if (userError || !userData?.id) {
-          console.error("Error creating user:", userError);
-          throw new Error(userError?.message || "Failed to create user");
+          console.error("Ошибка создания пользователя:", userError);
+          throw new Error(userError?.message || "Не удалось создать пользователя");
         }
 
-        console.log("User created successfully:", userData);
+        console.log("Пользователь успешно создан:", userData);
 
         // Ждем пока пользователь появится в базе
-        console.log("Waiting for user to be available in database...");
+        console.log("Ждем пока пользователь появится в базе...");
         const userId = await waitForUser(values.email);
 
         if (!userId) {
-          throw new Error("Timeout waiting for user creation. Please try again.");
+          throw new Error("Таймаут ожидания создания пользователя. Пожалуйста, попробуйте снова.");
         }
 
         // Создаем профиль няни
-        console.log("Creating nanny profile...");
+        console.log("Создаем профиль няни...");
         const nannyId = await createNannyProfile(values);
         
         // Создаем документы
@@ -82,7 +81,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         return nannyId;
       } catch (error: any) {
-        console.error("Error in mutation:", {
+        console.error("Ошибка в мутации:", {
           message: error.message,
           details: error.details,
           hint: error.hint,
@@ -100,7 +99,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
       onSuccess();
     },
     onError: (error: any) => {
-      console.error("Error saving nanny:", {
+      console.error("Ошибка сохранения няни:", {
         message: error.message,
         details: error.details,
         hint: error.hint,
