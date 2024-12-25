@@ -3,30 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { FormValues } from "../types/form";
 
-// Вспомогательная функция для задержки
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Функция для проверки существования пользователя
-const checkUserExists = async (email: string): Promise<boolean> => {
-  console.log("Проверяем существование пользователя с email:", email);
-  
-  try {
-    const { data, error } = await supabase.functions.invoke('check-user-exists', {
-      body: { email }
-    });
-
-    if (error) {
-      console.error("Ошибка при проверке пользователя:", error);
-      return false;
-    }
-
-    return data?.exists || false;
-  } catch (error) {
-    console.error("Ошибка при вызове функции проверки:", error);
-    return false;
-  }
-};
-
 export const useFamilyMutation = (familyId?: string) => {
   return useMutation({
     mutationFn: async (values: FormValues) => {
@@ -34,62 +10,45 @@ export const useFamilyMutation = (familyId?: string) => {
         if (familyId) {
           console.log("useFamilyMutation: обновление существующей семьи");
           
-          const { data, error } = await supabase.rpc('create_parent_with_user', {
-            p_email: values.email,
-            p_first_name: values.first_name,
-            p_last_name: values.last_name,
-            p_main_phone: values.main_phone,
-            p_emergency_phone: values.emergency_phone,
-            p_address: values.address,
-            p_special_requirements: values.special_requirements,
-            p_notes: values.notes,
-            p_status: values.status
-          });
+          // Сначала обновляем основной профиль
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              first_name: values.first_name,
+              last_name: values.last_name,
+              main_phone: values.main_phone,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', familyData.user_id);
 
-          if (error) {
-            console.error("useFamilyMutation: ошибка обновления:", error);
-            throw error;
+          if (profileError) {
+            console.error("useFamilyMutation: ошибка обновления profiles:", profileError);
+            throw profileError;
           }
 
-          return data;
+          // Затем обновляем профиль родителя
+          const { error: parentError } = await supabase
+            .from('parent_profiles')
+            .update({
+              emergency_phone: values.emergency_phone,
+              address: values.address,
+              special_requirements: values.special_requirements,
+              notes: values.notes,
+              status: values.status,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', familyId);
+
+          if (parentError) {
+            console.error("useFamilyMutation: ошибка обновления parent_profiles:", parentError);
+            throw parentError;
+          }
+
+          return familyId;
         } else {
           console.log("useFamilyMutation: создание новой семьи");
           
-          // Сначала проверяем существование пользователя
-          const userExists = await checkUserExists(values.email);
-          
-          if (!userExists) {
-            console.log("useFamilyMutation: пользователь не существует, создаем через edge function");
-            const { data: authData, error: authError } = await supabase.functions.invoke(
-              'create-auth-user',
-              {
-                body: JSON.stringify({ 
-                  email: values.email,
-                  code: '123456', // Временный код для создания пользователя
-                  shouldSignIn: false,
-                  userData: {
-                    first_name: values.first_name,
-                    last_name: values.last_name
-                  }
-                })
-              }
-            );
-
-            if (authError || !authData?.id) {
-              console.error("useFamilyMutation: ошибка создания пользователя:", authError);
-              throw new Error("Не удалось создать пользователя");
-            }
-
-            console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
-            
-            // Увеличиваем задержку до 5 секунд для репликации
-            console.log("useFamilyMutation: ожидаем репликацию данных (5 секунд)...");
-            await delay(5000);
-          }
-          
-          // Теперь создаем профиль родителя
-          console.log("useFamilyMutation: создаем профиль родителя");
-          
+          // Для новой семьи используем RPC функцию
           const { data, error } = await supabase.rpc('create_parent_with_user', {
             p_email: values.email,
             p_first_name: values.first_name,
