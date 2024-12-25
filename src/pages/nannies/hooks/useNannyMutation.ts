@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormValues } from "../types/form";
 import { useToast } from "@/hooks/use-toast";
-import { checkUserExists, createNannyProfile, createNannyDocuments, createNannyTraining } from "../api/nannyApi";
+import { createNannyProfile, createNannyDocuments, createNannyTraining } from "../api/nannyApi";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useNannyMutation = (onSuccess: () => void) => {
