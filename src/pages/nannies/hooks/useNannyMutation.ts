@@ -12,18 +12,18 @@ const waitForUser = async (email: string, maxAttempts = 10): Promise<string | nu
   for (let i = 0; i < maxAttempts; i++) {
     console.log(`Attempt ${i + 1} of ${maxAttempts} to check user existence`);
     
-    const { data: { users }, error } = await supabase.auth.admin.listUsers({
-      filter: { email: email.toLowerCase() }
-    });
+    // Используем RPC функцию вместо админского API
+    const { data: userId, error } = await supabase
+      .rpc('get_user_id_by_email', { email_param: email.toLowerCase() });
 
     if (error) {
       console.error("Error checking user existence:", error);
       continue;
     }
 
-    if (users && users.length > 0) {
-      console.log("User found:", users[0].id);
-      return users[0].id;
+    if (userId) {
+      console.log("User found:", userId);
+      return userId;
     }
 
     await delay(3000); // Ждем 3 секунды между попытками
