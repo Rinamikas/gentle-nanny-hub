@@ -10,6 +10,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useFamilyData } from "../hooks/useFamilyData";
 import { useFamilyForm } from "../hooks/useFamilyForm";
 import { useFamilyMutation } from "../hooks/useFamilyMutation";
+import { useEffect } from "react";
+import { setFormMethods } from "@/utils/formTestUtils";
 
 interface FamilyFormProps {
   familyId?: string;
@@ -27,6 +29,11 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
   const { data: familyData, isLoading } = useFamilyData(currentFamilyId);
   const form = useFamilyForm(familyData);
   const mutation = useFamilyMutation(currentFamilyId);
+
+  useEffect(() => {
+    setFormMethods(form);
+    return () => setFormMethods(null);
+  }, [form]);
 
   const handleSubmit = async (values: FormValues) => {
     try {
