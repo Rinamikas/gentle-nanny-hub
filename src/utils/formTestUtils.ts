@@ -28,10 +28,10 @@ export const fillFormWithTestData = (isValid: boolean) => {
     setValue("email", isValid ? faker.internet.email() : "invalid-email");
   }
   if ('main_phone' in currentValues) {
-    setValue("main_phone", isValid ? faker.phone.number('+7 ### ### ## ##') : "123");
+    setValue("main_phone", isValid ? faker.phone.number() : "123");
   }
   if ('emergency_phone' in currentValues) {
-    setValue("emergency_phone", isValid ? faker.phone.number('+7 ### ### ## ##') : "456");
+    setValue("emergency_phone", isValid ? faker.phone.number() : "456");
   }
   if ('address' in currentValues) {
     setValue("address", isValid ? faker.location.streetAddress(true) : "ул");
@@ -51,7 +51,7 @@ export const fillFormWithTestData = (isValid: boolean) => {
     setValue("age_group", isValid ? faker.helpers.arrayElement(['0-1', '1-3', '3-6', '6+']) : "");
   }
   if ('camera_phone' in currentValues) {
-    setValue("camera_phone", isValid ? faker.phone.number('+7 ### ### ## ##') : "789");
+    setValue("camera_phone", isValid ? faker.phone.number() : "789");
   }
   if ('camera_number' in currentValues) {
     setValue("camera_number", isValid ? faker.string.numeric(6) : "12");
