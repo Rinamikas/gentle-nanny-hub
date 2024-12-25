@@ -38,7 +38,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
         console.log("Создаем профиль няни...");
         const nannyId = await createNannyProfile(values);
         
-        // Создаем документы
+        // Создаем документы и тренинги
         if (nannyId) {
           await createNannyDocuments(nannyId, values);
           await createNannyTraining(nannyId, values.training_stage);
@@ -46,12 +46,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         return nannyId;
       } catch (error: any) {
-        console.error("Ошибка в мутации:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
+        console.error("Ошибка в мутации:", error);
         throw error;
       }
     },
@@ -64,12 +59,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
       onSuccess();
     },
     onError: (error: any) => {
-      console.error("Ошибка сохранения няни:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.error("Ошибка сохранения няни:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",

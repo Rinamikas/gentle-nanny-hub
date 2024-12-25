@@ -48,19 +48,14 @@ serve(async (req) => {
         password,
         email_confirm: true,
         user_metadata: { 
-          firstName, 
-          lastName,
+          first_name: firstName, 
+          last_name: lastName,
           phone
         }
       })
 
     if (createError) {
-      console.error("Error creating auth user:", {
-        message: createError.message,
-        status: createError.status,
-        name: createError.name,
-        stack: createError.stack
-      })
+      console.error("Error creating auth user:", createError)
       throw createError
     }
 
@@ -85,17 +80,11 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error("Create user error:", {
-      message: error.message,
-      details: error instanceof Error ? error.stack : undefined,
-      name: error.name,
-      status: error.status
-    })
+    console.error("Create user error:", error)
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Error creating user",
-        details: error instanceof Error ? error.stack : undefined
+        error: error.message || "Error creating user"
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
