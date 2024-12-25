@@ -25,47 +25,21 @@ serve(async (req) => {
 
     const { email, firstName, lastName, phone } = await req.json()
     
-    // Валидация входных данных
     if (!email || typeof email !== 'string') {
       throw new Error('Email is required and must be a string')
     }
 
     const normalizedEmail = email.toLowerCase().trim()
     
-    console.log("Attempting to create user with data:", { 
+    console.log("Creating user with data:", { 
       email: normalizedEmail, 
       firstName, 
       lastName, 
       phone 
     })
 
-    // Проверяем существование пользователя через auth.users
-    const { data: { users }, error: getUserError } = await supabaseClient.auth.admin.listUsers({
-      filter: {
-        email: normalizedEmail
-      }
-    })
-
-    if (getUserError) {
-      console.error("Error checking existing user:", getUserError)
-      throw new Error(`Failed to check existing user: ${getUserError.message}`)
-    }
-
-    if (users && users.length > 0) {
-      console.log("User already exists:", users[0].id)
-      return new Response(
-        JSON.stringify({ 
-          id: users[0].id,
-          email: normalizedEmail
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // Генерируем случайный пароль для пользователя
     const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
-
-    console.log("Creating new user with email:", normalizedEmail)
 
     // Создаем пользователя через auth.admin API
     const { data: newUser, error: createError } = await supabaseClient.auth.admin

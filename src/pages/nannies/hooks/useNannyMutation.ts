@@ -4,33 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import { checkUserExists, createNannyProfile, createNannyDocuments, createNannyTraining } from "../api/nannyApi";
 import { supabase } from "@/integrations/supabase/client";
 
-// Вспомогательная функция для задержки
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Функция для проверки существования пользователя
-const waitForUser = async (email: string, maxAttempts = 10): Promise<string | null> => {
-  for (let i = 0; i < maxAttempts; i++) {
-    console.log(`Попытка ${i + 1} из ${maxAttempts} проверки существования пользователя`);
-    
-    const { data: userId, error } = await supabase
-      .rpc('get_user_id_by_email', { email_param: email.toLowerCase() });
-
-    if (error) {
-      console.error("Ошибка при проверке существования пользователя:", error);
-      continue;
-    }
-
-    if (userId) {
-      console.log("Пользователь найден:", userId);
-      return userId as string;
-    }
-
-    await delay(3000); // Ждем 3 секунды между попытками
-  }
-
-  return null;
-};
-
 export const useNannyMutation = (onSuccess: () => void) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,15 +33,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
         }
 
         console.log("Пользователь успешно создан:", userData);
-
-        // Ждем пока пользователь появится в базе
-        console.log("Ждем пока пользователь появится в базе...");
-        const userId = await waitForUser(values.email);
-
-        if (!userId) {
-          throw new Error("Таймаут ожидания создания пользователя. Пожалуйста, попробуйте снова.");
-        }
-
+        
         // Создаем профиль няни
         console.log("Создаем профиль няни...");
         const nannyId = await createNannyProfile(values);
