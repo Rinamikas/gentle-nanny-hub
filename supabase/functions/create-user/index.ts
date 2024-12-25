@@ -41,50 +41,56 @@ serve(async (req) => {
     // Генерируем случайный пароль для пользователя
     const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
 
-    // Создаем пользователя через auth.admin API
-    const { data: newUser, error: createError } = await supabaseClient.auth.admin
-      .createUser({
-        email: normalizedEmail,
-        password,
-        email_confirm: true,
-        user_metadata: { 
-          first_name: firstName, 
-          last_name: lastName,
-          phone
-        }
-      })
+    try {
+      // Создаем пользователя через auth.admin API
+      const { data: newUser, error: createError } = await supabaseClient.auth.admin
+        .createUser({
+          email: normalizedEmail,
+          password,
+          email_confirm: true,
+          user_metadata: { 
+            first_name: firstName, 
+            last_name: lastName,
+            phone,
+            email_verified: true
+          }
+        })
 
-    if (createError) {
-      console.error("Error creating auth user:", createError)
-      throw createError
-    }
-
-    if (!newUser?.user) {
-      console.error("No user data returned after creation")
-      throw new Error("Failed to create user - no data returned")
-    }
-
-    console.log("Auth user created successfully:", newUser.user.id)
-
-    return new Response(
-      JSON.stringify({ 
-        id: newUser.user.id,
-        email: normalizedEmail
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+      if (createError) {
+        console.error("Error creating auth user:", createError)
+        throw new Error(`Database error creating new user: ${createError.message}`)
       }
-    )
+
+      if (!newUser?.user) {
+        console.error("No user data returned after creation")
+        throw new Error("Failed to create user - no data returned")
+      }
+
+      console.log("Auth user created successfully:", newUser.user.id)
+
+      return new Response(
+        JSON.stringify({ 
+          id: newUser.user.id,
+          email: normalizedEmail
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    } catch (createError) {
+      console.error("Error in user creation:", createError)
+      throw new Error(`Failed to create user: ${createError.message}`)
+    }
 
   } catch (error) {
     console.error("Create user error:", error)
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Error creating user"
+        error: error instanceof Error ? error.message : "Unknown error creating user"
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
