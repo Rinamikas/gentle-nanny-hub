@@ -1,16 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FormValues } from "../types/form";
-import { DOCUMENT_TYPE, DocumentType } from "../types/documents";
+import { DOCUMENT_TYPE } from "../types/documents";
 import { Database } from "@/integrations/supabase/types";
 
 type TrainingStage = Database['public']['Enums']['training_stage'];
 
-export const checkUserExists = async (email: string): Promise<boolean> => {
-  console.log("Проверяем существование пользователя с email:", email);
+export const checkUserExists = async (userId: string): Promise<boolean> => {
+  console.log("Проверяем существование пользователя с ID:", userId);
   
   try {
-    const { data, error } = await supabase.functions.invoke('check-user-exists', {
-      body: { email }
+    const { data: { users }, error } = await supabase.auth.admin.listUsers({
+      filter: {
+        id: userId
+      }
     });
 
     if (error) {
@@ -18,7 +20,10 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
       return false;
     }
 
-    return data?.exists || false;
+    const exists = users && users.length > 0;
+    console.log("Результат проверки:", exists ? "Пользователь найден" : "Пользователь не найден");
+    return exists;
+
   } catch (error) {
     console.error("Ошибка при вызове функции проверки:", error);
     return false;

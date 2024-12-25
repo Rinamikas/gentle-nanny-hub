@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Функция для повторных попыток
-const retryOperation = async (operation: () => Promise<boolean>, maxRetries = 3, delayMs = 2000): Promise<boolean> => {
+const retryOperation = async (operation: () => Promise<boolean>, maxRetries = 5, delayMs = 2000): Promise<boolean> => {
   for (let i = 0; i < maxRetries; i++) {
     const result = await operation();
     if (result) return true;
@@ -36,16 +36,12 @@ export const useNannyMutation = (onSuccess: () => void) => {
           }
         );
 
-        if (userError) {
+        if (userError || !userData?.id) {
           console.error("Error creating user:", userError);
-          throw userError;
+          throw new Error(userError?.message || "Failed to create user");
         }
 
-        if (!userData?.id) {
-          console.error("No user data returned");
-          throw new Error("Failed to create user");
-        }
-
+        const userId = userData.id;
         console.log("User created/found successfully:", userData);
 
         // Ждем репликацию данных
@@ -54,17 +50,9 @@ export const useNannyMutation = (onSuccess: () => void) => {
         
         // Проверяем существование пользователя с повторными попытками
         const userExists = await retryOperation(
-          async () => {
-            const exists = await checkUserExists(values.email);
-            if (exists) {
-              console.log("User found in auth.users");
-              return true;
-            }
-            console.log("User not found in auth.users yet");
-            return false;
-          },
-          5, // Максимум 5 попыток
-          2000 // Интервал 2 секунды
+          async () => checkUserExists(userId),
+          5,
+          2000
         );
 
         if (!userExists) {
