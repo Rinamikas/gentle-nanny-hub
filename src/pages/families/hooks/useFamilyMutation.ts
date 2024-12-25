@@ -6,6 +6,24 @@ import type { FormValues } from "../types/form";
 // Вспомогательная функция для задержки
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Функция для проверки существования пользователя
+const checkUserExists = async (email: string) => {
+  console.log("Проверяем существование пользователя с email:", email);
+  
+  const { data: { users }, error } = await supabase.auth.admin.listUsers({
+    filter: {
+      email: email
+    }
+  });
+
+  if (error) {
+    console.error("Ошибка при проверке пользователя:", error);
+    return false;
+  }
+
+  return users && users.length > 0;
+};
+
 export const useFamilyMutation = (familyId?: string) => {
   return useMutation({
     mutationFn: async (values: FormValues) => {
@@ -57,9 +75,22 @@ export const useFamilyMutation = (familyId?: string) => {
 
           console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
           
-          // Добавляем задержку в 2 секунды, чтобы дать время на репликацию данных
-          console.log("useFamilyMutation: ожидаем репликацию данных...");
-          await delay(2000);
+          // Увеличиваем задержку до 5 секунд
+          console.log("useFamilyMutation: ожидаем репликацию данных (5 секунд)...");
+          await delay(5000);
+          
+          // Проверяем существование пользователя перед созданием профиля
+          let retries = 3;
+          while (retries > 0) {
+            const userExists = await checkUserExists(values.email);
+            if (userExists) {
+              console.log("useFamilyMutation: пользователь найден в auth.users");
+              break;
+            }
+            console.log(`useFamilyMutation: пользователь не найден, осталось попыток: ${retries - 1}`);
+            await delay(1000);
+            retries--;
+          }
           
           // Теперь создаем профиль родителя
           console.log("useFamilyMutation: создаем профиль родителя");
