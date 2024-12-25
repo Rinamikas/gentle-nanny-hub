@@ -10,18 +10,14 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const checkUserExists = async (email: string) => {
   console.log("Проверяем существование пользователя с email:", email);
   
-  const { data: { users }, error } = await supabase.auth.admin.listUsers({
-    filter: {
-      email: email
-    }
-  });
+  const { data, error } = await supabase.auth.admin.getUser(email);
 
   if (error) {
     console.error("Ошибка при проверке пользователя:", error);
     return false;
   }
 
-  return users && users.length > 0;
+  return data?.user !== null;
 };
 
 export const useFamilyMutation = (familyId?: string) => {
