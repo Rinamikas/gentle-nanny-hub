@@ -24,46 +24,53 @@ serve(async (req) => {
     )
 
     const { email, firstName, lastName, phone } = await req.json()
+    
+    console.log("Creating user with data:", { email, firstName, lastName, phone })
 
-    console.log("Creating/checking user with email:", email)
+    // Генерируем случайный пароль для пользователя
+    const password = Math.random().toString(36).slice(-8)
 
-    // Проверяем существование пользователя
-    const { data: existingUser, error: getUserError } = await supabaseClient.auth.admin
-      .listUsers()
-
-    const userExists = existingUser?.users.find(u => u.email === email)
-
-    if (userExists) {
-      console.log("User already exists:", userExists.id)
-      return new Response(
-        JSON.stringify({ id: userExists.id }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Создаем нового пользователя
+    // Создаем пользователя через auth.admin API
     const { data: newUser, error: createError } = await supabaseClient.auth.admin
       .createUser({
         email,
+        password,
         email_confirm: true,
-        user_metadata: { firstName, lastName, phone }
+        user_metadata: { 
+          firstName, 
+          lastName,
+          phone
+        }
       })
 
     if (createError) {
+      console.error("Error creating auth user:", createError)
       throw createError
     }
 
-    console.log("New user created:", newUser.user.id)
+    console.log("Auth user created successfully:", newUser.user.id)
 
     return new Response(
-      JSON.stringify({ id: newUser.user.id }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        id: newUser.user.id,
+        email: newUser.user.email
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
 
   } catch (error) {
-    console.error("Error:", error)
+    console.error("Create user error:", error)
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || "Error creating user",
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
