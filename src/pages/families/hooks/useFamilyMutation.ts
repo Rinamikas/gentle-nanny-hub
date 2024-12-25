@@ -1,19 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import type { FormValues } from "../types/form";
 
 export const useFamilyMutation = (familyId?: string) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (values: FormValues) => {
-      console.log("useFamilyMutation: начало мутации с данными:", values);
-
       try {
         if (familyId) {
           console.log("useFamilyMutation: обновление существующей семьи");
+          
           const { data, error } = await supabase.rpc('create_parent_with_user', {
             p_email: values.email,
             p_first_name: values.first_name,
@@ -26,19 +22,22 @@ export const useFamilyMutation = (familyId?: string) => {
             p_status: values.status
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error("useFamilyMutation: ошибка обновления:", error);
+            throw error;
+          }
+
           return data;
         } else {
           console.log("useFamilyMutation: создание новой семьи");
           
-          // Сначала создаем пользователя через edge function
           console.log("useFamilyMutation: создание пользователя через edge function");
           const { data: authData, error: authError } = await supabase.functions.invoke(
             'create-auth-user',
             {
               body: JSON.stringify({ 
                 email: values.email,
-                code: Math.random().toString(36).slice(-8),
+                code: '123456', // Временный код для создания пользователя
                 shouldSignIn: false,
                 userData: {
                   first_name: values.first_name,
@@ -48,27 +47,12 @@ export const useFamilyMutation = (familyId?: string) => {
             }
           );
 
-          if (authError) {
+          if (authError || !authData?.id) {
             console.error("useFamilyMutation: ошибка создания пользователя:", authError);
-            throw authError;
-          }
-
-          if (!authData?.id) {
-            console.error("useFamilyMutation: не получен ID пользователя");
-            throw new Error("Не удалось получить ID пользователя");
+            throw new Error("Не удалось создать пользователя");
           }
 
           console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
-          
-          // Проверяем создание пользователя
-          const { data: authCheck, error: checkError } = await supabase.auth.admin.getUserById(authData.id);
-          
-          if (checkError || !authCheck?.user) {
-            console.error("useFamilyMutation: ошибка проверки пользователя:", checkError);
-            throw new Error("Не удалось проверить создание пользователя");
-          }
-
-          console.log("useFamilyMutation: пользователь подтвержден в auth.users");
           
           // Теперь создаем профиль родителя
           console.log("useFamilyMutation: создаем профиль родителя");
@@ -86,34 +70,30 @@ export const useFamilyMutation = (familyId?: string) => {
           });
 
           if (error) {
-            console.error("useFamilyMutation: ошибка создания профиля родителя:", error);
+            console.error("useFamilyMutation: ошибка создания:", error);
             throw error;
           }
 
-          console.log("useFamilyMutation: профиль родителя создан успешно");
           return data;
         }
       } catch (error) {
-        console.error("useFamilyMutation: ошибка:", error);
+        console.error("useFamilyMutation: ошибка в обработчике:", error);
         throw error;
       }
     },
-    onSuccess: () => {
-      toast({
-        title: familyId ? "Семья обновлена" : "Семья создана",
-        description: familyId ? "Данные семьи успешно обновлены" : "Новая семья успешно создана",
-      });
-      queryClient.invalidateQueries({ queryKey: ['families'] });
-      if (familyId) {
-        queryClient.invalidateQueries({ queryKey: ['family', familyId] });
-      }
-    },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error("useFamilyMutation: ошибка в обработчике:", error);
+      
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: error.message || "Не удалось сохранить данные семьи",
+        description: error.message || "Не удалось сохранить данные"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Успешно",
+        description: `Семья успешно ${familyId ? "обновлена" : "создана"}`
       });
     }
   });
