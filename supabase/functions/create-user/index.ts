@@ -39,23 +39,23 @@ serve(async (req) => {
       phone 
     })
 
-    // Проверяем существование пользователя
-    const { data: existingUser, error: getUserError } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .eq('email', normalizedEmail)
-      .single()
+    // Проверяем существование пользователя через auth.users
+    const { data: { users }, error: getUserError } = await supabaseClient.auth.admin.listUsers({
+      filter: {
+        email: normalizedEmail
+      }
+    })
 
-    if (getUserError && getUserError.code !== 'PGRST116') {
+    if (getUserError) {
       console.error("Error checking existing user:", getUserError)
       throw new Error(`Failed to check existing user: ${getUserError.message}`)
     }
 
-    if (existingUser) {
-      console.log("User already exists:", existingUser.id)
+    if (users && users.length > 0) {
+      console.log("User already exists:", users[0].id)
       return new Response(
         JSON.stringify({ 
-          id: existingUser.id,
+          id: users[0].id,
           email: normalizedEmail
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
