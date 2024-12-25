@@ -53,7 +53,17 @@ export const useFamilyMutation = (familyId?: string) => {
             throw authError;
           }
 
-          console.log("useFamilyMutation: пользователь создан, создаем профиль родителя");
+          if (!authData?.id) {
+            console.error("useFamilyMutation: не получен ID пользователя");
+            throw new Error("Не удалось получить ID пользователя");
+          }
+
+          console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
+          
+          // Небольшая задержка чтобы убедиться что пользователь создан
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          console.log("useFamilyMutation: создаем профиль родителя");
           
           // Теперь создаем профиль родителя
           const { data, error } = await supabase.rpc('create_parent_with_user', {
