@@ -639,6 +639,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_parent_with_user: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_main_phone: string
+          p_emergency_phone: string
+          p_address: string
+          p_special_requirements: string
+          p_notes: string
+          p_status: string
+        }
+        Returns: string
+      }
       current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
