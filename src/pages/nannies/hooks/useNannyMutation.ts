@@ -7,6 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 // Вспомогательная функция для задержки
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Функция для повторных попыток
+const retryOperation = async (operation: () => Promise<boolean>, maxRetries = 3, delayMs = 2000): Promise<boolean> => {
+  for (let i = 0; i < maxRetries; i++) {
+    const result = await operation();
+    if (result) return true;
+    console.log(`Попытка ${i + 1} не удалась, ждем ${delayMs}мс...`);
+    await delay(delayMs);
+  }
+  return false;
+};
+
 export const useNannyMutation = (onSuccess: () => void) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -37,37 +48,38 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         console.log("User created/found successfully:", userData);
 
-        // Добавляем задержку в 5 секунд для репликации данных
-        console.log("Waiting for data replication (5 seconds)...");
+        // Ждем репликацию данных
+        console.log("Waiting for data replication...");
         await delay(5000);
         
-        // Проверяем существование пользователя перед созданием профиля
-        let retries = 3;
-        let userExists = false;
-        
-        while (retries > 0 && !userExists) {
-          userExists = await checkUserExists(values.email);
-          if (userExists) {
-            console.log("User found in auth.users");
-            break;
-          }
-          console.log(`User not found, ${retries - 1} retries left`);
-          await delay(1000);
-          retries--;
-        }
+        // Проверяем существование пользователя с повторными попытками
+        const userExists = await retryOperation(
+          async () => {
+            const exists = await checkUserExists(values.email);
+            if (exists) {
+              console.log("User found in auth.users");
+              return true;
+            }
+            console.log("User not found in auth.users yet");
+            return false;
+          },
+          5, // Максимум 5 попыток
+          2000 // Интервал 2 секунды
+        );
 
         if (!userExists) {
           throw new Error("User was not found in auth.users after multiple retries");
         }
 
         // Создаем профиль няни
+        console.log("Creating nanny profile...");
         const nannyId = await createNannyProfile(values);
         
         // Создаем документы
-        await createNannyDocuments(nannyId, values);
-        
-        // Создаем этап обучения
-        await createNannyTraining(nannyId, values.training_stage);
+        if (nannyId) {
+          await createNannyDocuments(nannyId, values);
+          await createNannyTraining(nannyId, values.training_stage);
+        }
 
         return nannyId;
       } catch (error: any) {
