@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FormValues } from "../types/form";
+import { DOCUMENT_TYPE } from "../types/documents";
+import { Database } from "@/integrations/supabase/types";
+
+type TrainingStage = Database['public']['Enums']['training_stage'];
 
 export const checkUserExists = async (email: string): Promise<boolean> => {
   console.log("Проверяем существование пользователя с email:", email);
@@ -58,10 +62,10 @@ export const createNannyProfile = async (values: FormValues): Promise<string> =>
 
 export const createNannyDocuments = async (nannyId: string, values: FormValues) => {
   const documents = [
-    { type: 'criminal_record', file_url: values.criminal_record },
-    { type: 'image_usage_consent', file_url: values.image_usage_consent },
-    { type: 'medical_book', file_url: values.medical_book },
-    { type: 'personal_data_consent', file_url: values.personal_data_consent },
+    { type: DOCUMENT_TYPE.CRIMINAL_RECORD as const, file_url: values.criminal_record },
+    { type: DOCUMENT_TYPE.IMAGE_USAGE_CONSENT as const, file_url: values.image_usage_consent },
+    { type: DOCUMENT_TYPE.MEDICAL_BOOK as const, file_url: values.medical_book },
+    { type: DOCUMENT_TYPE.PERSONAL_DATA_CONSENT as const, file_url: values.personal_data_consent },
   ].filter((doc) => doc.file_url);
 
   console.log("Creating documents:", documents);
@@ -92,7 +96,7 @@ export const createNannyTraining = async (nannyId: string, stage?: string) => {
     .from("nanny_training")
     .insert({
       nanny_id: nannyId,
-      stage: stage,
+      stage: stage as TrainingStage,
     });
 
   if (trainingError) {

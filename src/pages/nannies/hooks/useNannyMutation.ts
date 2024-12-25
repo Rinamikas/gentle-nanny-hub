@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormValues } from "../types/form";
 import { useToast } from "@/hooks/use-toast";
 import { checkUserExists, createNannyProfile, createNannyDocuments, createNannyTraining } from "../api/nannyApi";
+import { supabase } from "@/integrations/supabase/client";
 
 // Вспомогательная функция для задержки
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

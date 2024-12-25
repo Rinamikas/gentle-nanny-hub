@@ -9,11 +9,22 @@ export interface NannyProfile extends NannyRow {
     phone?: string;
   };
   nanny_training?: {
-    stage: string;
+    stage: Database['public']['Enums']['training_stage'];
   };
   nanny_documents?: {
-    type: string;
+    type: Database['public']['Enums']['document_type'];
     file_url: string;
   }[];
   relative_phone?: string;
 }
+
+export type NannyWithDetails = NannyProfile & {
+  profiles: (ProfileRow & {
+    email?: string;
+    phone?: string;
+  });
+  nanny_training?: {
+    stage: Database['public']['Enums']['training_stage'];
+  };
+  relative_phone: string;
+};
