@@ -38,12 +38,32 @@ serve(async (req) => {
       phone 
     })
 
-    // Генерируем более надежный пароль
-    const password = Math.random().toString(36).slice(-8) + 
-                    Math.random().toString(36).slice(-8) + 
-                    Math.random().toString(36).slice(-8)
-
     try {
+      // Проверяем существование пользователя
+      const { data: existingUsers } = await supabaseClient.auth.admin.listUsers({
+        filter: {
+          email: normalizedEmail
+        }
+      })
+
+      if (existingUsers?.users?.length > 0) {
+        return new Response(
+          JSON.stringify({ 
+            error: "User already exists",
+            id: existingUsers.users[0].id
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409 
+          }
+        )
+      }
+
+      // Генерируем более надежный пароль
+      const password = Math.random().toString(36).slice(-8) + 
+                      Math.random().toString(36).slice(-8) + 
+                      Math.random().toString(36).slice(-8)
+
       console.log("Attempting to create user with auth.admin.createUser...")
       
       const { data: newUser, error: createError } = await supabaseClient.auth.admin
