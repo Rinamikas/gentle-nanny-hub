@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,86 +8,65 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabaseAdmin = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     )
 
-    const { email } = await req.json()
+    const { email, firstName, lastName, phone } = await req.json()
 
-    if (!email) {
-      throw new Error('Email is required')
-    }
+    console.log("Creating/checking user with email:", email)
 
-    console.log("Checking existing user with email:", email)
+    // Проверяем существование пользователя
+    const { data: existingUser, error: getUserError } = await supabaseClient.auth.admin
+      .listUsers()
 
-    // Сначала проверяем существование пользователя
-    const { data: existingUsers, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
-    })
+    const userExists = existingUser?.users.find(u => u.email === email)
 
-    if (getUserError) {
-      console.error("Error checking existing user:", getUserError)
-      throw getUserError
-    }
-
-    // Если пользователь найден, возвращаем его данные
-    if (existingUsers.users && existingUsers.users.length > 0) {
-      const existingUser = existingUsers.users[0]
-      console.log("Found existing user:", existingUser.id)
+    if (userExists) {
+      console.log("User already exists:", userExists.id)
       return new Response(
-        JSON.stringify({ id: existingUser.id }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
+        JSON.stringify({ id: userExists.id }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log("No existing user found, creating new user...")
-
     // Создаем нового пользователя
-    const { data: authUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      email_confirm: true,
-      password: Math.random().toString(36).slice(-8), // Временный пароль
-    })
+    const { data: newUser, error: createError } = await supabaseClient.auth.admin
+      .createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { firstName, lastName, phone }
+      })
 
     if (createError) {
-      console.error("Error creating user:", createError)
       throw createError
     }
 
-    if (!authUser.user) {
-      throw new Error('Failed to create user')
-    }
-
-    console.log("Created new user:", authUser.user.id)
+    console.log("New user created:", newUser.user.id)
 
     return new Response(
-      JSON.stringify({ id: authUser.user.id }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      JSON.stringify({ id: newUser.user.id }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error("Error in create-user function:", error)
+    console.error("Error:", error)
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error instanceof Error ? error.stack : undefined 
-      }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: 400
       }
     )
   }
