@@ -25,15 +25,38 @@ serve(async (req) => {
 
     const { email, firstName, lastName, phone } = await req.json()
     
-    console.log("Creating user with data:", { email, firstName, lastName, phone })
+    console.log("Attempting to create user with data:", { email, firstName, lastName, phone })
+
+    // Проверяем существование пользователя
+    const { data: existingUsers, error: listError } = await supabaseClient.auth.admin.listUsers()
+    
+    if (listError) {
+      console.error("Error checking existing users:", listError)
+      throw new Error(`Failed to check existing users: ${listError.message}`)
+    }
+
+    const existingUser = existingUsers?.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+    
+    if (existingUser) {
+      console.log("User already exists:", existingUser.id)
+      return new Response(
+        JSON.stringify({ 
+          id: existingUser.id,
+          email: existingUser.email
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Генерируем случайный пароль для пользователя
     const password = Math.random().toString(36).slice(-8)
 
+    console.log("Creating new user with email:", email)
+
     // Создаем пользователя через auth.admin API
     const { data: newUser, error: createError } = await supabaseClient.auth.admin
       .createUser({
-        email,
+        email: email.toLowerCase(),
         password,
         email_confirm: true,
         user_metadata: { 
@@ -46,6 +69,11 @@ serve(async (req) => {
     if (createError) {
       console.error("Error creating auth user:", createError)
       throw createError
+    }
+
+    if (!newUser?.user) {
+      console.error("No user data returned after creation")
+      throw new Error("Failed to create user - no data returned")
     }
 
     console.log("Auth user created successfully:", newUser.user.id)
@@ -64,7 +92,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error("Create user error:", error)
+    console.error("Create user error:", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
     
     return new Response(
       JSON.stringify({ 
