@@ -69,6 +69,7 @@ export const useFamilyMutation = (familyId?: string) => {
           }
 
           // Ждем пока пользователь будет создан
+          let userExists = false;
           for (let i = 0; i < 5; i++) {
             await delay(1000);
             
@@ -79,12 +80,13 @@ export const useFamilyMutation = (familyId?: string) => {
 
             if (exists) {
               console.log("useFamilyMutation: пользователь создан успешно");
+              userExists = true;
               break;
             }
+          }
 
-            if (i === 4) {
-              throw new Error("Timeout waiting for user creation");
-            }
+          if (!userExists) {
+            throw new Error("Timeout waiting for user creation");
           }
 
           // Создаем профиль родителя через RPC
