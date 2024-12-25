@@ -60,12 +60,19 @@ export const useFamilyMutation = (familyId?: string) => {
 
           console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
           
-          // Небольшая задержка чтобы убедиться что пользователь создан
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Проверяем создание пользователя
+          const { data: authCheck, error: checkError } = await supabase.auth.admin.getUserById(authData.id);
           
-          console.log("useFamilyMutation: создаем профиль родителя");
+          if (checkError || !authCheck?.user) {
+            console.error("useFamilyMutation: ошибка проверки пользователя:", checkError);
+            throw new Error("Не удалось проверить создание пользователя");
+          }
+
+          console.log("useFamilyMutation: пользователь подтвержден в auth.users");
           
           // Теперь создаем профиль родителя
+          console.log("useFamilyMutation: создаем профиль родителя");
+          
           const { data, error } = await supabase.rpc('create_parent_with_user', {
             p_email: values.email,
             p_first_name: values.first_name,
