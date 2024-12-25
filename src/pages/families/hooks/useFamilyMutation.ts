@@ -55,50 +55,36 @@ export const useFamilyMutation = (familyId?: string) => {
         } else {
           console.log("useFamilyMutation: создание новой семьи");
           
-          console.log("useFamilyMutation: создание пользователя через edge function");
-          const { data: authData, error: authError } = await supabase.functions.invoke(
-            'create-auth-user',
-            {
-              body: JSON.stringify({ 
-                email: values.email,
-                code: '123456', // Временный код для создания пользователя
-                shouldSignIn: false,
-                userData: {
-                  first_name: values.first_name,
-                  last_name: values.last_name
-                }
-              })
-            }
-          );
-
-          if (authError || !authData?.id) {
-            console.error("useFamilyMutation: ошибка создания пользователя:", authError);
-            throw new Error("Не удалось создать пользователя");
-          }
-
-          console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
+          // Сначала проверяем существование пользователя
+          const userExists = await checkUserExists(values.email);
           
-          // Увеличиваем задержку до 5 секунд
-          console.log("useFamilyMutation: ожидаем репликацию данных (5 секунд)...");
-          await delay(5000);
-          
-          // Проверяем существование пользователя перед созданием профиля
-          let retries = 3;
-          let userExists = false;
-          
-          while (retries > 0 && !userExists) {
-            userExists = await checkUserExists(values.email);
-            if (userExists) {
-              console.log("useFamilyMutation: пользователь найден в auth.users");
-              break;
-            }
-            console.log(`useFamilyMutation: пользователь не найден, осталось попыток: ${retries - 1}`);
-            await delay(1000);
-            retries--;
-          }
-
           if (!userExists) {
-            throw new Error("Пользователь не найден в auth.users после нескольких попыток");
+            console.log("useFamilyMutation: пользователь не существует, создаем через edge function");
+            const { data: authData, error: authError } = await supabase.functions.invoke(
+              'create-auth-user',
+              {
+                body: JSON.stringify({ 
+                  email: values.email,
+                  code: '123456', // Временный код для создания пользователя
+                  shouldSignIn: false,
+                  userData: {
+                    first_name: values.first_name,
+                    last_name: values.last_name
+                  }
+                })
+              }
+            );
+
+            if (authError || !authData?.id) {
+              console.error("useFamilyMutation: ошибка создания пользователя:", authError);
+              throw new Error("Не удалось создать пользователя");
+            }
+
+            console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
+            
+            // Увеличиваем задержку до 5 секунд для репликации
+            console.log("useFamilyMutation: ожидаем репликацию данных (5 секунд)...");
+            await delay(5000);
           }
           
           // Теперь создаем профиль родителя
