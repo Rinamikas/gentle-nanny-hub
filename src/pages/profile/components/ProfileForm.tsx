@@ -10,6 +10,9 @@ import type { Profile } from "../types";
 import ContactInfo from "./ContactInfo";
 import UserRoleManager from "./UserRoleManager";
 import { localizeUserRole } from "@/utils/localization";
+import { useEffect } from "react";
+import { setFormMethods, fillFormWithTestData } from "@/utils/formTestUtils";
+import { Beaker, AlertTriangle } from "lucide-react";
 
 interface ProfileFormProps {
   profile?: Profile | null;
@@ -27,6 +30,29 @@ export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
       email: profile?.email || "",
     },
   });
+
+  useEffect(() => {
+    setFormMethods(form);
+    return () => setFormMethods(null);
+  }, [form]);
+
+  const handleFillValidData = () => {
+    console.log("Заполняем валидными тестовыми данными");
+    try {
+      fillFormWithTestData(true);
+    } catch (error) {
+      console.error("Ошибка при заполнении тестовыми данными:", error);
+    }
+  };
+
+  const handleFillInvalidData = () => {
+    console.log("Заполняем невалидными тестовыми данными");
+    try {
+      fillFormWithTestData(false);
+    } catch (error) {
+      console.error("Ошибка при заполнении ошибочными данными:", error);
+    }
+  };
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
@@ -98,7 +124,30 @@ export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
             />
             <ContactInfo form={form} />
           </div>
-          <Button type="submit">Сохранить</Button>
+
+          <div className="flex gap-2">
+            <Button type="submit">Сохранить</Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2"
+              onClick={handleFillValidData}
+            >
+              <Beaker className="h-4 w-4" />
+              Тестовые данные
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2 text-destructive"
+              onClick={handleFillInvalidData}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Ошибочные данные
+            </Button>
+          </div>
         </form>
       </Form>
     </div>
