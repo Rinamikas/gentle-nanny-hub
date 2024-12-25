@@ -3,10 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type NannyWithDetails = Database['public']['Tables']['nanny_profiles']['Row'] & {
-  profiles: Database['public']['Tables']['profiles']['Row'] & {
-    email?: string;
-    phone?: string;
-  };
+  profiles: Database['public']['Tables']['profiles']['Row'];
   nanny_documents?: {
     type: string;
     file_url: string;
@@ -27,19 +24,20 @@ export const useNannyData = (id?: string) => {
       }
       
       console.log("Fetching nanny data for ID:", id);
-      const { data, error } = await supabase
+      
+      // Получаем основные данные няни
+      const { data: nannyData, error: nannyError } = await supabase
         .from("nanny_profiles")
         .select(`
           *,
-          profiles!inner (
+          profiles (
             id,
             first_name,
             last_name,
             main_phone,
             photo_url,
             created_at,
-            updated_at,
-            email
+            updated_at
           ),
           nanny_documents (
             type,
@@ -52,13 +50,34 @@ export const useNannyData = (id?: string) => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching nanny data:", error);
-        throw error;
+      if (nannyError) {
+        console.error("Error fetching nanny data:", nannyError);
+        throw nannyError;
       }
+
+      if (!nannyData) {
+        return null;
+      }
+
+      // Получаем email пользователя
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error("Error fetching user data:", userError);
+        throw userError;
+      }
+
+      // Объединяем данные
+      const enrichedData = {
+        ...nannyData,
+        profiles: {
+          ...nannyData.profiles,
+          email: userData.user?.email
+        }
+      };
       
-      console.log("Received nanny data:", data);
-      return data as unknown as NannyWithDetails;
+      console.log("Received nanny data:", enrichedData);
+      return enrichedData as NannyWithDetails;
     },
     enabled: !!id && id !== ":id",
   });

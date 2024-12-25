@@ -8,17 +8,24 @@ import { DOCUMENT_TYPE } from "../types/documents";
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Функция для проверки существования пользователя
-const checkUserExists = async (email: string) => {
+const checkUserExists = async (email: string): Promise<boolean> => {
   console.log("Проверяем существование пользователя с email:", email);
   
-  const { data: { users }, error } = await supabase.auth.admin.listUsers();
+  try {
+    const { data, error } = await supabase.functions.invoke('check-user-exists', {
+      body: { email }
+    });
 
-  if (error) {
-    console.error("Ошибка при проверке пользователя:", error);
+    if (error) {
+      console.error("Ошибка при проверке пользователя:", error);
+      return false;
+    }
+
+    return data?.exists || false;
+  } catch (error) {
+    console.error("Ошибка при вызове функции проверки:", error);
     return false;
   }
-
-  return users?.some(user => user.email === email.toLowerCase()) || false;
 };
 
 export const useNannyMutation = (onSuccess: () => void) => {
