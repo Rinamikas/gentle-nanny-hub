@@ -10,14 +10,14 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const checkUserExists = async (email: string) => {
   console.log("Проверяем существование пользователя с email:", email);
   
-  const { data, error } = await supabase.auth.admin.getUser(email);
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
 
   if (error) {
     console.error("Ошибка при проверке пользователя:", error);
     return false;
   }
 
-  return data?.user !== null;
+  return users?.some(user => user.email === email.toLowerCase()) || false;
 };
 
 export const useFamilyMutation = (familyId?: string) => {
@@ -77,8 +77,10 @@ export const useFamilyMutation = (familyId?: string) => {
           
           // Проверяем существование пользователя перед созданием профиля
           let retries = 3;
-          while (retries > 0) {
-            const userExists = await checkUserExists(values.email);
+          let userExists = false;
+          
+          while (retries > 0 && !userExists) {
+            userExists = await checkUserExists(values.email);
             if (userExists) {
               console.log("useFamilyMutation: пользователь найден в auth.users");
               break;
@@ -86,6 +88,10 @@ export const useFamilyMutation = (familyId?: string) => {
             console.log(`useFamilyMutation: пользователь не найден, осталось попыток: ${retries - 1}`);
             await delay(1000);
             retries--;
+          }
+
+          if (!userExists) {
+            throw new Error("Пользователь не найден в auth.users после нескольких попыток");
           }
           
           // Теперь создаем профиль родителя

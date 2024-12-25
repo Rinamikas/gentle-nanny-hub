@@ -4,6 +4,23 @@ import { FormValues } from "../types/form";
 import { useToast } from "@/hooks/use-toast";
 import { DOCUMENT_TYPE } from "../types/documents";
 
+// Вспомогательная функция для задержки
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Функция для проверки существования пользователя
+const checkUserExists = async (email: string) => {
+  console.log("Проверяем существование пользователя с email:", email);
+  
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
+
+  if (error) {
+    console.error("Ошибка при проверке пользователя:", error);
+    return false;
+  }
+
+  return users?.some(user => user.email === email.toLowerCase()) || false;
+};
+
 export const useNannyMutation = (onSuccess: () => void) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -36,8 +53,28 @@ export const useNannyMutation = (onSuccess: () => void) => {
 
         console.log("User created/found successfully:", userData);
 
-        // Добавляем небольшую задержку, чтобы убедиться, что пользователь создан
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Добавляем задержку в 5 секунд для репликации данных
+        console.log("Waiting for data replication (5 seconds)...");
+        await delay(5000);
+        
+        // Проверяем существование пользователя перед созданием профиля
+        let retries = 3;
+        let userExists = false;
+        
+        while (retries > 0 && !userExists) {
+          userExists = await checkUserExists(values.email);
+          if (userExists) {
+            console.log("User found in auth.users");
+            break;
+          }
+          console.log(`User not found, ${retries - 1} retries left`);
+          await delay(1000);
+          retries--;
+        }
+
+        if (!userExists) {
+          throw new Error("User was not found in auth.users after multiple retries");
+        }
 
         // Создаем или обновляем няню через функцию
         console.log("Creating nanny profile...");
