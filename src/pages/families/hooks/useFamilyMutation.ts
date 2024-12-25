@@ -30,7 +30,9 @@ export const useFamilyMutation = (familyId?: string) => {
           return data;
         } else {
           console.log("useFamilyMutation: создание новой семьи");
-          // Создаем пользователя в auth.users через API
+          
+          // Сначала создаем пользователя через edge function
+          console.log("useFamilyMutation: создание пользователя через edge function");
           const { data: authData, error: authError } = await supabase.functions.invoke(
             'create-auth-user',
             {
@@ -46,9 +48,14 @@ export const useFamilyMutation = (familyId?: string) => {
             }
           );
 
-          if (authError) throw authError;
+          if (authError) {
+            console.error("useFamilyMutation: ошибка создания пользователя:", authError);
+            throw authError;
+          }
 
-          // Создаем профиль родителя
+          console.log("useFamilyMutation: пользователь создан, создаем профиль родителя");
+          
+          // Теперь создаем профиль родителя
           const { data, error } = await supabase.rpc('create_parent_with_user', {
             p_email: values.email,
             p_first_name: values.first_name,
@@ -61,7 +68,12 @@ export const useFamilyMutation = (familyId?: string) => {
             p_status: values.status
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error("useFamilyMutation: ошибка создания профиля родителя:", error);
+            throw error;
+          }
+
+          console.log("useFamilyMutation: профиль родителя создан успешно");
           return data;
         }
       } catch (error) {

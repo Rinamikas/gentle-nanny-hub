@@ -71,22 +71,7 @@ serve(async (req) => {
         throw updateError
       }
 
-      // Обновляем профиль используя service role
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .update({
-          first_name: userData?.first_name,
-          last_name: userData?.last_name,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-
-      if (profileError) {
-        console.error('Error updating profile:', profileError)
-        throw profileError
-      }
-
-      console.log('User and profile updated successfully')
+      console.log('User updated successfully')
     } else {
       // Создаем нового пользователя
       console.log('Creating new user...')
@@ -108,24 +93,7 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id
-
-      // Создаем профиль используя service role
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: userId,
-          first_name: userData?.first_name,
-          last_name: userData?.last_name,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError)
-        throw profileError
-      }
-
-      console.log('User and profile created successfully')
+      console.log('User created successfully')
     }
 
     // Создаем сессию если нужно
