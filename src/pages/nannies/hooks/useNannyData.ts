@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type NannyWithDetails = Database['public']['Tables']['nanny_profiles']['Row'] & {
-  profiles: Database['public']['Tables']['profiles']['Row'];
+  profiles: Database['public']['Tables']['profiles']['Row'] & {
+    email?: string;
+  };
   nanny_documents?: {
     type: string;
     file_url: string;
@@ -11,7 +13,6 @@ type NannyWithDetails = Database['public']['Tables']['nanny_profiles']['Row'] & 
   nanny_training?: {
     stage: Database['public']['Enums']['training_stage'];
   };
-  relative_phone?: string;
 };
 
 export const useNannyData = (id?: string) => {
@@ -30,7 +31,7 @@ export const useNannyData = (id?: string) => {
         .from("nanny_profiles")
         .select(`
           *,
-          profiles (
+          profiles!inner(
             id,
             first_name,
             last_name,
@@ -39,11 +40,11 @@ export const useNannyData = (id?: string) => {
             created_at,
             updated_at
           ),
-          nanny_documents (
+          nanny_documents(
             type,
             file_url
           ),
-          nanny_training (
+          nanny_training(
             stage
           )
         `)
