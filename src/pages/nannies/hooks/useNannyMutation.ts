@@ -7,6 +7,31 @@ import { supabase } from "@/integrations/supabase/client";
 // Вспомогательная функция для задержки
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Функция для проверки существования пользователя
+const waitForUser = async (email: string, maxAttempts = 10): Promise<string | null> => {
+  for (let i = 0; i < maxAttempts; i++) {
+    console.log(`Attempt ${i + 1} of ${maxAttempts} to check user existence`);
+    
+    const { data: { users }, error } = await supabase.auth.admin.listUsers({
+      filter: { email: email.toLowerCase() }
+    });
+
+    if (error) {
+      console.error("Error checking user existence:", error);
+      continue;
+    }
+
+    if (users && users.length > 0) {
+      console.log("User found:", users[0].id);
+      return users[0].id;
+    }
+
+    await delay(3000); // Ждем 3 секунды между попытками
+  }
+
+  return null;
+};
+
 export const useNannyMutation = (onSuccess: () => void) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -35,12 +60,15 @@ export const useNannyMutation = (onSuccess: () => void) => {
           throw new Error(userError?.message || "Failed to create user");
         }
 
-        const userId = userData.id;
-        console.log("User created/found successfully:", userData);
+        console.log("User created successfully:", userData);
 
-        // Ждем репликацию данных
-        console.log("Waiting for data replication...");
-        await delay(2000);
+        // Ждем пока пользователь появится в базе
+        console.log("Waiting for user to be available in database...");
+        const userId = await waitForUser(values.email);
+
+        if (!userId) {
+          throw new Error("Timeout waiting for user creation. Please try again.");
+        }
 
         // Создаем профиль няни
         console.log("Creating nanny profile...");
@@ -81,10 +109,9 @@ export const useNannyMutation = (onSuccess: () => void) => {
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Не удалось сохранить данные",
+        description: error instanceof Error 
+          ? error.message
+          : "Не удалось сохранить данные. Пожалуйста, попробуйте еще раз.",
       });
     },
   });
