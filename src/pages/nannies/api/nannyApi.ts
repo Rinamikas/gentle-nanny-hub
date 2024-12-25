@@ -9,7 +9,7 @@ export const checkUserExists = async (userId: string): Promise<boolean> => {
   console.log("Проверяем существование пользователя с ID:", userId);
   
   try {
-    const { data, error } = await supabase.auth.admin.getUser(userId);
+    const { data, error } = await supabase.auth.admin.users.retrieve(userId);
 
     if (error) {
       console.error("Ошибка при проверке пользователя:", error);
