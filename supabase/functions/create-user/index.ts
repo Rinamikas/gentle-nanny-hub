@@ -40,24 +40,23 @@ serve(async (req) => {
     })
 
     // Проверяем существование пользователя
-    const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers({
-      filter: {
-        email: normalizedEmail
-      }
-    })
+    const { data: existingUser, error: getUserError } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .single()
 
-    if (listError) {
-      console.error("Error checking existing users:", listError)
-      throw new Error(`Failed to check existing users: ${listError.message}`)
+    if (getUserError && getUserError.code !== 'PGRST116') {
+      console.error("Error checking existing user:", getUserError)
+      throw new Error(`Failed to check existing user: ${getUserError.message}`)
     }
 
-    if (users && users.length > 0) {
-      const existingUser = users[0]
+    if (existingUser) {
       console.log("User already exists:", existingUser.id)
       return new Response(
         JSON.stringify({ 
           id: existingUser.id,
-          email: existingUser.email
+          email: normalizedEmail
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -101,7 +100,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         id: newUser.user.id,
-        email: newUser.user.email
+        email: normalizedEmail
       }),
       { 
         headers: { 
