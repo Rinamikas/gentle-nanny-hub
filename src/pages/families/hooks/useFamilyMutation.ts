@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { FormValues } from "../types/form";
 
+// Вспомогательная функция для задержки
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const useFamilyMutation = (familyId?: string) => {
   return useMutation({
     mutationFn: async (values: FormValues) => {
@@ -53,6 +56,10 @@ export const useFamilyMutation = (familyId?: string) => {
           }
 
           console.log("useFamilyMutation: пользователь создан с ID:", authData.id);
+          
+          // Добавляем задержку в 2 секунды, чтобы дать время на репликацию данных
+          console.log("useFamilyMutation: ожидаем репликацию данных...");
+          await delay(2000);
           
           // Теперь создаем профиль родителя
           console.log("useFamilyMutation: создаем профиль родителя");
