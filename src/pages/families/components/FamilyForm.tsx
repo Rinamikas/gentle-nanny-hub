@@ -52,19 +52,15 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
         return;
       }
 
-      // Получаем текущего пользователя
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Не удалось получить сессию пользователя");
-      }
-
-      const userId = session.user.id;
-      console.log("FamilyForm: текущий userId =", userId);
-
       if (currentFamilyId) {
         console.log("FamilyForm: обновление существующей семьи");
+        console.log("FamilyForm: данные родителя:", familyData);
 
-        // Обновляем профиль
+        if (!familyData?.profiles?.id) {
+          throw new Error("Не найден ID профиля родителя");
+        }
+
+        // Обновляем профиль родителя
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
@@ -73,7 +69,7 @@ export default function FamilyForm({ familyId: propsFamilyId, initialData, onSub
             main_phone: values.main_phone,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", userId);
+          .eq("id", familyData.profiles.id);
 
         if (profileError) {
           console.error("FamilyForm: ошибка обновления profiles:", profileError);
