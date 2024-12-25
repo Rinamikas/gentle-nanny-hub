@@ -25,19 +25,34 @@ serve(async (req) => {
 
     const { email, firstName, lastName, phone } = await req.json()
     
-    console.log("Attempting to create user with data:", { email, firstName, lastName, phone })
+    // Валидация входных данных
+    if (!email || typeof email !== 'string') {
+      throw new Error('Email is required and must be a string')
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
+    
+    console.log("Attempting to create user with data:", { 
+      email: normalizedEmail, 
+      firstName, 
+      lastName, 
+      phone 
+    })
 
     // Проверяем существование пользователя
-    const { data: existingUsers, error: listError } = await supabaseClient.auth.admin.listUsers()
-    
+    const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers({
+      filter: {
+        email: normalizedEmail
+      }
+    })
+
     if (listError) {
       console.error("Error checking existing users:", listError)
       throw new Error(`Failed to check existing users: ${listError.message}`)
     }
 
-    const existingUser = existingUsers?.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
-    
-    if (existingUser) {
+    if (users && users.length > 0) {
+      const existingUser = users[0]
       console.log("User already exists:", existingUser.id)
       return new Response(
         JSON.stringify({ 
@@ -49,14 +64,14 @@ serve(async (req) => {
     }
 
     // Генерируем случайный пароль для пользователя
-    const password = Math.random().toString(36).slice(-8)
+    const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
 
-    console.log("Creating new user with email:", email)
+    console.log("Creating new user with email:", normalizedEmail)
 
     // Создаем пользователя через auth.admin API
     const { data: newUser, error: createError } = await supabaseClient.auth.admin
       .createUser({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         password,
         email_confirm: true,
         user_metadata: { 
@@ -67,7 +82,12 @@ serve(async (req) => {
       })
 
     if (createError) {
-      console.error("Error creating auth user:", createError)
+      console.error("Error creating auth user:", {
+        message: createError.message,
+        status: createError.status,
+        name: createError.name,
+        stack: createError.stack
+      })
       throw createError
     }
 
@@ -94,9 +114,9 @@ serve(async (req) => {
   } catch (error) {
     console.error("Create user error:", {
       message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
+      details: error instanceof Error ? error.stack : undefined,
+      name: error.name,
+      status: error.status
     })
     
     return new Response(
