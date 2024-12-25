@@ -35,6 +35,6 @@ export interface Functions {
     Args: {
       email_param: string
     }
-    Returns: string | null
+    Returns: string
   }
 }

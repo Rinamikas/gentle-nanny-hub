@@ -22,7 +22,7 @@ const waitForUser = async (email: string, maxAttempts = 10): Promise<string | nu
 
     if (userId) {
       console.log("Пользователь найден:", userId);
-      return userId;
+      return userId as string;
     }
 
     await delay(3000); // Ждем 3 секунды между попытками
