@@ -63,9 +63,15 @@ serve(async (req) => {
     console.log("No existing user found, creating new user...")
     
     try {
-      // Если пользователь не существует - создаем нового
       const password = Math.random().toString(36).slice(-8)
       
+      console.log("Attempting to create user with:", {
+        email: normalizedEmail,
+        firstName,
+        lastName,
+        phone
+      })
+
       const { data: newUser, error: createError } = await supabaseClient.auth.admin
         .createUser({
           email: normalizedEmail,
@@ -80,11 +86,18 @@ serve(async (req) => {
         })
 
       if (createError) {
-        console.error("Error creating user:", createError)
+        console.error("Supabase createUser error:", {
+          code: createError.code,
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint
+        })
+        
         return new Response(
           JSON.stringify({ 
             error: "Failed to create user",
-            details: createError.message
+            details: createError.message,
+            code: createError.code
           }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -94,10 +107,14 @@ serve(async (req) => {
       }
 
       if (!newUser?.user) {
+        console.error("User creation returned no data")
         throw new Error("User creation failed - no data returned")
       }
 
-      console.log("Successfully created new user:", newUser.user.email)
+      console.log("Successfully created new user:", {
+        id: newUser.user.id,
+        email: newUser.user.email
+      })
 
       return new Response(
         JSON.stringify({ 
@@ -111,10 +128,15 @@ serve(async (req) => {
         }
       )
     } catch (createError) {
-      console.error("Database error creating new user:", createError)
+      console.error("Unexpected error during user creation:", {
+        name: createError.name,
+        message: createError.message,
+        stack: createError.stack
+      })
+      
       return new Response(
         JSON.stringify({ 
-          error: "Database error creating new user",
+          error: "Unexpected error during user creation",
           details: createError.message
         }),
         { 
@@ -125,7 +147,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error("Error in user creation:", {
+    console.error("Top level error in user creation:", {
       name: error.name,
       message: error.message,
       status: error.status,
