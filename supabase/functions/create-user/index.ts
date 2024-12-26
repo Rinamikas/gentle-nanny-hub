@@ -33,95 +33,78 @@ serve(async (req) => {
     
     console.log("Starting user creation process for:", normalizedEmail)
 
-    // Генерируем пароль
-    const password = Math.random().toString(36).slice(-8)
-
-    try {
-      console.log("Attempting to create new user...")
-      
-      const { data: newUser, error: createError } = await supabaseClient.auth.admin
-        .createUser({
-          email: normalizedEmail,
-          password,
-          email_confirm: true,
-          user_metadata: { 
-            first_name: firstName, 
-            last_name: lastName,
-            phone,
-            email_verified: true
-          }
-        })
-
-      if (createError) {
-        console.log("Create user error:", createError)
-        
-        // Если пользователь уже существует, получаем его данные
-        if (createError.message.includes('User already registered')) {
-          console.log("User exists, fetching details...")
-          
-          const { data: { users }, error: listError } = await supabaseClient.auth.admin
-            .listUsers({
-              filter: {
-                email: normalizedEmail
-              }
-            })
-
-          if (listError) {
-            console.error("Error fetching existing user:", listError)
-            throw listError
-          }
-
-          if (!users?.length) {
-            throw new Error("Failed to fetch existing user")
-          }
-
-          console.log("Returning existing user:", users[0].id)
-          return new Response(
-            JSON.stringify({ 
-              id: users[0].id,
-              email: normalizedEmail,
-              exists: true
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 200
-            }
-          )
+    // Сначала проверяем существование пользователя
+    console.log("Checking if user exists...")
+    const { data: { users }, error: listError } = await supabaseClient.auth.admin
+      .listUsers({
+        filter: {
+          email: normalizedEmail
         }
-        
-        throw createError
-      }
-
-      if (!newUser?.user) {
-        throw new Error("User creation failed - no data returned")
-      }
-
-      console.log("User created successfully:", {
-        id: newUser.user.id,
-        email: normalizedEmail
       })
 
+    if (listError) {
+      console.error("Error checking existing users:", listError)
+      throw listError
+    }
+
+    // Если пользователь существует - возвращаем его данные
+    if (users && users.length > 0) {
+      console.log("User already exists:", users[0].id)
       return new Response(
         JSON.stringify({ 
-          id: newUser.user.id,
+          id: users[0].id,
           email: normalizedEmail,
-          exists: false
+          exists: true
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200
         }
       )
-
-    } catch (error) {
-      console.error("Detailed error in user creation:", {
-        error,
-        message: error.message,
-        stack: error.stack
-      })
-      
-      throw error
     }
+
+    // Если пользователь не существует - создаем нового
+    console.log("User not found, creating new user...")
+    const password = Math.random().toString(36).slice(-8)
+    
+    const { data: newUser, error: createError } = await supabaseClient.auth.admin
+      .createUser({
+        email: normalizedEmail,
+        password,
+        email_confirm: true,
+        user_metadata: { 
+          first_name: firstName, 
+          last_name: lastName,
+          phone,
+          email_verified: true
+        }
+      })
+
+    if (createError) {
+      console.error("Error creating user:", createError)
+      throw createError
+    }
+
+    if (!newUser?.user) {
+      throw new Error("User creation failed - no data returned")
+    }
+
+    console.log("User created successfully:", {
+      id: newUser.user.id,
+      email: normalizedEmail
+    })
+
+    return new Response(
+      JSON.stringify({ 
+        id: newUser.user.id,
+        email: normalizedEmail,
+        exists: false
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
 
   } catch (error) {
     console.error("Error in user creation:", {
