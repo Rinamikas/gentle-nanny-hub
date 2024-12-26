@@ -31,24 +31,43 @@ serve(async (req) => {
 
     const normalizedEmail = email.toLowerCase().trim()
     
-    console.log("Creating user with data:", { 
-      email: normalizedEmail, 
-      firstName, 
-      lastName, 
-      phone 
-    })
+    console.log("Starting user creation process for:", normalizedEmail)
 
-    // Генерируем более надежный пароль
-    const password = Math.random().toString(36).slice(-8) + 
-                    Math.random().toString(36).slice(-8) + 
-                    Math.random().toString(36).slice(-8)
+    // Сначала проверяем существование пользователя
+    const { data: existingUser, error: getUserError } = await supabaseClient.auth.admin
+      .getUserByEmail(normalizedEmail)
 
-    console.log("Attempting to create user with auth.admin.createUser...")
+    if (getUserError && !getUserError.message.includes('User not found')) {
+      console.error("Error checking existing user:", getUserError)
+      throw getUserError
+    }
+
+    if (existingUser) {
+      console.log("User already exists:", existingUser.id)
+      return new Response(
+        JSON.stringify({ 
+          error: "User already exists",
+          id: existingUser.id
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409
+        }
+      )
+    }
+
+    // Генерируем пароль
+    const password = Array(3)
+      .fill(0)
+      .map(() => Math.random().toString(36).slice(-8))
+      .join('')
+
+    console.log("Creating new user with email:", normalizedEmail)
     
     const { data: newUser, error: createError } = await supabaseClient.auth.admin
       .createUser({
         email: normalizedEmail,
-        password: password,
+        password,
         email_confirm: true,
         user_metadata: { 
           first_name: firstName, 
@@ -59,7 +78,7 @@ serve(async (req) => {
       })
 
     if (createError) {
-      console.error("Error details from auth.admin.createUser:", {
+      console.error("Error creating user:", {
         message: createError.message,
         status: createError.status,
         name: createError.name
@@ -68,14 +87,12 @@ serve(async (req) => {
     }
 
     if (!newUser?.user) {
-      console.error("No user data returned after creation")
-      throw new Error("Failed to create user - no data returned")
+      throw new Error("User creation failed - no data returned")
     }
 
     console.log("User created successfully:", {
       id: newUser.user.id,
-      email: normalizedEmail,
-      created_at: newUser.user.created_at
+      email: normalizedEmail
     })
 
     return new Response(
@@ -84,34 +101,18 @@ serve(async (req) => {
         email: normalizedEmail
       }),
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       }
     )
 
   } catch (error) {
-    console.error("Detailed error in user creation:", {
-      error,
+    console.error("Error in user creation:", {
+      name: error.name,
       message: error.message,
+      status: error.status,
       stack: error.stack
     })
-    
-    // Если пользователь уже существует, возвращаем специальный статус
-    if (error.message?.includes('User already registered')) {
-      return new Response(
-        JSON.stringify({ 
-          error: "User already exists",
-          details: error.message
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409
-        }
-      )
-    }
     
     return new Response(
       JSON.stringify({ 
@@ -120,7 +121,7 @@ serve(async (req) => {
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: error.status || 500
       }
     )
   }
