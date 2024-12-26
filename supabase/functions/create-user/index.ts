@@ -31,10 +31,9 @@ serve(async (req) => {
 
     const normalizedEmail = email.toLowerCase().trim()
     
-    console.log("Starting user creation process for:", normalizedEmail)
+    console.log("Checking if user exists for email:", normalizedEmail)
 
     // Сначала проверяем существование пользователя
-    console.log("Checking if user exists...")
     const { data: { users }, error: listError } = await supabaseClient.auth.admin
       .listUsers({
         filter: {
@@ -49,7 +48,7 @@ serve(async (req) => {
 
     // Если пользователь существует - возвращаем его данные
     if (users && users.length > 0) {
-      console.log("User already exists:", users[0].id)
+      console.log("Found existing user:", users[0].email)
       return new Response(
         JSON.stringify({ 
           id: users[0].id,
@@ -63,8 +62,9 @@ serve(async (req) => {
       )
     }
 
+    console.log("No existing user found, creating new user...")
+    
     // Если пользователь не существует - создаем нового
-    console.log("User not found, creating new user...")
     const password = Math.random().toString(36).slice(-8)
     
     const { data: newUser, error: createError } = await supabaseClient.auth.admin
@@ -89,10 +89,7 @@ serve(async (req) => {
       throw new Error("User creation failed - no data returned")
     }
 
-    console.log("User created successfully:", {
-      id: newUser.user.id,
-      email: normalizedEmail
-    })
+    console.log("Successfully created new user:", newUser.user.email)
 
     return new Response(
       JSON.stringify({ 
