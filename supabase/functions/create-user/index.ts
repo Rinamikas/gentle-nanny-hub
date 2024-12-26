@@ -38,105 +38,80 @@ serve(async (req) => {
       phone 
     })
 
-    try {
-      // Проверяем существование пользователя
-      const { data: existingUsers } = await supabaseClient.auth.admin.listUsers({
-        filter: {
-          email: normalizedEmail
+    // Генерируем более надежный пароль
+    const password = Math.random().toString(36).slice(-8) + 
+                    Math.random().toString(36).slice(-8) + 
+                    Math.random().toString(36).slice(-8)
+
+    console.log("Attempting to create user with auth.admin.createUser...")
+    
+    const { data: newUser, error: createError } = await supabaseClient.auth.admin
+      .createUser({
+        email: normalizedEmail,
+        password: password,
+        email_confirm: true,
+        user_metadata: { 
+          first_name: firstName, 
+          last_name: lastName,
+          phone,
+          email_verified: true
         }
       })
 
-      if (existingUsers?.users?.length > 0) {
-        return new Response(
-          JSON.stringify({ 
-            error: "User already exists",
-            id: existingUsers.users[0].id
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 409 
-          }
-        )
-      }
-
-      // Генерируем более надежный пароль
-      const password = Math.random().toString(36).slice(-8) + 
-                      Math.random().toString(36).slice(-8) + 
-                      Math.random().toString(36).slice(-8)
-
-      console.log("Attempting to create user with auth.admin.createUser...")
-      
-      const { data: newUser, error: createError } = await supabaseClient.auth.admin
-        .createUser({
-          email: normalizedEmail,
-          password: password,
-          email_confirm: true,
-          user_metadata: { 
-            first_name: firstName, 
-            last_name: lastName,
-            phone,
-            email_verified: true
-          }
-        })
-
-      if (createError) {
-        console.error("Error details from auth.admin.createUser:", {
-          message: createError.message,
-          status: createError.status,
-          name: createError.name
-        })
-        throw createError
-      }
-
-      if (!newUser?.user) {
-        console.error("No user data returned after creation")
-        throw new Error("Failed to create user - no data returned")
-      }
-
-      console.log("User created successfully:", {
-        id: newUser.user.id,
-        email: newUser.user.email,
-        created_at: newUser.user.created_at
-      })
-
-      return new Response(
-        JSON.stringify({ 
-          id: newUser.user.id,
-          email: normalizedEmail
-        }),
-        { 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          },
-          status: 200
-        }
-      )
-    } catch (createError) {
-      console.error("Detailed error in user creation:", {
-        error: createError,
+    if (createError) {
+      console.error("Error details from auth.admin.createUser:", {
         message: createError.message,
-        stack: createError.stack
+        status: createError.status,
+        name: createError.name
       })
-      
-      return new Response(
-        JSON.stringify({ 
-          error: "Failed to create user",
-          details: createError.message
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      )
+      throw createError
     }
 
+    if (!newUser?.user) {
+      console.error("No user data returned after creation")
+      throw new Error("Failed to create user - no data returned")
+    }
+
+    console.log("User created successfully:", {
+      id: newUser.user.id,
+      email: normalizedEmail,
+      created_at: newUser.user.created_at
+    })
+
+    return new Response(
+      JSON.stringify({ 
+        id: newUser.user.id,
+        email: normalizedEmail
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
+        status: 200
+      }
+    )
+
   } catch (error) {
-    console.error("Top level error:", {
+    console.error("Detailed error in user creation:", {
       error,
       message: error.message,
       stack: error.stack
     })
+    
+    // Если пользователь уже существует, возвращаем специальный статус
+    if (error.message?.includes('User already registered')) {
+      return new Response(
+        JSON.stringify({ 
+          error: "User already exists",
+          details: error.message
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409
+        }
+      )
+    }
     
     return new Response(
       JSON.stringify({ 
