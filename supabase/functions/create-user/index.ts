@@ -33,21 +33,25 @@ serve(async (req) => {
     
     console.log("Starting user creation process for:", normalizedEmail)
 
-    // Сначала проверяем существование пользователя
-    const { data: existingUser, error: getUserError } = await supabaseClient.auth.admin
-      .getUserByEmail(normalizedEmail)
+    // Проверяем существование пользователя через listUsers с фильтром
+    const { data: users, error: listError } = await supabaseClient.auth.admin
+      .listUsers({
+        filter: {
+          email: normalizedEmail
+        }
+      })
 
-    if (getUserError && !getUserError.message.includes('User not found')) {
-      console.error("Error checking existing user:", getUserError)
-      throw getUserError
+    if (listError) {
+      console.error("Error checking existing users:", listError)
+      throw listError
     }
 
-    if (existingUser) {
-      console.log("User already exists:", existingUser.id)
+    if (users?.users?.length > 0) {
+      console.log("User already exists:", users.users[0].id)
       return new Response(
         JSON.stringify({ 
           error: "User already exists",
-          id: existingUser.id
+          id: users.users[0].id
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
