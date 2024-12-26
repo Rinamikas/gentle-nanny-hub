@@ -13,7 +13,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
       console.log("Начинаем мутацию няни со значениями:", values);
 
       try {
-        // Создаем пользователя через edge function
+        // 1. Создаем пользователя через edge function
         console.log("Создаем пользователя через edge function...");
         const { data: userData, error: userError } = await supabase.functions.invoke(
           'create-user',
@@ -27,18 +27,23 @@ export const useNannyMutation = (onSuccess: () => void) => {
           }
         );
 
-        if (userError || !userData?.id) {
+        if (userError) {
           console.error("Ошибка создания пользователя:", userError);
-          throw new Error(userError?.message || "Не удалось создать пользователя");
+          throw new Error(userError.message || "Не удалось создать пользователя");
+        }
+
+        if (!userData?.id) {
+          console.error("Нет данных пользователя после создания");
+          throw new Error("Не удалось получить ID пользователя");
         }
 
         console.log("Пользователь успешно создан:", userData);
         
-        // Создаем профиль няни
+        // 2. Создаем профиль няни
         console.log("Создаем профиль няни...");
         const nannyId = await createNannyProfile(values);
         
-        // Создаем документы и тренинги
+        // 3. Создаем документы и тренинги
         if (nannyId) {
           await createNannyDocuments(nannyId, values);
           await createNannyTraining(nannyId, values.training_stage);
