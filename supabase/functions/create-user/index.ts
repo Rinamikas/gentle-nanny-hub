@@ -33,25 +33,23 @@ serve(async (req) => {
     
     console.log("Checking if user exists for email:", normalizedEmail)
 
-    // Сначала проверяем существование пользователя
-    const { data: { users }, error: listError } = await supabaseClient.auth.admin
-      .listUsers({
-        filter: {
-          email: normalizedEmail
-        }
-      })
+    // Получаем список всех пользователей и фильтруем вручную
+    const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers()
 
     if (listError) {
-      console.error("Error checking existing users:", listError)
+      console.error("Error getting users list:", listError)
       throw listError
     }
 
+    // Ищем пользователя с нужным email
+    const existingUser = users.find(user => user.email?.toLowerCase() === normalizedEmail)
+
     // Если пользователь существует - возвращаем его данные
-    if (users && users.length > 0) {
-      console.log("Found existing user:", users[0].email)
+    if (existingUser) {
+      console.log("Found existing user:", existingUser.email)
       return new Response(
         JSON.stringify({ 
-          id: users[0].id,
+          id: existingUser.id,
           email: normalizedEmail,
           exists: true
         }),
