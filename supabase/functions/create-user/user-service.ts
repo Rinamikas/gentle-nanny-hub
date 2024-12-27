@@ -28,7 +28,8 @@ export async function createAuthUser(supabase: SupabaseClient, userData: CreateU
       last_name: userData.lastName,
       phone: userData.phone,
       email_verified: true
-    }
+    },
+    phone: userData.phone
   });
 
   if (createError) {
