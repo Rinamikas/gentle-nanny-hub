@@ -11,7 +11,7 @@ export async function findExistingUser(supabase: SupabaseClient, email: string) 
     throw listError;
   }
   
-  return users.find(user => user.email?.toLowerCase() === email);
+  return users.find(user => user.email?.toLowerCase() === email.toLowerCase());
 }
 
 export async function createAuthUser(supabase: SupabaseClient, userData: CreateUserData) {
@@ -20,7 +20,7 @@ export async function createAuthUser(supabase: SupabaseClient, userData: CreateU
   const password = Math.random().toString(36).slice(-8);
   
   const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-    email: userData.email,
+    email: userData.email.toLowerCase(),
     password,
     email_confirm: true,
     user_metadata: { 

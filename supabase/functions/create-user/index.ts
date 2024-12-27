@@ -33,6 +33,7 @@ serve(async (req) => {
 
     // Валидируем входные данные
     const userData = validateUserData(await req.json());
+    console.log("Validated user data:", userData);
     
     // Проверяем существование пользователя
     const existingUser = await findExistingUser(supabaseClient, userData.email);
@@ -54,19 +55,22 @@ serve(async (req) => {
 
     try {
       // Создаем пользователя в auth.users
+      console.log("Creating new auth user...");
       const newUser = await createAuthUser(supabaseClient, userData);
       
       try {
         // Создаем профиль
+        console.log("Creating user profile...");
         await createUserProfile(supabaseClient, newUser.id, userData);
         
         try {
           // Создаем роль
+          console.log("Creating user role...");
           await createUserRole(supabaseClient, newUser.id);
           
           console.log("Successfully created new user:", {
             id: newUser.id,
-            email: newUser.email
+            email: userData.email
           });
 
           return new Response(
@@ -81,11 +85,13 @@ serve(async (req) => {
             }
           );
         } catch (roleError) {
+          console.error("Role creation error:", roleError);
           // Если не удалось создать роль, удаляем пользователя
           await deleteAuthUser(supabaseClient, newUser.id);
           throw new Error(`Failed to create user role: ${roleError.message}`);
         }
       } catch (profileError) {
+        console.error("Profile creation error:", profileError);
         // Если не удалось создать профиль, удаляем пользователя
         await deleteAuthUser(supabaseClient, newUser.id);
         throw new Error(`Failed to create profile: ${profileError.message}`);
