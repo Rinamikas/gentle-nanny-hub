@@ -72,6 +72,7 @@ serve(async (req) => {
         phone
       })
 
+      // Сначала создаем пользователя в auth.users
       const { data: newUser, error: createError } = await supabaseClient.auth.admin
         .createUser({
           email: normalizedEmail,
@@ -109,6 +110,43 @@ serve(async (req) => {
       if (!newUser?.user) {
         console.error("User creation returned no data")
         throw new Error("User creation failed - no data returned")
+      }
+
+      // Теперь создаем запись в profiles
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .insert({
+          id: newUser.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          main_phone: phone
+        })
+
+      if (profileError) {
+        console.error("Error creating profile:", profileError)
+        
+        // Если не удалось создать профиль, удаляем пользователя
+        const { error: deleteError } = await supabaseClient.auth.admin
+          .deleteUser(newUser.user.id)
+        
+        if (deleteError) {
+          console.error("Failed to cleanup user after profile creation error:", deleteError)
+        }
+
+        throw new Error(`Failed to create profile: ${profileError.message}`)
+      }
+
+      // Создаем роль parent для нового пользователя
+      const { error: roleError } = await supabaseClient
+        .from('user_roles')
+        .insert({
+          user_id: newUser.user.id,
+          role: 'parent'
+        })
+
+      if (roleError) {
+        console.error("Error creating user role:", roleError)
+        throw new Error(`Failed to create user role: ${roleError.message}`)
       }
 
       console.log("Successfully created new user:", {
