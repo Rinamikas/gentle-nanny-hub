@@ -28,6 +28,7 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
       first_name: userData.firstName, 
       last_name: userData.lastName,
       phone: userData.phone,
+      birth_date: userData.birth_date,
       email_verified: true
     }
   });
