@@ -1,5 +1,5 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import { CreateUserData } from './validation';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { CreateUserData } from './validation.ts';
 
 export async function findExistingUser(supabase: SupabaseClient, email: string) {
   console.log("Checking if user exists for email:", email);
