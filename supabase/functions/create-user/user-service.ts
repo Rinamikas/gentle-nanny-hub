@@ -1,7 +1,7 @@
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { CreateUserData } from './validation.ts';
 
-export async function findExistingUser(supabase: SupabaseClient, email: string) {
+export async function findExistingUser(supabase: ReturnType<typeof createClient>, email: string) {
   console.log("Checking if user exists for email:", email);
   
   const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
@@ -14,7 +14,7 @@ export async function findExistingUser(supabase: SupabaseClient, email: string) 
   return users.find(user => user.email?.toLowerCase() === email.toLowerCase());
 }
 
-export async function createAuthUser(supabase: SupabaseClient, userData: CreateUserData) {
+export async function createAuthUser(supabase: ReturnType<typeof createClient>, userData: CreateUserData) {
   console.log("Creating auth user for:", userData.email);
   
   const password = Math.random().toString(36).slice(-8);
@@ -23,13 +23,13 @@ export async function createAuthUser(supabase: SupabaseClient, userData: CreateU
     email: userData.email.toLowerCase(),
     password,
     email_confirm: true,
+    phone: userData.phone,
     user_metadata: { 
       first_name: userData.firstName, 
       last_name: userData.lastName,
       phone: userData.phone,
       email_verified: true
-    },
-    phone: userData.phone
+    }
   });
 
   if (createError) {
@@ -44,7 +44,7 @@ export async function createAuthUser(supabase: SupabaseClient, userData: CreateU
   return newUser.user;
 }
 
-export async function createUserProfile(supabase: SupabaseClient, userId: string, userData: CreateUserData) {
+export async function createUserProfile(supabase: ReturnType<typeof createClient>, userId: string, userData: CreateUserData) {
   console.log("Creating user profile for:", userId);
   
   const { error: profileError } = await supabase
@@ -62,7 +62,7 @@ export async function createUserProfile(supabase: SupabaseClient, userId: string
   }
 }
 
-export async function createUserRole(supabase: SupabaseClient, userId: string) {
+export async function createUserRole(supabase: ReturnType<typeof createClient>, userId: string) {
   console.log("Creating parent role for:", userId);
   
   const { error: roleError } = await supabase
@@ -78,7 +78,7 @@ export async function createUserRole(supabase: SupabaseClient, userId: string) {
   }
 }
 
-export async function deleteAuthUser(supabase: SupabaseClient, userId: string) {
+export async function deleteAuthUser(supabase: ReturnType<typeof createClient>, userId: string) {
   console.log("Deleting auth user:", userId);
   
   const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
