@@ -14,20 +14,37 @@ function isValidE164(phone: string): boolean {
 function isValidAge(birthDate: string | undefined): boolean {
   if (!birthDate) return true; // Если дата не указана, пропускаем проверку
   
-  const birth = new Date(birthDate);
-  const today = new Date();
-  const age = today.getFullYear() - birth.getFullYear();
-  
-  // Проверяем, исполнилось ли уже в этом году
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
+  try {
+    const birth = new Date(birthDate);
+    const today = new Date();
+    
+    // Проверяем валидность даты
+    if (isNaN(birth.getTime())) {
+      console.error("Invalid birth date format:", birthDate);
+      return false;
+    }
+    
+    const age = today.getFullYear() - birth.getFullYear();
+    
+    // Проверяем, исполнилось ли уже в этом году
+    const monthDiff = today.getMonth() - birth.getMonth();
+    const dayDiff = today.getDate() - birth.getDate();
+    
+    // Если день рождения еще не наступил в этом году
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      return age - 1 >= 18;
+    }
+    
+    return age >= 18;
+  } catch (error) {
+    console.error("Error validating age:", error);
+    return false;
   }
-  
-  return age >= 18;
 }
 
 export function validateUserData(data: unknown): CreateUserData {
+  console.log("Validating user data:", data);
+
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid request data');
   }
@@ -56,11 +73,17 @@ export function validateUserData(data: unknown): CreateUserData {
   }
 
   // Проверяем возраст если дата указана
-  if (birth_date && typeof birth_date === 'string') {
+  if (birth_date) {
+    if (typeof birth_date !== 'string') {
+      throw new Error('Birth date must be a string');
+    }
+
     if (!isValidAge(birth_date)) {
       throw new Error('User must be at least 18 years old');
     }
   }
+
+  console.log("Validation passed successfully");
 
   return {
     email: email.toLowerCase().trim(),
