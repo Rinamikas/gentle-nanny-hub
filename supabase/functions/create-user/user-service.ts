@@ -10,8 +10,19 @@ export async function findExistingUser(supabase: ReturnType<typeof createClient>
     console.error("Error getting users list:", listError);
     throw listError;
   }
+
+  // Ищем пользователя с точным совпадением email (case-insensitive)
+  const existingUser = users.find(
+    user => user.email?.toLowerCase() === email.toLowerCase()
+  );
   
-  return users.find(user => user.email?.toLowerCase() === email.toLowerCase());
+  if (existingUser) {
+    console.log("Found existing user with exact email match:", existingUser.email);
+  } else {
+    console.log("No user found with email:", email);
+  }
+  
+  return existingUser;
 }
 
 export async function createAuthUser(supabase: ReturnType<typeof createClient>, userData: CreateUserData) {

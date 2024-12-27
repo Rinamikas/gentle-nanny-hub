@@ -36,22 +36,13 @@ serve(async (req) => {
     console.log("Validated user data:", userData);
     
     // Проверяем существование пользователя
-    const { data: existingUsers, error: listError } = await supabaseClient.auth.admin.listUsers({
-      filter: {
-        email: userData.email.toLowerCase()
-      }
-    });
-
-    if (listError) {
-      console.error("Error checking existing users:", listError);
-      throw new Error(`Failed to check existing users: ${listError.message}`);
-    }
-
-    if (existingUsers.users.length > 0) {
-      console.log("Found existing user:", existingUsers.users[0].email);
+    const existingUser = await findExistingUser(supabaseClient, userData.email);
+    
+    if (existingUser) {
+      console.log("Found existing user:", existingUser.email);
       return new Response(
         JSON.stringify({ 
-          id: existingUsers.users[0].id,
+          id: existingUser.id,
           email: userData.email,
           exists: true
         }),
