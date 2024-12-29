@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { validateUserData } from './validation.ts'
 import { 
-  findExistingUser, 
   createAuthUser,
   createUserProfile,
   createUserRole,
@@ -34,24 +33,6 @@ serve(async (req) => {
     // Валидируем входные данные
     const userData = validateUserData(await req.json());
     console.log("Validated user data:", userData);
-    
-    // Проверяем существование пользователя
-    const existingUser = await findExistingUser(supabaseClient, userData.email);
-    
-    if (existingUser) {
-      console.log("Found existing user:", existingUser.email);
-      return new Response(
-        JSON.stringify({ 
-          id: existingUser.id,
-          email: userData.email,
-          exists: true
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      );
-    }
 
     try {
       // Создаем пользователя в auth.users

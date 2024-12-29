@@ -1,30 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { CreateUserData } from './validation.ts';
 
-export async function findExistingUser(supabase: ReturnType<typeof createClient>, email: string) {
-  console.log("Checking if user exists for email:", email);
-  
-  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-  
-  if (listError) {
-    console.error("Error getting users list:", listError);
-    throw listError;
-  }
-
-  // Ищем пользователя с точным совпадением email (case-insensitive)
-  const existingUser = users.find(
-    user => user.email?.toLowerCase() === email.toLowerCase()
-  );
-  
-  if (existingUser) {
-    console.log("Found existing user with exact email match:", existingUser.email);
-  } else {
-    console.log("No user found with email:", email);
-  }
-  
-  return existingUser;
-}
-
 export async function createAuthUser(supabase: ReturnType<typeof createClient>, userData: CreateUserData) {
   console.log("Creating auth user for:", userData.email);
   
