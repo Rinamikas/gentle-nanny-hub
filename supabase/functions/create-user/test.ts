@@ -47,7 +47,20 @@ serve(async (req) => {
       
       const userId = existingUsers.users[0].id;
       
-      // Сначала удаляем связанные данные
+      // Сначала проверяем и удаляем роли пользователя
+      const { error: deleteRolesError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (deleteRolesError) {
+        console.error('❌ Ошибка удаления ролей:', deleteRolesError);
+        throw deleteRolesError;
+      }
+      
+      console.log('✅ Роли пользователя удалены');
+
+      // Затем удаляем профиль
       const { error: deleteProfileError } = await supabaseAdmin
         .from('profiles')
         .delete()
@@ -57,15 +70,18 @@ serve(async (req) => {
         console.error('❌ Ошибка удаления профиля:', deleteProfileError);
         throw deleteProfileError;
       }
+      
+      console.log('✅ Профиль пользователя удален');
 
-      // Теперь удаляем пользователя
+      // Теперь удаляем пользователя из auth.users
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
       
       if (deleteError) {
         console.error('❌ Ошибка удаления пользователя:', deleteError);
         throw deleteError;
       }
-      console.log('✅ Существующий пользователь удален');
+      
+      console.log('✅ Пользователь успешно удален');
     }
 
     // Создаем нового пользователя
