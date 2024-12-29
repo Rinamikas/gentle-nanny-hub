@@ -4,14 +4,18 @@ import { CreateUserData } from './validation.ts';
 export async function findExistingUser(supabase: ReturnType<typeof createClient>, email: string) {
   console.log("Checking if user exists for email:", email);
   
-  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({
+    filter: {
+      email: email.toLowerCase()
+    }
+  });
   
   if (listError) {
     console.error("Error getting users list:", listError);
     throw listError;
   }
 
-  const existingUser = users.find(
+  const existingUser = users?.find(
     user => user.email?.toLowerCase() === email.toLowerCase()
   );
   
@@ -29,19 +33,19 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
     email: userData.email,
     firstName: userData.firstName,
     lastName: userData.lastName,
-    phone: userData.phone,
-    role: 'nanny'
+    phone: userData.phone
   });
   
   try {
+    // Генерируем случайный пароль
     const password = Math.random().toString(36).slice(-8);
     
-    console.log("Attempting to create user in auth.users...");
+    console.log("Attempting to create user with admin API...");
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: userData.email.toLowerCase(),
       password: password,
       email_confirm: true,
-      raw_user_meta_data: {
+      user_metadata: {
         first_name: userData.firstName,
         last_name: userData.lastName,
         phone: userData.phone,

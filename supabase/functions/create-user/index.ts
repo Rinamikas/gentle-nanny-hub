@@ -1,13 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { validateUserData } from './validation.ts'
-import { 
-  findExistingUser,
-  createAuthUser,
-  createUserProfile,
-  createUserRole,
-  deleteAuthUser
-} from './user-service.ts'
+import { findExistingUser, createAuthUser } from './user-service.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,13 +48,10 @@ serve(async (req) => {
         );
       }
 
-      // Создаем пользователя в auth.users
+      // Создаем пользователя через Admin API
       console.log("Creating new auth user...");
       const newUser = await createAuthUser(supabaseClient, userData);
       
-      // Ждем немного, чтобы триггер успел отработать
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       console.log("Successfully created new user:", {
         id: newUser.id,
         email: userData.email
