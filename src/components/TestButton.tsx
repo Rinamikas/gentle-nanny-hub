@@ -13,21 +13,31 @@ export const TestButton = () => {
         firstName: "Test",
         lastName: "User",
         phone: "+79001234567",
-        birth_date: "1990-01-01" // Добавляем дату рождения
+        birth_date: "1990-01-01"
       };
       
-      console.log("📤 Отправляем тестовые данные:", testData);
+      console.log("📤 Отправляем тестовые данные:", JSON.stringify(testData, null, 2));
       
       const { data, error } = await supabase.functions.invoke('create-user/test', {
-        body: testData
+        body: testData,
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (error) {
-        console.error("❌ Ошибка теста:", error);
+        console.error("❌ Ошибка теста:", {
+          message: error.message,
+          details: error.details,
+          name: error.name,
+          status: error.status,
+          stack: error.stack
+        });
+        
         toast({
           variant: "destructive",
           title: "Ошибка теста",
-          description: error.message || "Неизвестная ошибка"
+          description: `${error.message || "Неизвестная ошибка"} ${error.details ? `(${error.details})` : ''}`
         });
         return;
       }
@@ -39,7 +49,14 @@ export const TestButton = () => {
       });
       
     } catch (error: any) {
-      console.error("❌ Неожиданная ошибка:", error);
+      console.error("❌ Неожиданная ошибка:", {
+        message: error.message,
+        details: error.details,
+        name: error.name,
+        status: error.status,
+        stack: error.stack
+      });
+      
       toast({
         variant: "destructive",
         title: "Ошибка",
