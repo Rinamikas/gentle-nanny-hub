@@ -47,7 +47,62 @@ serve(async (req) => {
       
       const userId = existingUsers.users[0].id;
       
-      // Сначала проверяем и удаляем роли пользователя
+      // 1. Проверяем и удаляем данные из parent_profiles
+      const { error: deleteParentError } = await supabaseAdmin
+        .from('parent_profiles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (deleteParentError) {
+        console.error('❌ Ошибка удаления parent_profiles:', deleteParentError);
+        throw deleteParentError;
+      }
+      console.log('✅ Данные parent_profiles удалены');
+
+      // 2. Проверяем и удаляем данные из nanny_profiles
+      const { data: nannyProfile } = await supabaseAdmin
+        .from('nanny_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (nannyProfile) {
+        // Удаляем связанные с няней данные
+        const tables = [
+          'nanny_training',
+          'nanny_documents',
+          'working_hours',
+          'schedule_events',
+          'nanny_settings'
+        ];
+
+        for (const table of tables) {
+          const { error } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('nanny_id', nannyProfile.id);
+
+          if (error) {
+            console.error(`❌ Ошибка удаления данных из ${table}:`, error);
+            throw error;
+          }
+          console.log(`✅ Данные из ${table} удалены`);
+        }
+
+        // Удаляем профиль няни
+        const { error: deleteNannyError } = await supabaseAdmin
+          .from('nanny_profiles')
+          .delete()
+          .eq('user_id', userId);
+
+        if (deleteNannyError) {
+          console.error('❌ Ошибка удаления nanny_profiles:', deleteNannyError);
+          throw deleteNannyError;
+        }
+        console.log('✅ Данные nanny_profiles удалены');
+      }
+
+      // 3. Удаляем роли пользователя
       const { error: deleteRolesError } = await supabaseAdmin
         .from('user_roles')
         .delete()
@@ -57,10 +112,9 @@ serve(async (req) => {
         console.error('❌ Ошибка удаления ролей:', deleteRolesError);
         throw deleteRolesError;
       }
-      
       console.log('✅ Роли пользователя удалены');
 
-      // Затем удаляем профиль
+      // 4. Удаляем профиль
       const { error: deleteProfileError } = await supabaseAdmin
         .from('profiles')
         .delete()
@@ -70,18 +124,16 @@ serve(async (req) => {
         console.error('❌ Ошибка удаления профиля:', deleteProfileError);
         throw deleteProfileError;
       }
-      
       console.log('✅ Профиль пользователя удален');
 
-      // Теперь удаляем пользователя из auth.users
+      // 5. Удаляем пользователя из auth.users
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
       
       if (deleteError) {
         console.error('❌ Ошибка удаления пользователя:', deleteError);
         throw deleteError;
       }
-      
-      console.log('✅ Пользователь успешно удален');
+      console.log('✅ Пользователь успешно удален из auth.users');
     }
 
     // Создаем нового пользователя
