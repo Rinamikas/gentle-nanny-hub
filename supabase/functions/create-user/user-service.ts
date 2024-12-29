@@ -29,6 +29,7 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
     email: userData.email,
     firstName: userData.firstName,
     lastName: userData.lastName,
+    phone: userData.phone,
     role: 'nanny'
   });
   
@@ -62,72 +63,6 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
     return newUser.user;
   } catch (error) {
     console.error("Failed to create auth user:", error);
-    throw error;
-  }
-}
-
-export async function createUserProfile(supabase: ReturnType<typeof createClient>, userId: string, userData: CreateUserData) {
-  console.log("Creating user profile for:", userId);
-  
-  try {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-        main_phone: userData.phone
-      });
-
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
-      throw profileError;
-    }
-    
-    console.log("User profile created successfully");
-  } catch (error) {
-    console.error("Failed to create user profile:", error);
-    throw error;
-  }
-}
-
-export async function createUserRole(supabase: ReturnType<typeof createClient>, userId: string) {
-  console.log("Creating nanny role for:", userId);
-  
-  try {
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: userId,
-        role: 'nanny'
-      });
-
-    if (roleError) {
-      console.error("Role creation error:", roleError);
-      throw roleError;
-    }
-    
-    console.log("User role created successfully");
-  } catch (error) {
-    console.error("Failed to create user role:", error);
-    throw error;
-  }
-}
-
-export async function deleteAuthUser(supabase: ReturnType<typeof createClient>, userId: string) {
-  console.log("Deleting auth user:", userId);
-  
-  try {
-    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-    
-    if (deleteError) {
-      console.error("Failed to delete user:", deleteError);
-      throw deleteError;
-    }
-    
-    console.log("Auth user deleted successfully");
-  } catch (error) {
-    console.error("Failed to delete auth user:", error);
     throw error;
   }
 }

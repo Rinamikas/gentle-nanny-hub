@@ -34,68 +34,49 @@ serve(async (req) => {
     // Валидируем входные данные
     const userData = validateUserData(await req.json());
     console.log("Validated user data:", userData);
-    
-    // Проверяем существование пользователя
-    const existingUser = await findExistingUser(supabaseClient, userData.email);
-    
-    if (existingUser) {
-      console.log("Found existing user:", existingUser.email);
+
+    try {
+      // Проверяем существование пользователя
+      const existingUser = await findExistingUser(supabaseClient, userData.email);
+      
+      if (existingUser) {
+        console.log("Found existing user:", existingUser.email);
+        return new Response(
+          JSON.stringify({ 
+            id: existingUser.id,
+            email: userData.email,
+            exists: true
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          }
+        );
+      }
+
+      // Создаем пользователя в auth.users
+      console.log("Creating new auth user...");
+      const newUser = await createAuthUser(supabaseClient, userData);
+      
+      // Ждем немного, чтобы триггер успел отработать
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log("Successfully created new user:", {
+        id: newUser.id,
+        email: userData.email
+      });
+
       return new Response(
         JSON.stringify({ 
-          id: existingUser.id,
+          id: newUser.id,
           email: userData.email,
-          exists: true
+          exists: false
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200
         }
       );
-    }
-
-    try {
-      // Создаем пользователя в auth.users
-      console.log("Creating new auth user...");
-      const newUser = await createAuthUser(supabaseClient, userData);
-      
-      try {
-        // Создаем профиль
-        console.log("Creating user profile...");
-        await createUserProfile(supabaseClient, newUser.id, userData);
-        
-        try {
-          // Создаем роль
-          console.log("Creating user role...");
-          await createUserRole(supabaseClient, newUser.id);
-          
-          console.log("Successfully created new user:", {
-            id: newUser.id,
-            email: userData.email
-          });
-
-          return new Response(
-            JSON.stringify({ 
-              id: newUser.id,
-              email: userData.email,
-              exists: false
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 200
-            }
-          );
-        } catch (roleError) {
-          console.error("Role creation error:", roleError);
-          // Если не удалось создать роль, удаляем пользователя
-          await deleteAuthUser(supabaseClient, newUser.id);
-          throw new Error(`Failed to create user role: ${roleError.message}`);
-        }
-      } catch (profileError) {
-        console.error("Profile creation error:", profileError);
-        // Если не удалось создать профиль, удаляем пользователя
-        await deleteAuthUser(supabaseClient, newUser.id);
-        throw new Error(`Failed to create profile: ${profileError.message}`);
-      }
     } catch (error) {
       console.error("User creation error:", {
         name: error.name,
