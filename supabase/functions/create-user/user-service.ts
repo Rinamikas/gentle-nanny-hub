@@ -49,6 +49,10 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
         first_name: userData.firstName,
         last_name: userData.lastName,
         phone: userData.phone
+      },
+      app_metadata: {
+        provider: 'email',
+        providers: ['email']
       }
     });
 
