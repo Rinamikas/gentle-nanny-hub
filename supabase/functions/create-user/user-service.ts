@@ -11,7 +11,6 @@ export async function findExistingUser(supabase: ReturnType<typeof createClient>
     throw listError;
   }
 
-  // Ищем пользователя с точным совпадением email (case-insensitive)
   const existingUser = users.find(
     user => user.email?.toLowerCase() === email.toLowerCase()
   );
@@ -29,10 +28,9 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
   console.log("Creating auth user for:", userData.email);
   
   try {
-    // Генерируем случайный пароль
     const password = Math.random().toString(36).slice(-8);
     
-    // Создаем пользователя с правильной структурой метаданных
+    // Создаем пользователя без триггера
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: userData.email.toLowerCase(),
       password: password,
@@ -40,7 +38,8 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
       raw_user_meta_data: {
         first_name: userData.firstName,
         last_name: userData.lastName,
-        phone: userData.phone
+        phone: userData.phone,
+        role: 'nanny' // Добавляем роль для определения в триггере
       }
     });
 
@@ -87,14 +86,14 @@ export async function createUserProfile(supabase: ReturnType<typeof createClient
 }
 
 export async function createUserRole(supabase: ReturnType<typeof createClient>, userId: string) {
-  console.log("Creating parent role for:", userId);
+  console.log("Creating nanny role for:", userId);
   
   try {
     const { error: roleError } = await supabase
       .from('user_roles')
       .insert({
         user_id: userId,
-        role: 'parent'
+        role: 'nanny'
       });
 
     if (roleError) {
