@@ -8,7 +8,9 @@ export const TestButton = () => {
     try {
       console.log("🚀 Начинаем тестирование...");
       
-      const { data, error } = await supabase.functions.invoke('create-user/test');
+      const { data, error } = await supabase.functions.invoke('create-user/test', {
+        body: {} // Добавляем пустой объект в качестве тела запроса
+      });
       
       if (error) {
         console.error("❌ Ошибка теста:", error);
