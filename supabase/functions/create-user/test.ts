@@ -32,31 +32,36 @@ serve(async (req) => {
 
     // Проверяем обязательные поля
     if (!testData.email || !testData.firstName || !testData.lastName || !testData.phone) {
+      console.error('❌ Не все обязательные поля заполнены');
       throw new Error('Не все обязательные поля заполнены');
     }
 
     // Проверяем существование пользователя
-    const { data: existingUsers, error: checkError } = await supabaseAdmin.auth.admin.listUsers({
+    console.log('🔍 Проверяем существование пользователя...');
+    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
-        email: testData.email
+        email: testData.email.toLowerCase()
       }
     });
 
-    if (checkError) {
-      console.error('❌ Ошибка проверки пользователя:', checkError);
-      throw checkError;
+    if (getUserError) {
+      console.error('❌ Ошибка проверки пользователя:', getUserError);
+      throw getUserError;
     }
 
     // Если пользователь существует - удаляем его
-    if (existingUsers?.users?.length > 0) {
+    if (users?.length > 0) {
       console.log('🗑️ Удаляем существующего пользователя...');
-      const userId = existingUsers.users[0].id;
+      const userId = users[0].id;
 
       try {
         // Удаляем все связанные данные
+        console.log('🧹 Начинаем удаление связанных данных...');
         await deleteUserData(supabaseAdmin, userId);
+        console.log('✅ Связанные данные удалены');
 
         // Удаляем пользователя из auth.users
+        console.log('🗑️ Удаляем пользователя из auth.users...');
         const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
         if (deleteError) {
@@ -72,7 +77,9 @@ serve(async (req) => {
     }
 
     // Создаем нового пользователя
+    console.log('👤 Создаем нового пользователя...');
     const newUser = await createTestUser(supabaseAdmin, testData);
+    console.log('✅ Новый пользователь создан:', newUser);
 
     return new Response(
       JSON.stringify({ 

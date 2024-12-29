@@ -5,6 +5,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
   
   try {
     // 1. Удаляем данные из children
+    console.log('1️⃣ Удаляем данные children...');
     const { error: deleteChildrenError } = await supabase
       .from('children')
       .delete()
@@ -17,6 +18,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
     console.log('✅ Данные children удалены');
 
     // 2. Удаляем данные из parent_profiles
+    console.log('2️⃣ Удаляем данные parent_profiles...');
     const { error: deleteParentError } = await supabase
       .from('parent_profiles')
       .delete()
@@ -29,6 +31,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
     console.log('✅ Данные parent_profiles удалены');
 
     // 3. Проверяем и удаляем данные из nanny_profiles
+    console.log('3️⃣ Проверяем данные nanny_profiles...');
     const { data: nannyProfile } = await supabase
       .from('nanny_profiles')
       .select('id')
@@ -36,6 +39,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
       .single();
 
     if (nannyProfile) {
+      console.log('🧹 Найден профиль няни, удаляем связанные данные...');
       // Удаляем связанные с няней данные
       const tables = [
         'appointments',
@@ -47,6 +51,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
       ];
 
       for (const table of tables) {
+        console.log(`🗑️ Удаляем данные из ${table}...`);
         const { error } = await supabase
           .from(table)
           .delete()
@@ -60,6 +65,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
       }
 
       // Удаляем профиль няни
+      console.log('🗑️ Удаляем профиль няни...');
       const { error: deleteNannyError } = await supabase
         .from('nanny_profiles')
         .delete()
@@ -73,6 +79,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
     }
 
     // 4. Удаляем роли пользователя
+    console.log('4️⃣ Удаляем роли пользователя...');
     const { error: deleteRolesError } = await supabase
       .from('user_roles')
       .delete()
@@ -85,6 +92,7 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
     console.log('✅ Роли пользователя удалены');
 
     // 5. Удаляем профиль
+    console.log('5️⃣ Удаляем профиль...');
     const { error: deleteProfileError } = await supabase
       .from('profiles')
       .delete()
@@ -112,10 +120,12 @@ export async function createTestUser(supabase: ReturnType<typeof createClient>, 
   console.log('👤 Создаем тестового пользователя:', testData);
   
   try {
+    // Генерируем случайный пароль
     const password = Math.random().toString(36).slice(-8);
     
+    console.log('🔑 Создаем пользователя через Admin API...');
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-      email: testData.email,
+      email: testData.email.toLowerCase(),
       password: password,
       email_confirm: true,
       user_metadata: {
