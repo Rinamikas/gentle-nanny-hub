@@ -4,6 +4,19 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
   console.log('🗑️ Начинаем удаление данных пользователя:', userId);
   
   try {
+    // Проверяем существование в profiles
+    console.log('🔍 Проверяем существование в profiles...');
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!profile) {
+      console.log('ℹ️ Профиль не найден, пропускаем удаление данных');
+      return true;
+    }
+
     // 1. Удаляем данные из children
     console.log('1️⃣ Удаляем данные children...');
     const { error: deleteChildrenError } = await supabase
@@ -36,18 +49,19 @@ export async function deleteUserData(supabase: ReturnType<typeof createClient>, 
       .from('nanny_profiles')
       .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (nannyProfile) {
       console.log('🧹 Найден профиль няни, удаляем связанные данные...');
+      
       // Удаляем связанные с няней данные
       const tables = [
-        'appointments',
         'nanny_training',
         'nanny_documents',
         'working_hours',
         'schedule_events',
-        'nanny_settings'
+        'nanny_settings',
+        'appointments'
       ];
 
       for (const table of tables) {
@@ -120,6 +134,29 @@ export async function createTestUser(supabase: ReturnType<typeof createClient>, 
   console.log('👤 Создаем тестового пользователя:', testData);
   
   try {
+    // Проверяем существование в auth.users
+    console.log('🔍 Проверяем существование в auth.users...');
+    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: testData.email.toLowerCase()
+      }
+    });
+
+    if (getUserError) {
+      console.error('❌ Ошибка проверки в auth.users:', getUserError);
+      throw getUserError;
+    }
+
+    if (users?.length > 0) {
+      console.log('⚠️ Пользователь уже существует в auth.users, удаляем...');
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(users[0].id);
+      if (deleteError) {
+        console.error('❌ Ошибка удаления из auth.users:', deleteError);
+        throw deleteError;
+      }
+      console.log('✅ Пользователь удален из auth.users');
+    }
+
     // Генерируем случайный пароль
     const password = Math.random().toString(36).slice(-8);
     
@@ -147,6 +184,24 @@ export async function createTestUser(supabase: ReturnType<typeof createClient>, 
     if (!newUser?.user) {
       console.error('❌ Пользователь не создан - нет данных');
       throw new Error('User creation failed - no data returned');
+    }
+
+    // Создаем запись в profiles
+    console.log('📝 Создаем запись в profiles...');
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: newUser.user.id,
+        first_name: testData.firstName,
+        last_name: testData.lastName,
+        main_phone: testData.phone
+      });
+
+    if (profileError) {
+      console.error('❌ Ошибка создания профиля:', profileError);
+      // Удаляем пользователя из auth.users если не удалось создать профиль
+      await supabase.auth.admin.deleteUser(newUser.user.id);
+      throw profileError;
     }
 
     console.log('✅ Пользователь успешно создан:', {
