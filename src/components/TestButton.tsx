@@ -8,8 +8,15 @@ export const TestButton = () => {
     try {
       console.log("🚀 Начинаем тестирование...");
       
+      const testData = {
+        email: "test@example.com",
+        firstName: "Test",
+        lastName: "User",
+        phone: "+79001234567"
+      };
+      
       const { data, error } = await supabase.functions.invoke('create-user/test', {
-        body: {} // Добавляем пустой объект в качестве тела запроса
+        body: testData
       });
       
       if (error) {
