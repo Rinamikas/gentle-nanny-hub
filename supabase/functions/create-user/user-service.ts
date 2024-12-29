@@ -25,12 +25,17 @@ export async function findExistingUser(supabase: ReturnType<typeof createClient>
 }
 
 export async function createAuthUser(supabase: ReturnType<typeof createClient>, userData: CreateUserData) {
-  console.log("Creating auth user for:", userData.email);
+  console.log("Creating auth user with data:", {
+    email: userData.email,
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    role: 'nanny'
+  });
   
   try {
     const password = Math.random().toString(36).slice(-8);
     
-    // Создаем пользователя без триггера
+    console.log("Attempting to create user in auth.users...");
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: userData.email.toLowerCase(),
       password: password,
@@ -39,7 +44,7 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
         first_name: userData.firstName,
         last_name: userData.lastName,
         phone: userData.phone,
-        role: 'nanny' // Добавляем роль для определения в триггере
+        role: 'nanny'
       }
     });
 
@@ -49,6 +54,7 @@ export async function createAuthUser(supabase: ReturnType<typeof createClient>, 
     }
 
     if (!newUser?.user) {
+      console.error("User creation failed - no data returned");
       throw new Error("User creation failed - no data returned");
     }
 
