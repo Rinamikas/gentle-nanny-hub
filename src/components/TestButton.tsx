@@ -12,8 +12,11 @@ export const TestButton = () => {
         email: "test@example.com",
         firstName: "Test",
         lastName: "User",
-        phone: "+79001234567"
+        phone: "+79001234567",
+        birth_date: "1990-01-01" // Добавляем дату рождения
       };
+      
+      console.log("📤 Отправляем тестовые данные:", testData);
       
       const { data, error } = await supabase.functions.invoke('create-user/test', {
         body: testData
@@ -24,7 +27,7 @@ export const TestButton = () => {
         toast({
           variant: "destructive",
           title: "Ошибка теста",
-          description: error.message
+          description: error.message || "Неизвестная ошибка"
         });
         return;
       }
@@ -35,12 +38,12 @@ export const TestButton = () => {
         description: "Проверьте консоль и логи Edge Function"
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Неожиданная ошибка:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Произошла неожиданная ошибка"
+        description: error.message || "Произошла неожиданная ошибка"
       });
     }
   };

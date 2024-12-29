@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase_supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,9 +44,22 @@ serve(async (req) => {
     // Если пользователь существует - удаляем его
     if (existingUsers?.users?.length > 0) {
       console.log('🗑️ Удаляем существующего пользователя...');
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
-        existingUsers.users[0].id
-      );
+      
+      const userId = existingUsers.users[0].id;
+      
+      // Сначала удаляем связанные данные
+      const { error: deleteProfileError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+        
+      if (deleteProfileError) {
+        console.error('❌ Ошибка удаления профиля:', deleteProfileError);
+        throw deleteProfileError;
+      }
+
+      // Теперь удаляем пользователя
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
       
       if (deleteError) {
         console.error('❌ Ошибка удаления пользователя:', deleteError);
@@ -57,8 +70,11 @@ serve(async (req) => {
 
     // Создаем нового пользователя
     console.log('👤 Создаем нового пользователя...');
+    const password = Math.random().toString(36).slice(-8);
+    
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: testData.email,
+      password: password,
       email_confirm: true,
       user_metadata: {
         first_name: testData.firstName,
