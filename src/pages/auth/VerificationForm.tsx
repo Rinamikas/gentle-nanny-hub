@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useNavigate } from "react-router-dom";
+import { OTPInput } from "@/components/ui/input-otp";
 
 interface VerificationFormProps {
   email: string;
@@ -11,93 +14,71 @@ interface VerificationFormProps {
 
 const VerificationForm = ({ email, onVerificationSuccess, onBack }: VerificationFormProps) => {
   const [otp, setOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const firstInput = document.querySelector('input[id^="otp-"]') as HTMLInputElement;
-    if (firstInput) {
-      firstInput.focus();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (otp.length === 6) {
-      handleVerification();
-    }
+    console.log("OTP value changed:", otp);
   }, [otp]);
 
   const handleVerification = async () => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
-    console.log("=== Starting verification process ===");
-    console.log("Email:", email);
-    console.log("OTP:", otp);
-
     try {
-      // 1. Проверяем код в базе данных через RPC
+      console.log("=== Starting verification process ===");
+      console.log("Email:", email);
+      console.log("OTP:", otp);
+
+      // 1. Проверяем код через RPC
       console.log("1. Checking verification code through RPC");
-      const { data: hasValidCode, error: rpcError } = await supabase
+      const { data: isValid, error: verificationError } = await supabase
         .rpc('check_verification_code', {
           p_email: email,
           p_code: otp
         });
-      
-      console.log("Verification code check result:", hasValidCode);
-      if (rpcError) throw rpcError;
-      
-      if (!hasValidCode) {
-        throw new Error("Неверный код или срок его действия истек");
+
+      if (verificationError) {
+        throw verificationError;
       }
 
-      // 2. Проверяем существование пользователя
+      console.log("Verification code check result:", isValid);
+
+      if (!isValid) {
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Неверный код подтверждения",
+        });
+        return;
+      }
+
+      // 2. Проверяем существование пользователя через Edge Function
       console.log("2. Checking if user exists");
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .eq('email', email.toLowerCase())
-        .maybeSingle();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error("Error checking profile:", profileError);
-        throw profileError;
-      }
-
-      // 3. Создаем или получаем пользователя через Edge Function
-      console.log("3. Creating or getting user through Edge Function");
-      const { data: userData, error: functionError } = await supabase.functions.invoke(
-        'create-auth-user',
+      const { data: userExists, error: userCheckError } = await supabase.functions.invoke(
+        'check-user-exists',
         {
-          body: JSON.stringify({ 
-            email,
-            code: otp,
-            shouldSignIn: true // Важно! Нам нужен пароль для входа
-          })
+          body: { email }
         }
       );
 
-      if (functionError) {
-        console.error("Error creating/getting user:", functionError);
-        throw functionError;
+      if (userCheckError) {
+        console.error("Error checking user:", userCheckError);
+        throw userCheckError;
       }
 
-      if (!userData.password) {
-        throw new Error("Не получен пароль для входа");
-      }
-
-      // 4. Входим с учетными данными
-      console.log("4. Attempting to sign in");
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // 3. Создаем или получаем сессию
+      const { data: authData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password: userData.password
+        token: otp,
+        options: {
+          shouldCreateUser: !userExists
+        }
       });
 
       if (signInError) {
-        console.error("5. Sign in error:", signInError);
+        console.error("Error signing in:", signInError);
         throw signInError;
       }
 
-      // 5. Обновляем статус кода верификации
+      // 4. Обновляем статус кода верификации
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
@@ -105,11 +86,12 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         .eq('code', otp);
 
       if (updateError) {
-        console.error("Error updating verification code status:", updateError);
+        console.error("Error updating verification status:", updateError);
+        // Не выбрасываем ошибку, так как авторизация уже прошла успешно
       }
 
       toast({
-        title: "Успешно!",
+        title: "Успешно",
         description: "Вы успешно авторизовались",
       });
 
@@ -122,34 +104,43 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: error.message || "Не удалось проверить код",
+        description: error.message || "Не удалось выполнить проверку",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-center space-y-4">
-        <InputOTP
-          maxLength={6}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold">Подтверждение</h2>
+        <p className="text-gray-500">
+          Введите код, отправленный на {email}
+        </p>
+      </div>
+
+      <div className="flex justify-center">
+        <OTPInput
           value={otp}
-          onChange={(value) => {
-            console.log("OTP value changed:", value);
-            setOtp(value);
-          }}
-          className="gap-2 justify-center"
+          onChange={setOtp}
+          maxLength={6}
+          containerClassName="group flex items-center has-[:disabled]:opacity-50"
+          className="[&_input]:mx-1 [&_input]:h-10 [&_input]:w-10 [&_input]:rounded-md [&_input]:border [&_input]:bg-transparent [&_input]:text-center [&_input]:text-lg [&_input]:font-semibold [&_input]:transition-all [&_input]:focus:border-primary [&_input]:focus:outline-none"
+        />
+      </div>
+
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={onBack}
         >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
+          Назад
+        </Button>
+        <Button 
+          onClick={handleVerification}
+          disabled={otp.length !== 6}
+        >
+          Подтвердить
+        </Button>
       </div>
     </div>
   );
