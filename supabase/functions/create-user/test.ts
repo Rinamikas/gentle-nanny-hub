@@ -29,6 +29,11 @@ serve(async (req) => {
     const testData = await req.json();
     console.log('📝 Тестовые данные:', testData);
 
+    // Проверяем обязательные поля
+    if (!testData.email || !testData.firstName || !testData.lastName || !testData.phone) {
+      throw new Error('Не все обязательные поля заполнены');
+    }
+
     // Проверяем существование пользователя
     const { data: existingUsers, error: checkError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
@@ -46,94 +51,113 @@ serve(async (req) => {
       console.log('🗑️ Удаляем существующего пользователя...');
       
       const userId = existingUsers.users[0].id;
-      
-      // 1. Проверяем и удаляем данные из parent_profiles
-      const { error: deleteParentError } = await supabaseAdmin
-        .from('parent_profiles')
-        .delete()
-        .eq('user_id', userId);
-      
-      if (deleteParentError) {
-        console.error('❌ Ошибка удаления parent_profiles:', deleteParentError);
-        throw deleteParentError;
-      }
-      console.log('✅ Данные parent_profiles удалены');
 
-      // 2. Проверяем и удаляем данные из nanny_profiles
-      const { data: nannyProfile } = await supabaseAdmin
-        .from('nanny_profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
+      try {
+        // 1. Удаляем данные из children
+        const { error: deleteChildrenError } = await supabaseAdmin
+          .from('children')
+          .delete()
+          .eq('parent_profile_id', userId);
 
-      if (nannyProfile) {
-        // Удаляем связанные с няней данные
-        const tables = [
-          'nanny_training',
-          'nanny_documents',
-          'working_hours',
-          'schedule_events',
-          'nanny_settings'
-        ];
-
-        for (const table of tables) {
-          const { error } = await supabaseAdmin
-            .from(table)
-            .delete()
-            .eq('nanny_id', nannyProfile.id);
-
-          if (error) {
-            console.error(`❌ Ошибка удаления данных из ${table}:`, error);
-            throw error;
-          }
-          console.log(`✅ Данные из ${table} удалены`);
+        if (deleteChildrenError) {
+          console.error('❌ Ошибка удаления children:', deleteChildrenError);
+          throw deleteChildrenError;
         }
+        console.log('✅ Данные children удалены');
 
-        // Удаляем профиль няни
-        const { error: deleteNannyError } = await supabaseAdmin
-          .from('nanny_profiles')
+        // 2. Удаляем данные из parent_profiles
+        const { error: deleteParentError } = await supabaseAdmin
+          .from('parent_profiles')
           .delete()
           .eq('user_id', userId);
 
-        if (deleteNannyError) {
-          console.error('❌ Ошибка удаления nanny_profiles:', deleteNannyError);
-          throw deleteNannyError;
+        if (deleteParentError) {
+          console.error('❌ Ошибка удаления parent_profiles:', deleteParentError);
+          throw deleteParentError;
         }
-        console.log('✅ Данные nanny_profiles удалены');
-      }
+        console.log('✅ Данные parent_profiles удалены');
 
-      // 3. Удаляем роли пользователя
-      const { error: deleteRolesError } = await supabaseAdmin
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-      
-      if (deleteRolesError) {
-        console.error('❌ Ошибка удаления ролей:', deleteRolesError);
-        throw deleteRolesError;
-      }
-      console.log('✅ Роли пользователя удалены');
+        // 3. Проверяем и удаляем данные из nanny_profiles
+        const { data: nannyProfile } = await supabaseAdmin
+          .from('nanny_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
 
-      // 4. Удаляем профиль
-      const { error: deleteProfileError } = await supabaseAdmin
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-        
-      if (deleteProfileError) {
-        console.error('❌ Ошибка удаления профиля:', deleteProfileError);
-        throw deleteProfileError;
-      }
-      console.log('✅ Профиль пользователя удален');
+        if (nannyProfile) {
+          // Удаляем связанные с няней данные
+          const tables = [
+            'appointments',
+            'nanny_training',
+            'nanny_documents',
+            'working_hours',
+            'schedule_events',
+            'nanny_settings'
+          ];
 
-      // 5. Удаляем пользователя из auth.users
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      if (deleteError) {
-        console.error('❌ Ошибка удаления пользователя:', deleteError);
-        throw deleteError;
+          for (const table of tables) {
+            const { error } = await supabaseAdmin
+              .from(table)
+              .delete()
+              .eq('nanny_id', nannyProfile.id);
+
+            if (error) {
+              console.error(`❌ Ошибка удаления данных из ${table}:`, error);
+              throw error;
+            }
+            console.log(`✅ Данные из ${table} удалены`);
+          }
+
+          // Удаляем профиль няни
+          const { error: deleteNannyError } = await supabaseAdmin
+            .from('nanny_profiles')
+            .delete()
+            .eq('user_id', userId);
+
+          if (deleteNannyError) {
+            console.error('❌ Ошибка удаления nanny_profiles:', deleteNannyError);
+            throw deleteNannyError;
+          }
+          console.log('✅ Данные nanny_profiles удалены');
+        }
+
+        // 4. Удаляем роли пользователя
+        const { error: deleteRolesError } = await supabaseAdmin
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId);
+
+        if (deleteRolesError) {
+          console.error('❌ Ошибка удаления ролей:', deleteRolesError);
+          throw deleteRolesError;
+        }
+        console.log('✅ Роли пользователя удалены');
+
+        // 5. Удаляем профиль
+        const { error: deleteProfileError } = await supabaseAdmin
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
+
+        if (deleteProfileError) {
+          console.error('❌ Ошибка удаления профиля:', deleteProfileError);
+          throw deleteProfileError;
+        }
+        console.log('✅ Профиль пользователя удален');
+
+        // 6. Удаляем пользователя из auth.users
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+        if (deleteError) {
+          console.error('❌ Ошибка удаления пользователя:', deleteError);
+          throw deleteError;
+        }
+        console.log('✅ Пользователь успешно удален из auth.users');
+
+      } catch (error) {
+        console.error('❌ Ошибка при удалении данных:', error);
+        throw new Error(`Ошибка при удалении данных: ${error.message}`);
       }
-      console.log('✅ Пользователь успешно удален из auth.users');
     }
 
     // Создаем нового пользователя
