@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { OTPInput } from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface VerificationFormProps {
   email: string;
@@ -14,7 +13,6 @@ interface VerificationFormProps {
 
 const VerificationForm = ({ email, onVerificationSuccess, onBack }: VerificationFormProps) => {
   const [otp, setOtp] = useState("");
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -67,7 +65,6 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       // 3. Создаем или получаем сессию
       const { data: authData, error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        token: otp,
         options: {
           shouldCreateUser: !userExists
         }
@@ -119,12 +116,17 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       </div>
 
       <div className="flex justify-center">
-        <OTPInput
+        <InputOTP
           value={otp}
           onChange={setOtp}
           maxLength={6}
-          containerClassName="group flex items-center has-[:disabled]:opacity-50"
-          className="[&_input]:mx-1 [&_input]:h-10 [&_input]:w-10 [&_input]:rounded-md [&_input]:border [&_input]:bg-transparent [&_input]:text-center [&_input]:text-lg [&_input]:font-semibold [&_input]:transition-all [&_input]:focus:border-primary [&_input]:focus:outline-none"
+          render={({ slots }) => (
+            <InputOTPGroup className="gap-2">
+              {slots.map((slot, index) => (
+                <InputOTPSlot key={index} {...slot} />
+              ))}
+            </InputOTPGroup>
+          )}
         />
       </div>
 
