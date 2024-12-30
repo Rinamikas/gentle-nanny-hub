@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface VerificationFormProps {
   email: string;
@@ -116,18 +115,56 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       </div>
 
       <div className="flex justify-center">
-        <InputOTP
-          value={otp}
-          onChange={setOtp}
-          maxLength={6}
-          render={({ slots }) => (
-            <InputOTPGroup className="gap-2">
-              {slots.map((slot, idx) => (
-                <InputOTPSlot key={idx} {...slot} index={idx} />
-              ))}
-            </InputOTPGroup>
-          )}
-        />
+        <div className="flex gap-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <input
+              key={index}
+              type="text"
+              maxLength={1}
+              className="w-10 h-10 text-center border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+              value={otp[index] || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.match(/^[0-9]$/)) {
+                  const newOtp = otp.split('');
+                  newOtp[index] = value;
+                  setOtp(newOtp.join(''));
+                  
+                  // Автоматически переходим к следующему полю
+                  if (index < 5 && value) {
+                    const nextInput = e.target.parentElement?.querySelector(
+                      `input[type="text"]:nth-child(${index + 2})`
+                    ) as HTMLInputElement;
+                    if (nextInput) {
+                      nextInput.focus();
+                    }
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                // При нажатии Backspace переходим к предыдущему полю
+                if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                  const newOtp = otp.split('');
+                  newOtp[index - 1] = '';
+                  setOtp(newOtp.join(''));
+                  
+                  const prevInput = e.currentTarget.parentElement?.querySelector(
+                    `input[type="text"]:nth-child(${index})`
+                  ) as HTMLInputElement;
+                  if (prevInput) {
+                    prevInput.focus();
+                  }
+                }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                const numbers = pastedData.replace(/[^0-9]/g, '').slice(0, 6);
+                setOtp(numbers);
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="flex justify-between">
