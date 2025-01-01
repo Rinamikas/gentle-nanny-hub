@@ -47,25 +47,11 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         return;
       }
 
-      // 2. Проверяем существование пользователя через Edge Function
-      console.log("2. Checking if user exists");
-      const { data: userExists, error: userCheckError } = await supabase.functions.invoke(
-        'check-user-exists',
-        {
-          body: { email }
-        }
-      );
-
-      if (userCheckError) {
-        console.error("Error checking user:", userCheckError);
-        throw userCheckError;
-      }
-
-      // 3. Создаем или получаем сессию
-      const { data: authData, error: signInError } = await supabase.auth.signInWithOtp({
+      // 2. Создаем сессию через OTP
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: !userExists
+          shouldCreateUser: true
         }
       });
 
@@ -74,7 +60,7 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         throw signInError;
       }
 
-      // 4. Обновляем статус кода верификации
+      // 3. Обновляем статус кода верификации
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
