@@ -13,17 +13,19 @@ export interface NannyTables {
       updated_at: string;
       user_id: string | null;
       birth_date: string | null;
-      phone: string | null;
-      email: string | null;
       photo_url: string | null;
       position: string | null;
       age_group: string | null;
       camera_phone: string | null;
       camera_number: string | null;
       address: string | null;
-      relative_phone: string | null;
-      is_deleted: boolean | null;
+      emergency_phone: string | null;
       deleted_at: string | null;
+      profiles: {
+        first_name: string | null;
+        last_name: string | null;
+        main_phone: string | null;
+      } | null;
     };
     Insert: {
       certifications?: string[] | null;
@@ -36,16 +38,13 @@ export interface NannyTables {
       updated_at?: string;
       user_id?: string | null;
       birth_date?: string | null;
-      phone?: string | null;
-      email?: string | null;
       photo_url?: string | null;
       position?: string | null;
       age_group?: string | null;
       camera_phone?: string | null;
       camera_number?: string | null;
       address?: string | null;
-      relative_phone?: string | null;
-      is_deleted?: boolean | null;
+      emergency_phone?: string | null;
       deleted_at?: string | null;
     };
     Update: {
@@ -59,16 +58,13 @@ export interface NannyTables {
       updated_at?: string;
       user_id?: string | null;
       birth_date?: string | null;
-      phone?: string | null;
-      email?: string | null;
       photo_url?: string | null;
       position?: string | null;
       age_group?: string | null;
       camera_phone?: string | null;
       camera_number?: string | null;
       address?: string | null;
-      relative_phone?: string | null;
-      is_deleted?: boolean | null;
+      emergency_phone?: string | null;
       deleted_at?: string | null;
     };
   };

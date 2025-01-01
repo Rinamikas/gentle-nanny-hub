@@ -25,18 +25,16 @@ const NanniesPage = () => {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data: nanniesData, error } = await supabase
         .from("nanny_profiles")
         .select(`
           *,
-          profiles(
+          profiles (
             first_name,
             last_name,
-            email,
-            phone
+            main_phone
           )
-        `)
-        .eq("is_deleted", showDeleted);
+        `);
 
       if (error) {
         console.error("Error fetching nannies:", error);
@@ -52,8 +50,8 @@ const NanniesPage = () => {
         throw error;
       }
 
-      console.log("Загруженные няни:", data);
-      return data;
+      console.log("Загруженные няни:", nanniesData);
+      return nanniesData;
     },
   });
 
@@ -63,10 +61,7 @@ const NanniesPage = () => {
       
       const { error } = await supabase
         .from("nanny_profiles")
-        .update({ 
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        })
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", nannyId);
 
       if (error) {
@@ -99,10 +94,7 @@ const NanniesPage = () => {
       
       const { error } = await supabase
         .from("nanny_profiles")
-        .update({ 
-          is_deleted: false,
-          deleted_at: null
-        })
+        .update({ deleted_at: null })
         .eq("id", nannyId);
 
       if (error) {
