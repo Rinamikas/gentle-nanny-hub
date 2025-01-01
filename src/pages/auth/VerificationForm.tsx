@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface VerificationFormProps {
   email: string;
@@ -12,13 +11,14 @@ interface VerificationFormProps {
 
 const VerificationForm = ({ email, onVerificationSuccess, onBack }: VerificationFormProps) => {
   const [otp, setOtp] = useState("");
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     console.log("OTP value changed:", otp);
   }, [otp]);
 
   const handleVerification = async () => {
+    setIsLoading(true);
     try {
       console.log("=== Starting verification process ===");
       console.log("Email:", email);
@@ -47,12 +47,11 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         return;
       }
 
-      // 2. Создаем сессию через OTP
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      // 2. Создаем сессию используя код как пароль
+      console.log("2. Creating session using verification code as password");
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          shouldCreateUser: true
-        }
+        password: otp,
       });
 
       if (signInError) {
@@ -61,6 +60,7 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       }
 
       // 3. Обновляем статус кода верификации
+      console.log("3. Updating verification code status");
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
@@ -88,6 +88,8 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         title: "Ошибка",
         description: error.message || "Не удалось выполнить проверку",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -148,6 +150,7 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
                 const numbers = pastedData.replace(/[^0-9]/g, '').slice(0, 6);
                 setOtp(numbers);
               }}
+              disabled={isLoading}
             />
           ))}
         </div>
@@ -157,14 +160,15 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         <Button
           variant="outline"
           onClick={onBack}
+          disabled={isLoading}
         >
           Назад
         </Button>
         <Button 
           onClick={handleVerification}
-          disabled={otp.length !== 6}
+          disabled={otp.length !== 6 || isLoading}
         >
-          Подтвердить
+          {isLoading ? "Проверка..." : "Подтвердить"}
         </Button>
       </div>
     </div>
