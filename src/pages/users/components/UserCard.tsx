@@ -1,21 +1,20 @@
+import { User } from "@/integrations/supabase/types/user-types";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User } from "../types";
 import { UserRole } from "@/integrations/supabase/types/enums";
-import { Dispatch, SetStateAction } from "react";
 
-export interface UserCardProps {
+interface UserCardProps {
   user: User;
-  onRoleChange: (userId: string, newRole: UserRole['role']) => Promise<void>;
+  onRoleChange: (userId: string, newRole: UserRole) => Promise<void>;
   isSelected: boolean;
-  onSelect: Dispatch<SetStateAction<string[]>>;
+  onSelect: (userId: string) => void;
 }
 
 export function UserCard({ user, onRoleChange, isSelected, onSelect }: UserCardProps) {
-  const handleRoleChange = async (newRole: string) => {
-    await onRoleChange(user.id, newRole as UserRole['role']);
+  const handleRoleChange = async (newRole: UserRole) => {
+    await onRoleChange(user.id, newRole);
   };
 
   return (
@@ -23,37 +22,50 @@ export function UserCard({ user, onRoleChange, isSelected, onSelect }: UserCardP
       <div className="flex items-start gap-4">
         <Checkbox
           checked={isSelected}
-          onCheckedChange={(checked) => {
-            onSelect((prev) => {
-              if (checked) {
-                return [...prev, user.id];
-              }
-              return prev.filter((id) => id !== user.id);
-            });
-          }}
+          onCheckedChange={() => onSelect(user.id)}
+          aria-label="Select user"
         />
         <div className="flex-1">
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium">
+              <h3 className="text-lg font-semibold">
                 {user.first_name} {user.last_name}
               </h3>
               <p className="text-sm text-gray-500">{user.main_phone}</p>
             </div>
-            <Select
-              value={user.user_roles[0]?.role}
-              onValueChange={handleRoleChange}
+            <div className="flex gap-2">
+              {user.user_roles.map((userRole, index) => (
+                <Badge key={index} variant="secondary">
+                  {userRole}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRoleChange('parent')}
+              disabled={user.user_roles.includes('parent')}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Выберите роль" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="parent">Родитель</SelectItem>
-                <SelectItem value="nanny">Няня</SelectItem>
-                <SelectItem value="admin">Администратор</SelectItem>
-                <SelectItem value="owner">Владелец</SelectItem>
-              </SelectContent>
-            </Select>
+              Родитель
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRoleChange('nanny')}
+              disabled={user.user_roles.includes('nanny')}
+            >
+              Няня
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRoleChange('admin')}
+              disabled={user.user_roles.includes('admin')}
+            >
+              Админ
+            </Button>
           </div>
         </div>
       </div>

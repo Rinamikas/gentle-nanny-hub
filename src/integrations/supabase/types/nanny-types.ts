@@ -1,76 +1,17 @@
-import { Json } from "./json";
+import { Database } from './database';
+import { ProfileRow } from './profile-types';
+
+export interface NannyProfile extends Database['public']['Tables']['nanny_profiles']['Row'] {
+  profiles?: ProfileRow;
+  deleted_at?: string | null;
+  is_deleted?: boolean | null;
+  relative_phone?: string | null;
+}
 
 export interface NannyTables {
   nanny_profiles: {
-    Row: {
-      certifications: string[] | null;
-      created_at: string;
-      education: string | null;
-      experience_years: number | null;
-      hourly_rate: number | null;
-      id: string;
-      specializations: string[] | null;
-      updated_at: string;
-      user_id: string | null;
-      birth_date: string | null;
-      photo_url: string | null;
-      position: string | null;
-      age_group: string | null;
-      camera_phone: string | null;
-      camera_number: string | null;
-      address: string | null;
-      emergency_phone: string | null;
-      deleted_at: string | null;
-      relative_phone: string | null;
-      profiles: {
-        first_name: string | null;
-        last_name: string | null;
-        main_phone: string | null;
-      } | null;
-    };
-    Insert: {
-      certifications?: string[] | null;
-      created_at?: string;
-      education?: string | null;
-      experience_years?: number | null;
-      hourly_rate?: number | null;
-      id?: string;
-      specializations?: string[] | null;
-      updated_at?: string;
-      user_id?: string | null;
-      birth_date?: string | null;
-      photo_url?: string | null;
-      position?: string | null;
-      age_group?: string | null;
-      camera_phone?: string | null;
-      camera_number?: string | null;
-      address?: string | null;
-      emergency_phone?: string | null;
-      deleted_at?: string | null;
-      relative_phone?: string | null;
-    };
-    Update: {
-      certifications?: string[] | null;
-      created_at?: string;
-      education?: string | null;
-      experience_years?: number | null;
-      hourly_rate?: number | null;
-      id?: string;
-      specializations?: string[] | null;
-      updated_at?: string;
-      user_id?: string | null;
-      birth_date?: string | null;
-      photo_url?: string | null;
-      position?: string | null;
-      age_group?: string | null;
-      camera_phone?: string | null;
-      camera_number?: string | null;
-      address?: string | null;
-      emergency_phone?: string | null;
-      deleted_at?: string | null;
-      relative_phone?: string | null;
-    };
+    Row: NannyProfile;
+    Insert: Omit<NannyProfile, 'id' | 'created_at' | 'updated_at'>;
+    Update: Partial<NannyProfile>;
   };
 }
-
-export type NannyProfile = NannyTables["nanny_profiles"]["Row"];
