@@ -19,7 +19,7 @@ const FamiliesPage = () => {
           profiles (
             first_name,
             last_name,
-            phone
+            main_phone
           ),
           children (*)
         `);

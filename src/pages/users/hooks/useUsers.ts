@@ -62,37 +62,6 @@ export const useUsers = () => {
     },
   });
 
-  const updateUserMutation = useMutation({
-    mutationFn: async ({
-      id,
-      updates,
-    }: {
-      id: string;
-      updates: { first_name: string; last_name: string; main_phone: string };
-    }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({
-        title: "Успешно",
-        description: "Пользователь успешно обновлен",
-      });
-    },
-    onError: (error) => {
-      console.error("Error updating user:", error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось обновить пользователя",
-        variant: "destructive",
-      });
-    },
-  });
-
   const changeUserRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole['role'] }) => {
       console.log("Changing role for user:", userId, "to:", newRole);
@@ -163,50 +132,10 @@ export const useUsers = () => {
     },
   });
 
-  const deleteUserMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log("Deleting user with ID:", id);
-      
-      try {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .delete()
-          .eq("id", id);
-
-        if (profileError) {
-          console.error("Error deleting user profile:", profileError);
-          throw profileError;
-        }
-
-        console.log("User successfully deleted");
-      } catch (error) {
-        console.error("Error in delete mutation:", error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({
-        title: "Успешно",
-        description: "Пользователь успешно удален",
-      });
-    },
-    onError: (error) => {
-      console.error("Error deleting user:", error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось удалить пользователя",
-        variant: "destructive",
-      });
-    },
-  });
-
   return {
     users,
     isLoading,
     error,
-    updateUser: updateUserMutation.mutate,
-    deleteUser: deleteUserMutation.mutate,
     changeUserRole: (userId: string, newRole: UserRole['role']) => 
       changeUserRoleMutation.mutateAsync({ userId, newRole }),
   };
