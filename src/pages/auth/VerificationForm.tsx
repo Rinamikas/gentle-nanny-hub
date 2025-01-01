@@ -47,8 +47,30 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         return;
       }
 
-      // 2. Создаем сессию используя код как пароль
-      console.log("2. Creating session using verification code as password");
+      // 2. Создаем пользователя через Edge Function
+      console.log("2. Creating user if not exists");
+      const { data: userData, error: createError } = await supabase.functions.invoke(
+        'create-auth-user',
+        {
+          body: JSON.stringify({
+            email,
+            code: otp,
+            shouldSignIn: false
+          })
+        }
+      );
+
+      if (createError) {
+        console.error("Error creating user:", createError);
+        throw createError;
+      }
+
+      // 3. Ждем 2 секунды перед входом
+      console.log("3. Waiting 2 seconds before sign in...");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // 4. Входим используя код как пароль
+      console.log("4. Signing in with verification code as password");
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: otp,
@@ -59,8 +81,8 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         throw signInError;
       }
 
-      // 3. Обновляем статус кода верификации
-      console.log("3. Updating verification code status");
+      // 5. Обновляем статус кода верификации
+      console.log("5. Updating verification code status");
       const { error: updateError } = await supabase
         .from('verification_codes')
         .update({ status: 'verified' })
