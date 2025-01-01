@@ -49,9 +49,10 @@ export default function FamilyForm() {
           .select(`
             *,
             profiles (
+              id,
               first_name,
               last_name,
-              phone
+              main_phone
             )
           `)
           .eq("id", id)
@@ -68,7 +69,7 @@ export default function FamilyForm() {
           form.reset({
             first_name: parentProfile.profiles?.first_name || "",
             last_name: parentProfile.profiles?.last_name || "",
-            phone: parentProfile.profiles?.phone || "",
+            phone: parentProfile.profiles?.main_phone || "",
             additional_phone: parentProfile.additional_phone || "",
             address: parentProfile.address || "",
             status: parentProfile.status || "default",
