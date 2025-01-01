@@ -1,80 +1,48 @@
-import { useState, useEffect } from "react";
-import { UserCard } from "./components/UserCard";
+import { useState } from "react";
 import { useUsers } from "./hooks/useUsers";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import UserCard from "./components/UserCard";
 import LoadingScreen from "@/components/LoadingScreen";
+import { toast } from "@/hooks/use-toast";
+import type { UserRole } from "./types";
 
 const UsersPage = () => {
-  const navigate = useNavigate();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { users, isLoading, error, updateUser, deleteUser, changeUserRole } = useUsers();
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-  });
-
-  // Проверяем сессию при монтировании
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("Нет активной сессии в UsersPage");
-        navigate("/auth");
-      }
-    };
-    checkSession();
-  }, [navigate]);
-
-  const handleEditClick = (user: any) => {
-    setEditingUser(user.id);
-    setEditForm({
-      first_name: user.first_name || "",
-      last_name: user.last_name || "",
-      email: user.email || "",
-    });
-  };
-
-  const handleSaveEdit = async (id: string) => {
-    updateUser({ id, updates: editForm });
-    setEditingUser(null);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Вы уверены, что хотите удалить этого пользователя?")) {
-      deleteUser(id);
-    }
-  };
-
-  const handleFormChange = (field: string, value: string) => {
-    setEditForm({ ...editForm, [field]: value });
-  };
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (error) {
-    return <div className="p-6">Ошибка: {(error as Error).message}</div>;
+    return <div>Error: {error.message}</div>;
   }
 
+  const handleRoleChange = async (userId: string, newRole: UserRole['role']) => {
+    try {
+      await changeUserRole(userId, newRole);
+    } catch (error) {
+      console.error("Error changing role:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось изменить роль пользователя",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Управление пользователями</h1>
-      <div className="grid gap-4">
+    <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-6">Пользователи</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {users?.map((user) => (
           <UserCard
             key={user.id}
             user={user}
-            isEditing={editingUser === user.id}
-            editForm={editForm}
-            onEdit={() => handleEditClick(user)}
-            onSave={() => handleSaveEdit(user.id)}
-            onCancel={() => setEditingUser(null)}
-            onDelete={() => handleDelete(user.id)}
-            onFormChange={handleFormChange}
-            onRoleChange={changeUserRole}
+            onUpdate={updateUser}
+            onDelete={deleteUser}
+            onRoleChange={handleRoleChange}
+            isSelected={selectedUserId === user.id}
+            onSelect={setSelectedUserId}
           />
         ))}
       </div>
