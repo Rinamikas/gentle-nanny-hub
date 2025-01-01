@@ -8,5 +8,7 @@ export interface User {
   last_name: string | null;
   main_phone: string | null;
   photo_url: string | null;
-  user_roles: UserRole[] | null;
+  created_at: string;
+  updated_at: string;
+  user_roles: UserRole[];
 }

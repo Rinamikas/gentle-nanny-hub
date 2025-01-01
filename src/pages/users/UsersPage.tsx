@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUsers } from "./hooks/useUsers";
-import UserCard from "./components/UserCard";
+import { UserCard } from "./components/UserCard";
 import LoadingScreen from "@/components/LoadingScreen";
 import { toast } from "@/hooks/use-toast";
 import type { UserRole } from "./types";

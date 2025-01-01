@@ -8,23 +8,23 @@ import { useState } from "react";
 
 interface UserCardProps {
   user: User;
-  isEditing: boolean;
-  editForm: {
+  isEditing?: boolean;
+  editForm?: {
     first_name: string;
     last_name: string;
-    email: string;
+    main_phone: string;
   };
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  onDelete: () => void;
-  onFormChange: (field: string, value: string) => void;
+  onEdit?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  onDelete?: () => void;
+  onFormChange?: (field: string, value: string) => void;
   onRoleChange: (userId: string, newRole: string) => Promise<void>;
 }
 
 export const UserCard = ({
   user,
-  isEditing,
+  isEditing = false,
   editForm,
   onEdit,
   onSave,
@@ -51,19 +51,19 @@ export const UserCard = ({
         {isEditing ? (
           <div className="flex-1 grid grid-cols-3 gap-4 mr-4">
             <Input
-              value={editForm.first_name}
-              onChange={(e) => onFormChange("first_name", e.target.value)}
+              value={editForm?.first_name || ""}
+              onChange={(e) => onFormChange?.("first_name", e.target.value)}
               placeholder="Имя"
             />
             <Input
-              value={editForm.last_name}
-              onChange={(e) => onFormChange("last_name", e.target.value)}
+              value={editForm?.last_name || ""}
+              onChange={(e) => onFormChange?.("last_name", e.target.value)}
               placeholder="Фамилия"
             />
             <Input
-              value={editForm.email}
-              onChange={(e) => onFormChange("email", e.target.value)}
-              placeholder="Email"
+              value={editForm?.main_phone || ""}
+              onChange={(e) => onFormChange?.("main_phone", e.target.value)}
+              placeholder="Телефон"
             />
           </div>
         ) : (
@@ -71,7 +71,7 @@ export const UserCard = ({
             <h3 className="font-medium">
               {user.first_name} {user.last_name}
             </h3>
-            <p className="text-sm text-gray-600">{user.email}</p>
+            <p className="text-sm text-gray-600">{user.main_phone}</p>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex gap-2">
                 {user.user_roles?.map((role, index) => (
