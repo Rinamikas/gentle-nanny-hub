@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUsers } from "./hooks/useUsers";
 import { UserCard } from "./components/UserCard";
-import { LoadingScreen } from "@/components/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function UsersPage() {
   const { users, isLoading, error, changeUserRole } = useUsers();

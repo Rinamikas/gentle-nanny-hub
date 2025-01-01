@@ -45,11 +45,11 @@ export const useUsers = () => {
       console.log("User roles fetched successfully:", userRoles);
 
       const rolesMap: { [key: string]: UserRole[] } = {};
-      userRoles.forEach((role: { user_id: string; role: UserRole['role'] }) => {
-        if (!rolesMap[role.user_id]) {
-          rolesMap[role.user_id] = [];
+      userRoles.forEach((ur: { user_id: string; role: UserRole }) => {
+        if (!rolesMap[ur.user_id]) {
+          rolesMap[ur.user_id] = [];
         }
-        rolesMap[role.user_id].push({ role: role.role });
+        rolesMap[ur.user_id].push(ur);
       });
 
       const usersWithRoles = profiles.map(profile => ({
@@ -63,7 +63,7 @@ export const useUsers = () => {
   });
 
   const changeUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole['role'] }) => {
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
       console.log("Changing role for user:", userId, "to:", newRole);
       
       const { data: currentRoles } = await supabase
@@ -136,7 +136,7 @@ export const useUsers = () => {
     users,
     isLoading,
     error,
-    changeUserRole: (userId: string, newRole: UserRole['role']) => 
+    changeUserRole: (userId: string, newRole: UserRole) => 
       changeUserRoleMutation.mutateAsync({ userId, newRole }),
   };
 };
