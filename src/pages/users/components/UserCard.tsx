@@ -1,150 +1,62 @@
-import { User } from "../types";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, X, Check } from "lucide-react";
-import { useState } from "react";
+import { User } from "../types";
+import { UserRole } from "@/integrations/supabase/types/enums";
+import { Dispatch, SetStateAction } from "react";
 
-interface UserCardProps {
+export interface UserCardProps {
   user: User;
-  isEditing?: boolean;
-  editForm?: {
-    first_name: string;
-    last_name: string;
-    main_phone: string;
-  };
-  onEdit?: () => void;
-  onSave?: () => void;
-  onCancel?: () => void;
-  onDelete?: () => void;
-  onFormChange?: (field: string, value: string) => void;
-  onRoleChange: (userId: string, newRole: string) => Promise<void>;
+  onRoleChange: (userId: string, newRole: UserRole['role']) => Promise<void>;
+  isSelected: boolean;
+  onSelect: Dispatch<SetStateAction<string[]>>;
 }
 
-export const UserCard = ({
-  user,
-  isEditing = false,
-  editForm,
-  onEdit,
-  onSave,
-  onCancel,
-  onDelete,
-  onFormChange,
-  onRoleChange,
-}: UserCardProps) => {
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
-  const [newRole, setNewRole] = useState<string>("");
-  const currentRole = user.user_roles?.[0]?.role || "";
-
-  const handleRoleChange = async () => {
-    if (newRole && newRole !== currentRole) {
-      await onRoleChange(user.id, newRole);
-      setShowRoleDialog(false);
-      setNewRole("");
-    }
+export function UserCard({ user, onRoleChange, isSelected, onSelect }: UserCardProps) {
+  const handleRoleChange = async (newRole: string) => {
+    await onRoleChange(user.id, newRole as UserRole['role']);
   };
 
   return (
-    <>
-      <div className="p-4 bg-white rounded-lg shadow flex items-center justify-between">
-        {isEditing ? (
-          <div className="flex-1 grid grid-cols-3 gap-4 mr-4">
-            <Input
-              value={editForm?.first_name || ""}
-              onChange={(e) => onFormChange?.("first_name", e.target.value)}
-              placeholder="Имя"
-            />
-            <Input
-              value={editForm?.last_name || ""}
-              onChange={(e) => onFormChange?.("last_name", e.target.value)}
-              placeholder="Фамилия"
-            />
-            <Input
-              value={editForm?.main_phone || ""}
-              onChange={(e) => onFormChange?.("main_phone", e.target.value)}
-              placeholder="Телефон"
-            />
-          </div>
-        ) : (
-          <div className="flex-1">
-            <h3 className="font-medium">
-              {user.first_name} {user.last_name}
-            </h3>
-            <p className="text-sm text-gray-600">{user.main_phone}</p>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex gap-2">
-                {user.user_roles?.map((role, index) => (
-                  <span
-                    key={`${user.id}-${role.role}-${index}`}
-                    className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs"
-                  >
-                    {role.role}
-                  </span>
-                ))}
-              </div>
-              <Select
-                value={newRole}
-                onValueChange={(value) => {
-                  setNewRole(value);
-                  setShowRoleDialog(true);
-                }}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Изменить роль" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="parent">Родитель</SelectItem>
-                  <SelectItem value="nanny">Няня</SelectItem>
-                </SelectContent>
-              </Select>
+    <Card className="p-4">
+      <div className="flex items-start gap-4">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => {
+            onSelect((prev) => {
+              if (checked) {
+                return [...prev, user.id];
+              }
+              return prev.filter((id) => id !== user.id);
+            });
+          }}
+        />
+        <div className="flex-1">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h3 className="font-medium">
+                {user.first_name} {user.last_name}
+              </h3>
+              <p className="text-sm text-gray-500">{user.main_phone}</p>
             </div>
+            <Select
+              value={user.user_roles[0]?.role}
+              onValueChange={handleRoleChange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Выберите роль" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="parent">Родитель</SelectItem>
+                <SelectItem value="nanny">Няня</SelectItem>
+                <SelectItem value="admin">Администратор</SelectItem>
+                <SelectItem value="owner">Владелец</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="ghost" size="icon" onClick={onSave}>
-                <Check className="h-4 w-4 text-green-600" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onCancel}>
-                <X className="h-4 w-4 text-red-600" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" size="icon" onClick={onEdit}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-red-600"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
         </div>
       </div>
-
-      <AlertDialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Изменение роли пользователя</AlertDialogTitle>
-            <AlertDialogDescription>
-              Вы уверены, что хотите изменить роль пользователя с "{currentRole}" на "{newRole}"?
-              Это действие приведет к созданию нового профиля и мягкому удалению старого.
-              Все связанные данные будут сохранены.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNewRole("")}>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRoleChange}>Подтвердить</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </Card>
   );
-};
+}

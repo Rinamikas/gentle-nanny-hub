@@ -10,4 +10,5 @@ export interface ParentProfile extends ParentProfileBase {
   children?: ChildRow[];
   deleted_at?: string | null;
   is_deleted?: boolean | null;
+  additional_phone?: string | null;
 }

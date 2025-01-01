@@ -21,6 +21,7 @@ export interface NannyTables {
       address: string | null;
       emergency_phone: string | null;
       deleted_at: string | null;
+      relative_phone: string | null;
       profiles: {
         first_name: string | null;
         last_name: string | null;
@@ -46,6 +47,7 @@ export interface NannyTables {
       address?: string | null;
       emergency_phone?: string | null;
       deleted_at?: string | null;
+      relative_phone?: string | null;
     };
     Update: {
       certifications?: string[] | null;
@@ -66,6 +68,7 @@ export interface NannyTables {
       address?: string | null;
       emergency_phone?: string | null;
       deleted_at?: string | null;
+      relative_phone?: string | null;
     };
   };
 }
