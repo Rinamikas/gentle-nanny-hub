@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -13,7 +12,24 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    // Устанавливаем фокус на первый слот при монтировании
+    const firstInput = document.querySelector('input[id^="otp-"]') as HTMLInputElement;
+    if (firstInput) {
+      firstInput.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Автоматически отправляем форму при заполнении всех слотов
+    if (otp.length === 6) {
+      handleVerification();
+    }
+  }, [otp]);
+
   const handleVerification = async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     console.log("=== Starting verification process ===");
     console.log("Email:", email);
@@ -27,67 +43,69 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           p_email: email,
           p_code: otp
         });
-
-      if (rpcError) {
-        console.error("RPC error:", rpcError);
-        throw new Error("Ошибка при проверке кода");
-      }
-
+      
       console.log("Verification code check result:", hasValidCode);
+      if (rpcError) throw rpcError;
+      
       if (!hasValidCode) {
         throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем или обновляем пользователя через Edge Function
+      // 2. Создаем/обновляем пользователя через Edge Function
       console.log("2. Creating/updating user through Edge Function");
-      const { data: userData, error: createError } = await supabase.functions.invoke(
-        'create-user',
+      const { data: userData, error: functionError } = await supabase.functions.invoke(
+        'create-auth-user',
         {
-          body: JSON.stringify({
+          body: JSON.stringify({ 
             email,
-            password: otp
+            code: otp
           })
         }
       );
 
-      if (createError) {
-        console.error("3. User creation error:", createError);
-        throw createError;
+      console.log("Edge function response:", userData);
+      
+      if (functionError) {
+        console.error("Error from edge function:", functionError);
+        throw functionError;
       }
 
-      // Добавляем задержку перед входом
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!userData?.password) {
+        console.error("Invalid response from edge function:", userData);
+        throw new Error("Не получен пароль от сервера");
+      }
 
-      // 3. Входим с помощью созданных credentials
-      console.log("4. Signing in with created credentials");
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      console.log("3. User created/updated successfully");
+      
+      // 4. Входим с созданными учетными данными
+      console.log("4. Attempting sign in with verification code as password");
+
+      // Добавляем задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: otp,
+        password: userData.password
       });
+
+      console.log("Sign in response:", signInData);
 
       if (signInError) {
         console.error("5. Sign in error:", signInError);
         throw signInError;
       }
 
-      if (!data.session) {
-        throw new Error("Не удалось создать сессию");
-      }
-
-      // 4. Обновляем статус кода в БД
-      console.log("6. Updating verification code status");
-      const { error: codeUpdateError } = await supabase
-        .from("verification_codes")
+      // 5. Обновляем статус кода верификации
+      const { error: updateError } = await supabase
+        .from('verification_codes')
         .update({ status: 'verified' })
-        .eq("email", email)
-        .eq("code", otp);
+        .eq('email', email)
+        .eq('code', otp);
 
-      if (codeUpdateError) {
-        console.error("7. Status update error:", codeUpdateError);
-        throw new Error("Ошибка при обновлении статуса кода");
+      if (updateError) {
+        console.error("Error updating verification code status:", updateError);
       }
 
-      console.log("=== Verification completed successfully ===");
       toast({
         title: "Успешно!",
         description: "Вы успешно авторизовались",
@@ -131,13 +149,6 @@ const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProp
           </InputOTPGroup>
         </InputOTP>
       </div>
-      <Button
-        onClick={handleVerification}
-        className="w-full"
-        disabled={isLoading || otp.length !== 6}
-      >
-        {isLoading ? "Проверка..." : "Подтвердить"}
-      </Button>
     </div>
   );
 };

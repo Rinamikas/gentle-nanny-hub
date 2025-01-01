@@ -17,11 +17,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, password } = await req.json()
+    const { email } = await req.json()
 
-    if (!email || !password) {
-      throw new Error('Email and password are required')
+    if (!email) {
+      throw new Error('Email is required')
     }
+
+    console.log("Creating/updating user with email:", email)
 
     // Проверяем существует ли пользователь
     const { data: existingUsers, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
@@ -30,34 +32,37 @@ serve(async (req) => {
       }
     })
 
-    if (searchError) throw searchError
+    if (searchError) {
+      console.error("Error searching for user:", searchError)
+      throw searchError
+    }
 
     let userId
 
     if (existingUsers.users.length > 0) {
-      // Если пользователь существует, обновляем пароль
-      const user = existingUsers.users[0]
-      userId = user.id
-
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        userId,
-        { password: password }
-      )
-
-      if (updateError) throw updateError
+      // Если пользователь существует, просто получаем его id
+      console.log("User exists, getting id")
+      userId = existingUsers.users[0].id
     } else {
       // Если пользователь не существует, создаем нового
+      console.log("User doesn't exist, creating new user")
       const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: email,
-        password: password,
         email_confirm: true
       })
 
-      if (createError) throw createError
-      if (!user) throw new Error('Failed to create user')
+      if (createError) {
+        console.error("Error creating user:", createError)
+        throw createError
+      }
+      if (!user) {
+        throw new Error('Failed to create user')
+      }
       
       userId = user.id
     }
+
+    console.log("Operation successful, returning user id:", userId)
 
     return new Response(
       JSON.stringify({ id: userId }),
@@ -68,6 +73,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
+    console.error("Error in create-user function:", error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

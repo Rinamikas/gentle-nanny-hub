@@ -10,27 +10,33 @@ export const useSessionHandler = () => {
   const handleLogout = async () => {
     try {
       setIsLoading(true);
-      console.log("Начинаем процесс выхода...");
+      console.log("=== Начало процесса выхода ===");
       
-      const { error } = await supabase.auth.signOut();
+      // Сначала очищаем localStorage
+      localStorage.clear();
+      console.log("1. Локальное хранилище очищено");
       
-      if (error) {
-        console.error("Ошибка при выходе:", error);
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Не удалось выйти из системы",
-        });
-        return;
+      try {
+        // Пробуем выйти через Supabase
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn("2. Ошибка при выходе через Supabase:", error);
+        } else {
+          console.log("2. Выход через Supabase выполнен успешно");
+        }
+      } catch (error) {
+        console.warn("2. Ошибка при выходе через Supabase:", error);
       }
-
-      console.log("Выход успешно выполнен");
+      
+      console.log("3. Показываем уведомление об успешном выходе");
       toast({
         title: "Успешно",
         description: "Вы вышли из системы",
       });
       
-      navigate("/auth");
+      console.log("4. Перенаправляем на страницу авторизации");
+      navigate("/auth", { replace: true });
+      
     } catch (error) {
       console.error("Неожиданная ошибка при выходе:", error);
       toast({
@@ -43,13 +49,13 @@ export const useSessionHandler = () => {
     }
   };
 
-  // Добавляем обработчик ошибок сессии
+  // Обработчик ошибок сессии
   const handleSessionError = () => {
-    console.log("Обнаружена ошибка сессии, выполняем выход...");
+    console.log("=== Обработка ошибки сессии ===");
     handleLogout();
   };
 
-  // Устанавливаем слушатель изменения состояния аутентификации
+  // Слушатель изменения состояния аутентификации
   supabase.auth.onAuthStateChange((event, session) => {
     console.log("Изменение состояния аутентификации:", event);
     
@@ -58,13 +64,16 @@ export const useSessionHandler = () => {
     }
     
     if (event === 'SIGNED_OUT') {
-      console.log("Пользователь вышел");
-      navigate('/auth');
+      console.log("Пользователь вышел из системы");
+      navigate('/auth', { replace: true });
     }
 
     // Если возникла ошибка с токеном
-    if (!session && event === 'TOKEN_REFRESHED') {
-      console.error("Ошибка обновления токена");
+    if (!session && (
+      event === 'TOKEN_REFRESHED' || 
+      event === 'INITIAL_SESSION'
+    )) {
+      console.error("Ошибка обновления токена или начальной сессии");
       handleSessionError();
     }
   });

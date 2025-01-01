@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserCard } from "./components/UserCard";
 import { useUsers } from "./hooks/useUsers";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const UsersPage = () => {
+  const navigate = useNavigate();
   const { users, isLoading, error, updateUser, deleteUser } = useUsers();
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
@@ -10,6 +14,18 @@ const UsersPage = () => {
     last_name: "",
     email: "",
   });
+
+  // Проверяем сессию при монтировании
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("Нет активной сессии в UsersPage");
+        navigate("/auth");
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const handleEditClick = (user: any) => {
     setEditingUser(user.id);
@@ -36,11 +52,11 @@ const UsersPage = () => {
   };
 
   if (isLoading) {
-    return <div>Загрузка...</div>;
+    return <LoadingScreen />;
   }
 
   if (error) {
-    return <div>Ошибка: {(error as Error).message}</div>;
+    return <div className="p-6">Ошибка: {(error as Error).message}</div>;
   }
 
   return (
