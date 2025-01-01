@@ -10,10 +10,6 @@ interface RequestBody {
   email: string
   code: string
   shouldSignIn?: boolean
-  userData?: {
-    first_name?: string
-    last_name?: string
-  }
 }
 
 serve(async (req) => {
@@ -33,11 +29,10 @@ serve(async (req) => {
       }
     )
 
-    const { email, code, shouldSignIn = true, userData } = await req.json() as RequestBody
+    const { email, code, shouldSignIn = false } = await req.json() as RequestBody
+    console.log('Creating/updating user:', { email })
 
-    console.log('Creating/updating user with data:', { email, userData })
-
-    // 1. Проверяем существование пользователя через auth.users
+    // 1. Проверяем существование пользователя
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
         email: email.toLowerCase()
@@ -45,42 +40,36 @@ serve(async (req) => {
     })
 
     if (getUserError) {
-      console.error('Error checking users:', getUserError)
-      throw new Error('Failed to check existing users')
+      console.error('Error checking user:', getUserError)
+      throw new Error('Failed to check existing user')
     }
 
     let userId: string
 
     if (users && users.length > 0) {
-      // Пользователь существует
-      console.log('User exists, updating...')
-      
+      // Пользователь существует - обновляем пароль
+      console.log('User exists, updating password...')
       const user = users[0]
       userId = user.id
 
-      // Обновляем пароль и метаданные
-      const { error: updateError } = await supabaseAdmin.auth.admin
-        .updateUserById(userId, {
-          password: code,
-          email_confirm: true,
-          user_metadata: userData
-        })
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password: code }
+      )
 
       if (updateError) {
         console.error('Error updating user:', updateError)
         throw updateError
       }
+      console.log('Password updated successfully')
 
-      console.log('User updated successfully')
     } else {
       // Создаем нового пользователя
       console.log('Creating new user...')
-      
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: email.toLowerCase(),
         password: code,
-        email_confirm: true,
-        user_metadata: userData
+        email_confirm: true
       })
 
       if (createError) {
@@ -122,6 +111,7 @@ serve(async (req) => {
         status: 200,
       },
     )
+
   } catch (error) {
     console.error('Error:', error)
     return new Response(
