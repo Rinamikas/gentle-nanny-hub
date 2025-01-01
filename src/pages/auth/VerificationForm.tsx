@@ -65,9 +65,9 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
         throw createError;
       }
 
-      // 3. Ждем 2 секунды перед входом
-      console.log("3. Waiting 2 seconds before sign in...");
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 3. Ждем 5 секунд перед входом
+      console.log("3. Waiting 5 seconds before sign in...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
       // 4. Входим используя код как пароль
       console.log("4. Signing in with verification code as password");
