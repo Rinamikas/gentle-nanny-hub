@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import NanniesTable from "./components/NanniesTable";
 import NanniesHeader from "./components/NanniesHeader";
 import LoadingScreen from "@/components/LoadingScreen";
+import type { NannyProfile } from "@/integrations/supabase/types/nanny-types";
 
 const NanniesPage = () => {
   const [showDeleted, setShowDeleted] = useState(false);
@@ -30,6 +31,7 @@ const NanniesPage = () => {
         .select(`
           *,
           profiles (
+            id,
             first_name,
             last_name,
             main_phone
@@ -51,7 +53,7 @@ const NanniesPage = () => {
       }
 
       console.log("Загруженные няни:", nanniesData);
-      return nanniesData;
+      return nanniesData as NannyProfile[];
     },
   });
 

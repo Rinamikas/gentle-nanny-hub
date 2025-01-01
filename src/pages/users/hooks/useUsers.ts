@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { User, UserRole } from "../types";
+import type { Database } from "@/integrations/supabase/types/database";
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 export const useUsers = () => {
   const queryClient = useQueryClient();
@@ -49,7 +51,7 @@ export const useUsers = () => {
         if (!rolesMap[ur.user_id]) {
           rolesMap[ur.user_id] = [];
         }
-        rolesMap[ur.user_id].push(ur);
+        rolesMap[ur.user_id].push(ur.role);
       });
 
       const usersWithRoles = profiles.map(profile => ({
@@ -58,7 +60,7 @@ export const useUsers = () => {
       }));
 
       console.log("Final users with roles:", usersWithRoles);
-      return usersWithRoles as User[];
+      return usersWithRoles;
     },
   });
 

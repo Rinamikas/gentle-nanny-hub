@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
 import FamiliesTable from "./components/FamiliesTable";
-import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
+import type { ParentProfile } from "@/integrations/supabase/types";
 
 const FamiliesPage = () => {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ const FamiliesPage = () => {
       const { data, error } = await supabase.from("parent_profiles").select(`
           *,
           profiles (
+            id,
             first_name,
             last_name,
             main_phone

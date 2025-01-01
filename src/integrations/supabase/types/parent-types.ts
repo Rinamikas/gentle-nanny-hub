@@ -1,7 +1,9 @@
 import type { Database } from './database';
 import type { ProfileRow } from './profile-types';
 
-export type ParentProfile = Database['public']['Tables']['parent_profiles']['Row'] & {
+export type ParentProfileRow = Database['public']['Tables']['parent_profiles']['Row'];
+
+export interface ParentProfile extends ParentProfileRow {
   profiles?: ProfileRow;
   children?: Database['public']['Tables']['children']['Row'][];
-};
+}
