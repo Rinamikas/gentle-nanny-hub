@@ -1,7 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import { validateUserData } from './validation.ts'
-import { findExistingUser, createAuthUser } from './user-service.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,98 +8,72 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { email, password } = await req.json()
+
+    if (!email || !password) {
+      throw new Error('Email and password are required')
+    }
+
+    // Проверяем существует ли пользователь
+    const { data: existingUsers, error: searchError } = await supabaseAdmin.auth.admin.listUsers({
+      filter: {
+        email: email
+      }
+    })
+
+    if (searchError) throw searchError
+
+    let userId
+
+    if (existingUsers.users.length > 0) {
+      // Если пользователь существует, обновляем пароль
+      const user = existingUsers.users[0]
+      userId = user.id
+
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password: password }
+      )
+
+      if (updateError) throw updateError
+    } else {
+      // Если пользователь не существует, создаем нового
+      const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: email,
+        password: password,
+        email_confirm: true
+      })
+
+      if (createError) throw createError
+      if (!user) throw new Error('Failed to create user')
+      
+      userId = user.id
+    }
+
+    return new Response(
+      JSON.stringify({ id: userId }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
       }
     )
 
-    // Валидируем входные данные
-    const userData = validateUserData(await req.json());
-    console.log("Validated user data:", userData);
-
-    try {
-      // Проверяем существование пользователя
-      const existingUser = await findExistingUser(supabaseClient, userData.email);
-      
-      if (existingUser) {
-        console.log("Found existing user:", existingUser.email);
-        return new Response(
-          JSON.stringify({ 
-            id: existingUser.id,
-            email: userData.email,
-            exists: true
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          }
-        );
-      }
-
-      // Создаем пользователя через Admin API
-      console.log("Creating new auth user...");
-      const newUser = await createAuthUser(supabaseClient, userData);
-      
-      console.log("Successfully created new user:", {
-        id: newUser.id,
-        email: userData.email
-      });
-
-      return new Response(
-        JSON.stringify({ 
-          id: newUser.id,
-          email: userData.email,
-          exists: false
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      );
-    } catch (error) {
-      console.error("User creation error:", {
-        name: error.name,
-        message: error.message,
-        details: error.details
-      });
-      
-      return new Response(
-        JSON.stringify({ 
-          error: "Failed to create user",
-          details: error.message
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
-    }
   } catch (error) {
-    console.error("Top level error:", {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    
     return new Response(
-      JSON.stringify({ 
-        error: "Error processing request",
-        details: error.message
-      }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: error.status || 400
+        status: 400 
       }
-    );
+    )
   }
 })

@@ -1,54 +1,143 @@
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import NanniesHeader from "./components/NanniesHeader";
-import NanniesTable from "./components/NanniesTable";
-import LoadingScreen from "@/components/LoadingScreen";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import NanniesTable from "./components/NanniesTable";
+import NanniesHeader from "./components/NanniesHeader";
 
 const NanniesPage = () => {
+  const [showDeleted, setShowDeleted] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: nannies, isLoading } = useQuery({
-    queryKey: ["nannies"],
+  const { data: nannies, isLoading: isLoadingNannies } = useQuery({
+    queryKey: ["nannies", showDeleted],
     queryFn: async () => {
-      console.log("Загрузка списка нянь...");
+      console.log("Fetching nannies, showDeleted:", showDeleted);
+      
       const { data, error } = await supabase
         .from("nanny_profiles")
         .select(`
           *,
-          profiles (
-            id,
+          profiles(
             first_name,
             last_name,
-            main_phone,
-            photo_url
+            email,
+            phone
           )
-        `);
+        `)
+        .eq("is_deleted", showDeleted);
 
       if (error) {
-        console.error("Ошибка при загрузке нянь:", error);
+        console.error("Error fetching nannies:", error);
         toast({
           variant: "destructive",
           title: "Ошибка",
           description: "Не удалось загрузить список нянь",
         });
-        throw error;
+        return [];
       }
 
-      console.log("Загружены няни:", data);
       return data;
     },
   });
 
-  if (isLoading) {
-    return <LoadingScreen />;
+  const softDeleteMutation = useMutation({
+    mutationFn: async (nannyId: string) => {
+      const { error } = await supabase
+        .from("nanny_profiles")
+        .update({ 
+          is_deleted: true,
+          deleted_at: new Date().toISOString()
+        })
+        .eq("id", nannyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["nannies"] });
+      toast({
+        title: "Успешно",
+        description: "Няня удалена",
+      });
+    },
+    onError: (error) => {
+      console.error("Error deleting nanny:", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось удалить няню",
+      });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (nannyId: string) => {
+      const { error } = await supabase
+        .from("nanny_profiles")
+        .update({ 
+          is_deleted: false,
+          deleted_at: null
+        })
+        .eq("id", nannyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["nannies"] });
+      toast({
+        title: "Успешно",
+        description: "Няня восстановлена",
+      });
+    },
+    onError: (error) => {
+      console.error("Error restoring nanny:", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось восстановить няню",
+      });
+    },
+  });
+
+  const handleAddNanny = () => {
+    navigate("/nannies/create");
+  };
+
+  const handleEditNanny = (nannyId: string) => {
+    navigate(`/nannies/${nannyId}/edit`);
+  };
+
+  const handleDeleteNanny = async (nannyId: string) => {
+    if (window.confirm("Вы уверены, что хотите удалить эту няню?")) {
+      await softDeleteMutation.mutate(nannyId);
+    }
+  };
+
+  const handleRestoreNanny = async (nannyId: string) => {
+    if (window.confirm("Вы хотите восстановить эту няню?")) {
+      await restoreMutation.mutate(nannyId);
+    }
+  };
+
+  if (isLoadingNannies) {
+    return <div>Загрузка...</div>;
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <NanniesHeader onCreateClick={() => navigate("/nannies/create")} />
-      <NanniesTable nannies={nannies || []} />
+    <div className="container mx-auto py-6">
+      <NanniesHeader 
+        showDeleted={showDeleted}
+        onToggleDeleted={() => setShowDeleted(!showDeleted)}
+        onAddNanny={handleAddNanny}
+      />
+      <NanniesTable
+        nannies={nannies}
+        onEdit={handleEditNanny}
+        onDelete={handleDeleteNanny}
+        onRestore={handleRestoreNanny}
+      />
     </div>
   );
 };

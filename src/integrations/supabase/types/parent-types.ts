@@ -1,16 +1,11 @@
-import type { Database } from './database-types';
-import type { ProfileRow } from './profile-types';
+import { Database } from './database';
+import { ProfileRow } from './profile-types';
+import { Tables } from './tables';
 
-type ParentRow = Database['public']['Tables']['parent_profiles']['Row'];
+export type ParentProfileBase = Database['public']['Tables']['parent_profiles']['Row'];
+export type ChildRow = Tables['children']['Row'];
 
-export interface ParentProfile extends ParentRow {
+export interface ParentProfile extends ParentProfileBase {
   profiles?: ProfileRow;
-  children?: {
-    id: string;
-    first_name: string;
-    gender: string;
-    birth_date: string;
-    medical_conditions: string | null;
-    notes: string | null;
-  }[];
+  children?: ChildRow[];
 }

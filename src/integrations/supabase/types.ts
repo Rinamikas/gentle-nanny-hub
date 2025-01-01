@@ -180,13 +180,15 @@ export type Database = {
           camera_phone: string | null
           certifications: string[] | null
           created_at: string
+          deleted_at: string | null
           education: string | null
-          emergency_phone: string | null
           experience_years: number | null
           hourly_rate: number | null
           id: string
+          is_deleted: boolean | null
           photo_url: string | null
           position: string | null
+          relative_phone: string | null
           specializations: string[] | null
           updated_at: string
           user_id: string | null
@@ -199,13 +201,15 @@ export type Database = {
           camera_phone?: string | null
           certifications?: string[] | null
           created_at?: string
+          deleted_at?: string | null
           education?: string | null
-          emergency_phone?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
+          is_deleted?: boolean | null
           photo_url?: string | null
           position?: string | null
+          relative_phone?: string | null
           specializations?: string[] | null
           updated_at?: string
           user_id?: string | null
@@ -218,13 +222,15 @@ export type Database = {
           camera_phone?: string | null
           certifications?: string[] | null
           created_at?: string
+          deleted_at?: string | null
           education?: string | null
-          emergency_phone?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
+          is_deleted?: boolean | null
           photo_url?: string | null
           position?: string | null
+          relative_phone?: string | null
           specializations?: string[] | null
           updated_at?: string
           user_id?: string | null
@@ -311,13 +317,11 @@ export type Database = {
       }
       parent_profiles: {
         Row: {
+          additional_phone: string | null
           address: string | null
           children_count: number | null
           created_at: string
-          deleted_at: string | null
-          emergency_phone: string | null
           id: string
-          is_deleted: boolean | null
           notes: string | null
           special_requirements: string | null
           status: Database["public"]["Enums"]["parent_status"] | null
@@ -325,13 +329,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          additional_phone?: string | null
           address?: string | null
           children_count?: number | null
           created_at?: string
-          deleted_at?: string | null
-          emergency_phone?: string | null
           id?: string
-          is_deleted?: boolean | null
           notes?: string | null
           special_requirements?: string | null
           status?: Database["public"]["Enums"]["parent_status"] | null
@@ -339,13 +341,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          additional_phone?: string | null
           address?: string | null
           children_count?: number | null
           created_at?: string
-          deleted_at?: string | null
-          emergency_phone?: string | null
           id?: string
-          is_deleted?: boolean | null
           notes?: string | null
           special_requirements?: string | null
           status?: Database["public"]["Enums"]["parent_status"] | null
@@ -365,28 +365,31 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
           first_name: string | null
           id: string
           last_name: string | null
-          main_phone: string | null
+          phone: string | null
           photo_url: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
-          main_phone?: string | null
+          phone?: string | null
           photo_url?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
-          main_phone?: string | null
+          phone?: string | null
           photo_url?: string | null
           updated_at?: string
         }
@@ -519,7 +522,7 @@ export type Database = {
           {
             foreignKeyName: "user_roles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -639,28 +642,8 @@ export type Database = {
         }
         Returns: string
       }
-      create_parent_with_user: {
-        Args: {
-          p_email: string
-          p_first_name: string
-          p_last_name: string
-          p_main_phone: string
-          p_emergency_phone: string
-          p_address: string
-          p_special_requirements: string
-          p_notes: string
-          p_status: string
-        }
-        Returns: string
-      }
       current_user_email: {
         Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_id_by_email: {
-        Args: {
-          email_param: string
-        }
         Returns: string
       }
       get_user_roles: {

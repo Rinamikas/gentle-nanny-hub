@@ -58,7 +58,7 @@ const NannyForm = () => {
         first_name: nanny.profiles?.first_name || "",
         last_name: nanny.profiles?.last_name || "",
         birth_date: nanny.birth_date || "",
-        phone: nanny.profiles?.main_phone || "",
+        phone: nanny.profiles?.phone || "",
         email: nanny.profiles?.email || "",
         photo_url: nanny.photo_url || "",
         position: nanny.position || "",
@@ -69,7 +69,7 @@ const NannyForm = () => {
         address: nanny.address || "",
         education: nanny.education || "",
         experience_years: nanny.experience_years || 0,
-        relative_phone: nanny.emergency_phone || "",
+        relative_phone: nanny.relative_phone || "",
         criminal_record: nanny.nanny_documents?.find(doc => doc.type === "criminal_record")?.file_url || "",
         image_usage_consent: nanny.nanny_documents?.find(doc => doc.type === "image_usage_consent")?.file_url || "",
         medical_book: nanny.nanny_documents?.find(doc => doc.type === "medical_book")?.file_url || "",
@@ -95,8 +95,8 @@ const NannyForm = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="container mx-auto py-6">
+      <div className="flex items-center gap-4">
         <Button 
           variant="ghost" 
           onClick={handleBack}
@@ -107,7 +107,7 @@ const NannyForm = () => {
         </Button>
       </div>
       
-      <h1 className="text-2xl font-bold mb-6">
+      <h1 className="text-2xl font-bold mt-6 mb-6">
         {id ? "Редактирование анкеты няни" : "Создание анкеты няни"}
       </h1>
 

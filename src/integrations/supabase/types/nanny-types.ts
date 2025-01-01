@@ -1,41 +1,77 @@
-import { ProfileRow } from './profile-types';
-
-export interface NannyProfile {
-  id: string;
-  user_id: string | null;
-  experience_years: number | null;
-  education: string | null;
-  specializations: string[] | null;
-  certifications: string[] | null;
-  hourly_rate: number | null;
-  created_at: string;
-  updated_at: string;
-  birth_date: string | null;
-  photo_url: string | null;
-  position: string | null;
-  age_group: string | null;
-  camera_phone: string | null;
-  camera_number: string | null;
-  address: string | null;
-  emergency_phone: string | null;
-  relative_phone: string | null;
-  profiles?: ProfileRow & { 
-    email?: string;
-    phone?: string;
-  };
-  nanny_training?: {
-    stage: string;
-  };
-  nanny_documents?: {
-    type: string;
-    file_url: string;
-  }[];
-}
+import { Json } from "./json";
 
 export interface NannyTables {
   nanny_profiles: {
-    Row: NannyProfile;
-    Insert: Partial<NannyProfile>;
-    Update: Partial<NannyProfile>;
-  }
+    Row: {
+      certifications: string[] | null;
+      created_at: string;
+      education: string | null;
+      experience_years: number | null;
+      hourly_rate: number | null;
+      id: string;
+      specializations: string[] | null;
+      updated_at: string;
+      user_id: string | null;
+      birth_date: string | null;
+      phone: string | null;
+      email: string | null;
+      photo_url: string | null;
+      position: string | null;
+      age_group: string | null;
+      camera_phone: string | null;
+      camera_number: string | null;
+      address: string | null;
+      relative_phone: string | null;
+      is_deleted: boolean | null;
+      deleted_at: string | null;
+    };
+    Insert: {
+      certifications?: string[] | null;
+      created_at?: string;
+      education?: string | null;
+      experience_years?: number | null;
+      hourly_rate?: number | null;
+      id?: string;
+      specializations?: string[] | null;
+      updated_at?: string;
+      user_id?: string | null;
+      birth_date?: string | null;
+      phone?: string | null;
+      email?: string | null;
+      photo_url?: string | null;
+      position?: string | null;
+      age_group?: string | null;
+      camera_phone?: string | null;
+      camera_number?: string | null;
+      address?: string | null;
+      relative_phone?: string | null;
+      is_deleted?: boolean | null;
+      deleted_at?: string | null;
+    };
+    Update: {
+      certifications?: string[] | null;
+      created_at?: string;
+      education?: string | null;
+      experience_years?: number | null;
+      hourly_rate?: number | null;
+      id?: string;
+      specializations?: string[] | null;
+      updated_at?: string;
+      user_id?: string | null;
+      birth_date?: string | null;
+      phone?: string | null;
+      email?: string | null;
+      photo_url?: string | null;
+      position?: string | null;
+      age_group?: string | null;
+      camera_phone?: string | null;
+      camera_number?: string | null;
+      address?: string | null;
+      relative_phone?: string | null;
+      is_deleted?: boolean | null;
+      deleted_at?: string | null;
+    };
+  };
 }
+
+export type NannyProfile = NannyTables["nanny_profiles"]["Row"];

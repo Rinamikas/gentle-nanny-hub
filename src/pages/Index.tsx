@@ -1,12 +1,32 @@
-import { TestButton } from "@/components/TestButton";
+import { useState, useEffect } from "react";
+import LoadingScreen from "@/components/LoadingScreen";
 
-export default function Index() {
+const Index = () => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate initial loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Панель управления</h1>
-      <div className="space-y-4">
-        <TestButton />
-      </div>
+    <div className="animate-fade-in">
+      <h1 className="text-3xl font-semibold text-[#8B5CF6] mb-6">
+        Панель управления
+      </h1>
+      <p className="text-gray-600">
+        Добро пожаловать в систему управления нянями
+      </p>
     </div>
   );
-}
+};
+
+export default Index;

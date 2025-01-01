@@ -12,15 +12,13 @@ export default function WorkingHoursSection({ nannyId }: WorkingHoursSectionProp
   }
 
   return (
-    <Card className="mb-6">
+    <Card>
       <CardHeader>
         <CardTitle>Рабочие часы</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <WorkingHoursForm nannyId={nannyId} />
-          <WorkingHoursList nannyId={nannyId} />
-        </div>
+      <CardContent className="space-y-6">
+        <WorkingHoursForm nannyId={nannyId} />
+        <WorkingHoursList nannyId={nannyId} />
       </CardContent>
     </Card>
   );

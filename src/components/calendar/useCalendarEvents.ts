@@ -37,16 +37,11 @@ export function useCalendarEvents(selectedNanny?: string) {
 
         console.log("Загруженные заявки:", appointments);
 
-        // Загружаем события расписания с правильным форматом запроса
+        // Загружаем события расписания
         const scheduleQuery = supabase
           .from('schedule_events')
           .select(`
-            id,
-            nanny_id,
-            event_type,
-            start_time,
-            end_time,
-            notes,
+            *,
             nanny_profiles (
               id,
               photo_url
@@ -125,7 +120,5 @@ export function useCalendarEvents(selectedNanny?: string) {
         throw error;
       }
     },
-    retry: 1,
-    retryDelay: 1000,
   });
 }

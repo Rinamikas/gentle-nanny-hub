@@ -1,82 +1,116 @@
-import { useSessionContext } from "@supabase/auth-helpers-react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import ProfileForm from "./components/ProfileForm";
+import LoadingScreen from "@/components/LoadingScreen";
+import NannyForm from "../nannies/components/NannyForm";
 import ProfileHeader from "./components/ProfileHeader";
-import ParentForm from "./components/ParentForm";
-import { toast } from "@/hooks/use-toast";
-import type { Profile } from "@/integrations/supabase/types/profile-types";
+import ContactInfo from "./components/ContactInfo";
+import type { Profile } from "./types";
 
 const ProfilePage = () => {
-  const { session } = useSessionContext();
+  const navigate = useNavigate();
 
-  const { data: profile, isLoading, refetch } = useQuery<Profile>({
-    queryKey: ['profile', session?.user?.id],
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["profile"],
     queryFn: async () => {
-      if (!session?.user?.id) {
-        throw new Error('No user ID found');
+      console.log("Начинаем загрузку профиля...");
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Ошибка при получении сессии:", sessionError);
+        throw sessionError;
       }
 
-      console.log('Fetching profile data for user:', session.user.id);
-      
+      if (!session) {
+        console.log("Сессия не найдена, перенаправляем на /auth");
+        navigate("/auth");
+        throw new Error("Не авторизован");
+      }
+
+      console.log("ID пользователя:", session.user.id);
+
+      // Получаем базовый профиль
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          user_roles (
-            id,
-            role,
-            created_at,
-            user_id
-          )
-        `)
-        .eq('id', session.user.id)
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
         .single();
 
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        toast({
-          title: "Ошибка",
-          description: "Не удалось загрузить профиль",
-          variant: "destructive",
-        });
+        console.error("Ошибка при загрузке профиля:", profileError);
         throw profileError;
       }
 
-      console.log('Profile data received:', profileData);
+      console.log("Загружен профиль:", profileData);
 
-      const profile: Profile = {
+      // Получаем роли пользователя
+      const { data: rolesData, error: rolesError } = await supabase
+        .rpc('get_user_roles');
+
+      if (rolesError) {
+        console.error("Ошибка при загрузке ролей:", rolesError);
+        throw rolesError;
+      }
+
+      // Фильтруем роли для текущего пользователя
+      const userRoles = rolesData.filter(role => role.user_id === session.user.id);
+      console.log("Роли пользователя:", userRoles);
+
+      // Получаем данные няни
+      const { data: nannyData, error: nannyError } = await supabase
+        .from("nanny_profiles")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      if (nannyError && nannyError.code !== 'PGRST116') {
+        console.error("Ошибка при загрузке профиля няни:", nannyError);
+      }
+
+      // Получаем данные родителя
+      const { data: parentData, error: parentError } = await supabase
+        .from("parent_profiles")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      if (parentError && parentError.code !== 'PGRST116') {
+        console.error("Ошибка при загрузке профиля родителя:", parentError);
+      }
+
+      const formattedData: Profile = {
         ...profileData,
-        email: session.user.email || '',
-        user_roles: Array.isArray(profileData.user_roles) 
-          ? profileData.user_roles 
-          : profileData.user_roles ? [profileData.user_roles] : []
+        user_roles: userRoles.map(({ role }) => ({ role })),
+        nanny_profiles: nannyData ? [nannyData] : [],
+        parent_profiles: parentData ? [parentData] : [],
       };
 
-      return profile;
+      console.log("Форматированные данные профиля:", formattedData);
+      return formattedData;
     },
-    enabled: !!session?.user?.id,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+  if (isLoading || !profile) {
+    return <LoadingScreen />;
   }
 
-  const isParent = profile?.user_roles?.some(role => role.role === 'parent');
-
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto py-6">
       <ProfileHeader profile={profile} />
-      <div className="mt-8">
-        <ProfileForm profile={profile} onUpdate={refetch} />
-      </div>
-      {isParent && profile && (
-        <div className="mt-8">
-          <ParentForm profile={profile} onUpdate={refetch} />
+      <ContactInfo email={profile.email} phone={profile.phone} />
+
+      {profile?.user_roles?.[0]?.role === "nanny" && profile.nanny_profiles?.[0] && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Анкета няни</h2>
+          <NannyForm />
+        </div>
+      )}
+
+      {profile?.user_roles?.[0]?.role === "parent" && profile.parent_profiles?.[0] && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Анкета родителя</h2>
+          {/* TODO: Добавить форму родителя */}
         </div>
       )}
     </div>

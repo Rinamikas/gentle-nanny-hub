@@ -1,15 +1,12 @@
-import type { Database } from '@/integrations/supabase/types';
-
-// Базовый тип из Supabase
-type ProfileRow = Database['public']['Tables']['profiles']['Row'] & {
-  email?: string; // добавляем email из auth.users
-};
-type UserRoleRow = Database['public']['Tables']['user_roles']['Row'];
-
-// Расширяем тип для нашего компонента
-export interface User extends ProfileRow {
-  user_roles?: Pick<UserRoleRow, 'role'>[];
+export interface UserRole {
+  role: string;
 }
 
-// Используем enum из базы данных для ролей
-export type UserRole = Database['public']['Enums']['user_role'];
+export interface User {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  photo_url: string | null;
+  user_roles: UserRole[] | null;
+}

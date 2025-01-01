@@ -1,4 +1,4 @@
-import { Database } from '@/integrations/supabase/types';
+import { Database } from "@/integrations/supabase/types";
 
 export type AppointmentStatus = Database['public']['Enums']['appointment_status'];
 export type ScheduleEventType = Database['public']['Enums']['schedule_event_type'];

@@ -14,15 +14,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
   const [cooldown, setCooldown] = useState(0);
   const { toast } = useToast();
 
-  // Загружаем сохраненный email при монтировании компонента
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('lastUsedEmail');
-    if (savedEmail) {
-      console.log("Загружен сохраненный email:", savedEmail);
-      setEmail(savedEmail);
-    }
-  }, []);
-
   useEffect(() => {
     let timer: number;
     if (cooldown > 0) {
@@ -47,10 +38,6 @@ export const EmailForm = ({ onEmailSubmit }: EmailFormProps) => {
     console.log("Email:", email);
 
     try {
-      // Сохраняем email в localStorage
-      localStorage.setItem('lastUsedEmail', email);
-      console.log("Email сохранен в localStorage");
-
       // Генерируем код верификации
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date();

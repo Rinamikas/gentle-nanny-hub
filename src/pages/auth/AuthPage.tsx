@@ -1,49 +1,47 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import { EmailForm } from "./EmailForm";
 import VerificationForm from "./VerificationForm";
-import { useSessionContext } from "@supabase/auth-helpers-react";
-import { useNavigate } from "react-router-dom";
 
-export default function AuthPage() {
+const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [showVerification, setShowVerification] = useState(false);
-  const { session } = useSessionContext();
   const navigate = useNavigate();
 
-  // Если пользователь уже авторизован, перенаправляем на главную
-  if (session) {
-    console.log("Пользователь уже авторизован, перенаправление...");
-    navigate("/");
-    return null;
-  }
-
-  const handleEmailSubmit = (submittedEmail: string) => {
-    console.log("Email отправлен:", submittedEmail);
+  const handleEmailSubmit = async (submittedEmail: string) => {
+    console.log("Email submitted, showing verification form for:", submittedEmail);
     setEmail(submittedEmail);
     setShowVerification(true);
   };
 
   const handleVerificationSuccess = () => {
-    console.log("Верификация успешна, перенаправление...");
+    console.log("Verification successful, navigating to home");
     navigate("/");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          {!showVerification ? (
-            <EmailForm onEmailSubmit={handleEmailSubmit} />
-          ) : (
-            <VerificationForm 
-              email={email} 
-              onVerificationSuccess={handleVerificationSuccess}
-              onBack={() => setShowVerification(false)} 
-            />
-          )}
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="w-full max-w-md space-y-8 p-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-primary mb-2">
+            Nanny Management System
+          </h1>
+          <p className="text-muted-foreground">
+            Вход в панель администратора
+          </p>
+        </div>
+        
+        {!showVerification ? (
+          <EmailForm onEmailSubmit={handleEmailSubmit} />
+        ) : (
+          <VerificationForm
+            email={email}
+            onVerificationSuccess={handleVerificationSuccess}
+          />
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default AuthPage;

@@ -1,101 +1,95 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface VerificationFormProps {
   email: string;
   onVerificationSuccess: () => void;
-  onBack: () => void;
 }
 
-const VerificationForm = ({ email, onVerificationSuccess, onBack }: VerificationFormProps) => {
+const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProps) => {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    console.log("OTP value changed:", otp);
-  }, [otp]);
-
   const handleVerification = async () => {
     setIsLoading(true);
-    try {
-      console.log("=== Starting verification process ===");
-      console.log("Email:", email);
-      console.log("OTP:", otp);
+    console.log("=== Starting verification process ===");
+    console.log("Email:", email);
+    console.log("OTP:", otp);
 
-      // 1. Проверяем код через RPC
+    try {
+      // 1. Проверяем код в базе данных через RPC
       console.log("1. Checking verification code through RPC");
-      const { data: isValid, error: verificationError } = await supabase
+      const { data: hasValidCode, error: rpcError } = await supabase
         .rpc('check_verification_code', {
           p_email: email,
           p_code: otp
         });
 
-      if (verificationError) {
-        throw verificationError;
+      if (rpcError) {
+        console.error("RPC error:", rpcError);
+        throw new Error("Ошибка при проверке кода");
       }
 
-      console.log("Verification code check result:", isValid);
-
-      if (!isValid) {
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Неверный код подтверждения",
-        });
-        return;
+      console.log("Verification code check result:", hasValidCode);
+      if (!hasValidCode) {
+        throw new Error("Неверный код или срок его действия истек");
       }
 
-      // 2. Создаем пользователя через Edge Function
-      console.log("2. Creating user if not exists");
+      // 2. Создаем или обновляем пользователя через Edge Function
+      console.log("2. Creating/updating user through Edge Function");
       const { data: userData, error: createError } = await supabase.functions.invoke(
-        'create-auth-user',
+        'create-user',
         {
           body: JSON.stringify({
             email,
-            code: otp,
-            shouldSignIn: false
+            password: otp
           })
         }
       );
 
       if (createError) {
-        console.error("Error creating user:", createError);
+        console.error("3. User creation error:", createError);
         throw createError;
       }
 
-      // 3. Ждем 5 секунд перед входом
-      console.log("3. Waiting 5 seconds before sign in...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Добавляем задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // 4. Входим используя код как пароль
-      console.log("4. Signing in with verification code as password");
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // 3. Входим с помощью созданных credentials
+      console.log("4. Signing in with created credentials");
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: otp,
       });
 
       if (signInError) {
-        console.error("Error signing in:", signInError);
+        console.error("5. Sign in error:", signInError);
         throw signInError;
       }
 
-      // 5. Обновляем статус кода верификации
-      console.log("5. Updating verification code status");
-      const { error: updateError } = await supabase
-        .from('verification_codes')
-        .update({ status: 'verified' })
-        .eq('email', email)
-        .eq('code', otp);
-
-      if (updateError) {
-        console.error("Error updating verification status:", updateError);
-        // Не выбрасываем ошибку, так как авторизация уже прошла успешно
+      if (!data.session) {
+        throw new Error("Не удалось создать сессию");
       }
 
+      // 4. Обновляем статус кода в БД
+      console.log("6. Updating verification code status");
+      const { error: codeUpdateError } = await supabase
+        .from("verification_codes")
+        .update({ status: 'verified' })
+        .eq("email", email)
+        .eq("code", otp);
+
+      if (codeUpdateError) {
+        console.error("7. Status update error:", codeUpdateError);
+        throw new Error("Ошибка при обновлении статуса кода");
+      }
+
+      console.log("=== Verification completed successfully ===");
       toast({
-        title: "Успешно",
+        title: "Успешно!",
         description: "Вы успешно авторизовались",
       });
 
@@ -108,7 +102,7 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: error.message || "Не удалось выполнить проверку",
+        description: error.message || "Не удалось проверить код",
       });
     } finally {
       setIsLoading(false);
@@ -117,82 +111,33 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
 
   return (
     <div className="space-y-4">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold">Подтверждение</h2>
-        <p className="text-gray-500">
-          Введите код, отправленный на {email}
-        </p>
-      </div>
-
-      <div className="flex justify-center">
-        <div className="flex gap-2">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <input
-              key={index}
-              type="text"
-              maxLength={1}
-              className="w-10 h-10 text-center border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-              value={otp[index] || ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value.match(/^[0-9]$/)) {
-                  const newOtp = otp.split('');
-                  newOtp[index] = value;
-                  setOtp(newOtp.join(''));
-                  
-                  // Автоматически переходим к следующему полю
-                  if (index < 5 && value) {
-                    const nextInput = e.target.parentElement?.querySelector(
-                      `input[type="text"]:nth-child(${index + 2})`
-                    ) as HTMLInputElement;
-                    if (nextInput) {
-                      nextInput.focus();
-                    }
-                  }
-                }
-              }}
-              onKeyDown={(e) => {
-                // При нажатии Backspace переходим к предыдущему полю
-                if (e.key === 'Backspace' && !otp[index] && index > 0) {
-                  const newOtp = otp.split('');
-                  newOtp[index - 1] = '';
-                  setOtp(newOtp.join(''));
-                  
-                  const prevInput = e.currentTarget.parentElement?.querySelector(
-                    `input[type="text"]:nth-child(${index})`
-                  ) as HTMLInputElement;
-                  if (prevInput) {
-                    prevInput.focus();
-                  }
-                }
-              }}
-              onPaste={(e) => {
-                e.preventDefault();
-                const pastedData = e.clipboardData.getData('text');
-                const numbers = pastedData.replace(/[^0-9]/g, '').slice(0, 6);
-                setOtp(numbers);
-              }}
-              disabled={isLoading}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          disabled={isLoading}
+      <div className="flex flex-col items-center space-y-4">
+        <InputOTP
+          maxLength={6}
+          value={otp}
+          onChange={(value) => {
+            console.log("OTP value changed:", value);
+            setOtp(value);
+          }}
+          className="gap-2 justify-center"
         >
-          Назад
-        </Button>
-        <Button 
-          onClick={handleVerification}
-          disabled={otp.length !== 6 || isLoading}
-        >
-          {isLoading ? "Проверка..." : "Подтвердить"}
-        </Button>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
       </div>
+      <Button
+        onClick={handleVerification}
+        className="w-full"
+        disabled={isLoading || otp.length !== 6}
+      >
+        {isLoading ? "Проверка..." : "Подтвердить"}
+      </Button>
     </div>
   );
 };

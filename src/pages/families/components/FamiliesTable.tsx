@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -9,9 +8,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Star, Diamond, Phone } from "lucide-react";
-import type { ParentProfile } from "../types/parent-types";
-import { localizeParentStatus } from "@/utils/localization";
+import { Edit, Star, Diamond } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import type { ParentProfile } from "@/integrations/supabase/types/parent-types";
 
 interface FamiliesTableProps {
   families: ParentProfile[];
@@ -32,12 +31,6 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
   console.log("FamiliesTable received families:", families);
   const navigate = useNavigate();
 
-  const formatPhoneLink = (phone: string | null) => {
-    if (!phone) return null;
-    const cleanPhone = phone.replace(/\D/g, '');
-    return `tel:${cleanPhone}`;
-  };
-
   return (
     <Table>
       <TableHeader>
@@ -45,6 +38,7 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
           <TableHead>ФИО родителя</TableHead>
           <TableHead>Статус</TableHead>
           <TableHead>Контактные номера</TableHead>
+          <TableHead>Адрес</TableHead>
           <TableHead>Дети</TableHead>
           <TableHead>Действия</TableHead>
         </TableRow>
@@ -52,13 +46,11 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
       <TableBody>
         {families.map((family) => {
           console.log("Rendering family:", family);
-          const displayName = family.profiles?.first_name && family.profiles?.last_name
-            ? `${family.profiles.first_name} ${family.profiles.last_name}`
-            : "Имя не указано";
-
           return (
             <TableRow key={family.id}>
-              <TableCell>{displayName}</TableCell>
+              <TableCell>
+                {family.profiles?.first_name} {family.profiles?.last_name}
+              </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <StatusIcon status={family.status} />
@@ -67,32 +59,25 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
                       family.status === "diamond" ? "default" : "secondary"
                     }
                   >
-                    {localizeParentStatus(family.status)}
+                    {family.status === "diamond"
+                      ? "Бриллиант"
+                      : family.status === "star"
+                      ? "Звезда"
+                      : "Обычный"}
                   </Badge>
                 </div>
               </TableCell>
               <TableCell>
                 <div className="space-y-1">
-                  {family.profiles?.main_phone && (
-                    <a 
-                      href={formatPhoneLink(family.profiles.main_phone)}
-                      className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                    >
-                      <Phone className="w-4 h-4" />
-                      {family.profiles.main_phone}
-                    </a>
-                  )}
-                  {family.emergency_phone && (
-                    <a 
-                      href={formatPhoneLink(family.emergency_phone)}
-                      className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
-                    >
-                      <Phone className="w-4 h-4" />
-                      {family.emergency_phone}
-                    </a>
+                  <div>{family.profiles?.phone}</div>
+                  {family.additional_phone && (
+                    <div className="text-sm text-gray-500">
+                      {family.additional_phone}
+                    </div>
                   )}
                 </div>
               </TableCell>
+              <TableCell>{family.address}</TableCell>
               <TableCell>
                 {family.children?.map((child) => (
                   <div key={child.id}>{child.first_name}</div>

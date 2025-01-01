@@ -1,14 +1,15 @@
-import type { Database } from '@/integrations/supabase/types';
-import type { UserRole } from '@/integrations/supabase/types/enums';
+import type { Tables } from '@/integrations/supabase/types';
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-
-export interface Profile extends ProfileRow {
-  email?: string;
-  phone?: string;
-  user_roles?: {
-    id: string;
-    role: UserRole;
-    created_at: string;
-  }[];
+export interface Profile {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  created_at: string;
+  updated_at: string;
+  user_roles: Array<{ role: string }>;
+  nanny_profiles: Tables<'nanny_profiles'>[] | null;
+  parent_profiles: Tables<'parent_profiles'>[] | null;
 }

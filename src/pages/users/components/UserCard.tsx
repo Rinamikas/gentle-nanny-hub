@@ -1,80 +1,97 @@
-import { useState } from "react";
-import { User } from "@/pages/users/types";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { User } from "../types";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-import UserRoleManager from "./UserRoleManager";
-import DeleteUserDialog from "./DeleteUserDialog";
-import { useQueryClient } from "@tanstack/react-query";
-import { deleteUserProfile } from "../api/userApi";
+import { Input } from "@/components/ui/input";
+import { Pencil, Trash2, X, Check } from "lucide-react";
 
-export function UserCard({ user }: { user: User }) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const handleRoleChange = () => {
-    queryClient.invalidateQueries({ queryKey: ['users'] });
-    toast({
-      title: "Успешно",
-      description: "Роль пользователя обновлена",
-    });
+interface UserCardProps {
+  user: User;
+  isEditing: boolean;
+  editForm: {
+    first_name: string;
+    last_name: string;
+    email: string;
   };
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
+  onFormChange: (field: string, value: string) => void;
+}
 
-  const handleDelete = async () => {
-    try {
-      await deleteUserProfile(user.id);
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error("Ошибка при удалении пользователя:", error);
-    }
-  };
-
-  const displayName = user.first_name && user.last_name 
-    ? `${user.first_name} ${user.last_name}`
-    : user.email;
-
+export const UserCard = ({
+  user,
+  isEditing,
+  editForm,
+  onEdit,
+  onSave,
+  onCancel,
+  onDelete,
+  onFormChange,
+}: UserCardProps) => {
   return (
-    <Card className="w-full">
-      <CardHeader className="flex-row items-center gap-4">
-        <Avatar className="h-12 w-12">
-          <AvatarImage src={user.photo_url || undefined} />
-          <AvatarFallback>
-            {user.first_name?.[0]}
-            {user.last_name?.[0]}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <CardTitle className="text-lg">
-            {displayName}
-          </CardTitle>
-          <CardDescription>{user.email}</CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <UserRoleManager
-            currentRole={user.user_roles?.[0]?.role}
-            onRoleChange={handleRoleChange}
+    <div className="p-4 bg-white rounded-lg shadow flex items-center justify-between">
+      {isEditing ? (
+        <div className="flex-1 grid grid-cols-3 gap-4 mr-4">
+          <Input
+            value={editForm.first_name}
+            onChange={(e) => onFormChange("first_name", e.target.value)}
+            placeholder="Имя"
+          />
+          <Input
+            value={editForm.last_name}
+            onChange={(e) => onFormChange("last_name", e.target.value)}
+            placeholder="Фамилия"
+          />
+          <Input
+            value={editForm.email}
+            onChange={(e) => onFormChange("email", e.target.value)}
+            placeholder="Email"
           />
         </div>
-      </CardHeader>
-
-      <DeleteUserDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDelete}
-        userName={displayName}
-      />
-    </Card>
+      ) : (
+        <div>
+          <h3 className="font-medium">
+            {user.first_name} {user.last_name}
+          </h3>
+          <p className="text-sm text-gray-600">{user.email}</p>
+          <div className="flex gap-2 mt-1">
+            {user.user_roles?.map((role, index) => (
+              <span
+                key={`${user.id}-${role.role}-${index}`}
+                className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs"
+              >
+                {role.role}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="flex gap-2">
+        {isEditing ? (
+          <>
+            <Button variant="ghost" size="icon" onClick={onSave}>
+              <Check className="h-4 w-4 text-green-600" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onCancel}>
+              <X className="h-4 w-4 text-red-600" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="ghost" size="icon" onClick={onEdit}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-600"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
   );
-}
+};
