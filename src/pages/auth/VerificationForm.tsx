@@ -6,9 +6,10 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 interface VerificationFormProps {
   email: string;
   onVerificationSuccess: () => void;
+  onBack: () => void;
 }
 
-const VerificationForm = ({ email, onVerificationSuccess }: VerificationFormProps) => {
+const VerificationForm = ({ email, onVerificationSuccess, onBack }: VerificationFormProps) => {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 

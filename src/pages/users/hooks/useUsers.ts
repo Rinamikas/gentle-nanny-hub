@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { User } from "../types";
 
 export const useUsers = () => {
@@ -82,11 +82,98 @@ export const useUsers = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("Пользователь успешно обновлен");
+      toast({
+        title: "Успешно",
+        description: "Пользователь успешно обновлен",
+      });
     },
     onError: (error) => {
       console.error("Error updating user:", error);
-      toast.error("Ошибка при обновлении пользователя");
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить пользователя",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const changeUserRoleMutation = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+      console.log("Changing role for user:", userId, "to:", newRole);
+      
+      // Получаем текущую роль и профили пользователя
+      const { data: currentRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      const currentRole = currentRoles?.[0]?.role;
+      console.log("Current role:", currentRole);
+
+      if (currentRole === newRole) {
+        throw new Error("Новая роль совпадает с текущей");
+      }
+
+      // Начинаем транзакцию
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .update({ role: newRole })
+        .eq("user_id", userId);
+
+      if (roleError) throw roleError;
+
+      // Мягко удаляем старый профиль
+      if (currentRole === 'nanny') {
+        const { error: nannyError } = await supabase
+          .from("nanny_profiles")
+          .update({ 
+            is_deleted: true,
+            deleted_at: new Date().toISOString()
+          })
+          .eq("user_id", userId);
+        
+        if (nannyError) throw nannyError;
+      } else if (currentRole === 'parent') {
+        const { error: parentError } = await supabase
+          .from("parent_profiles")
+          .update({ 
+            is_deleted: true,
+            deleted_at: new Date().toISOString()
+          })
+          .eq("user_id", userId);
+        
+        if (parentError) throw parentError;
+      }
+
+      // Создаем новый профиль
+      if (newRole === 'nanny') {
+        const { error: newNannyError } = await supabase
+          .from("nanny_profiles")
+          .insert([{ user_id: userId }]);
+        
+        if (newNannyError) throw newNannyError;
+      } else if (newRole === 'parent') {
+        const { error: newParentError } = await supabase
+          .from("parent_profiles")
+          .insert([{ user_id: userId }]);
+        
+        if (newParentError) throw newParentError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({
+        title: "Успешно",
+        description: "Роль пользователя успешно изменена",
+      });
+    },
+    onError: (error) => {
+      console.error("Error changing user role:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось изменить роль пользователя",
+        variant: "destructive",
+      });
     },
   });
 
@@ -128,5 +215,7 @@ export const useUsers = () => {
     error,
     updateUser: updateUserMutation.mutate,
     deleteUser: deleteUserMutation.mutate,
+    changeUserRole: (userId: string, newRole: string) => 
+      changeUserRoleMutation.mutate({ userId, newRole }),
   };
 };
