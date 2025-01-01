@@ -35,7 +35,8 @@ const NanniesPage = () => {
             first_name,
             last_name,
             main_phone
-          )
+          ),
+          nanny_training (*)
         `);
 
       if (error) {

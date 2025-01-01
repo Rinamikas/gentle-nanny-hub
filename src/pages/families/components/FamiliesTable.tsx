@@ -69,7 +69,7 @@ const FamiliesTable = ({ families }: FamiliesTableProps) => {
               </TableCell>
               <TableCell>
                 <div className="space-y-1">
-                  <div>{family.profiles?.phone}</div>
+                  <div>{family.profiles?.main_phone}</div>
                   {family.additional_phone && (
                     <div className="text-sm text-gray-500">
                       {family.additional_phone}

@@ -8,6 +8,6 @@ export type NannyProfileUpdate = Database['public']['Tables']['nanny_profiles'][
 export interface NannyProfile extends NannyProfileRow {
   profiles?: ProfileRow;
   nanny_training?: Database['public']['Tables']['nanny_training']['Row'];
-  deleted_at?: string | null;
+  deleted_at: string | null;
   relative_phone?: string;
 }

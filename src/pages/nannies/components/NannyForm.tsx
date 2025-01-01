@@ -58,7 +58,7 @@ const NannyForm = () => {
         first_name: nanny.profiles?.first_name || "",
         last_name: nanny.profiles?.last_name || "",
         birth_date: nanny.birth_date || "",
-        phone: nanny.profiles?.phone || "",
+        phone: nanny.profiles?.main_phone || "",
         email: nanny.profiles?.email || "",
         photo_url: nanny.photo_url || "",
         position: nanny.position || "",
