@@ -1,6 +1,6 @@
-export interface UserRole {
-  role: "nanny" | "owner" | "admin" | "parent";
-}
+import type { Database } from '@/integrations/supabase/types/database';
+
+export type UserRole = Database['public']['Enums']['user_role'];
 
 export interface User {
   id: string;

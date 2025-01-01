@@ -1,4 +1,6 @@
-import { UserRole } from './enums';
+import type { Database } from './database';
+
+export type UserRole = Database['public']['Enums']['user_role'];
 
 export interface User {
   id: string;
@@ -9,8 +11,4 @@ export interface User {
   created_at: string;
   updated_at: string;
   user_roles: UserRole[];
-}
-
-export interface UserRoleType {
-  role: UserRole;
 }

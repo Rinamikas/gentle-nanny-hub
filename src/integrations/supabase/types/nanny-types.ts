@@ -1,17 +1,11 @@
-import { Database } from './database';
-import { ProfileRow } from './profile-types';
+import type { Database } from './database';
+import type { ProfileRow } from './profile-types';
 
-export interface NannyProfile extends Database['public']['Tables']['nanny_profiles']['Row'] {
+type NannyProfileRow = Database['public']['Tables']['nanny_profiles']['Row'];
+
+export interface NannyProfile extends NannyProfileRow {
   profiles?: ProfileRow;
-  deleted_at?: string | null;
-  is_deleted?: boolean | null;
-  relative_phone?: string | null;
+  nanny_training?: Database['public']['Tables']['nanny_training']['Row'];
 }
 
-export interface NannyTables {
-  nanny_profiles: {
-    Row: NannyProfile;
-    Insert: Omit<NannyProfile, 'id' | 'created_at' | 'updated_at'>;
-    Update: Partial<NannyProfile>;
-  };
-}
+export type Nanny = NannyProfile;
