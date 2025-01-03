@@ -4,7 +4,7 @@ export const formSchema = z.object({
   first_name: z.string().min(2, "Имя должно содержать минимум 2 символа"),
   last_name: z.string().min(2, "Фамилия должна содержать минимум 2 символа"),
   birth_date: z.string().min(1, "Выберите дату рождения"),
-  phone: z.string().min(10, "Введите корректный номер телефона"),
+  main_phone: z.string().min(10, "Введите корректный номер телефона"),
   email: z.string().email("Введите корректный email"),
   photo_url: z.string().optional(),
   position: z.string().min(2, "Введите должность"),
