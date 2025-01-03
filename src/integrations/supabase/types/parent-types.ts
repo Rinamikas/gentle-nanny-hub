@@ -8,5 +8,5 @@ export type ParentProfileUpdate = Database['public']['Tables']['parent_profiles'
 export interface ParentProfile extends ParentProfileRow {
   profiles?: ProfileRow;
   children?: Database['public']['Tables']['children']['Row'][];
-  additional_phone?: string;
+  emergency_phone?: string;
 }

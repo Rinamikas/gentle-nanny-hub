@@ -631,7 +631,7 @@ export type Database = {
           p_camera_phone: string
           p_camera_number: string
           p_address: string
-          p_relative_phone: string
+          p_emergency_phone: string
           p_experience_years: number
           p_education: string
           p_hourly_rate: number

@@ -27,7 +27,7 @@ export default function FamilyForm() {
       first_name: "",
       last_name: "",
       phone: "",
-      additional_phone: "",
+      emergency_phone: "",
       address: "",
       status: "default",
       notes: "",
@@ -70,7 +70,7 @@ export default function FamilyForm() {
             first_name: parentProfile.profiles?.first_name || "",
             last_name: parentProfile.profiles?.last_name || "",
             phone: parentProfile.profiles?.main_phone || "",
-            additional_phone: parentProfile.additional_phone || "",
+            emergency_phone: parentProfile.emergency_phone || "",
             address: parentProfile.address || "",
             status: parentProfile.status || "default",
             notes: parentProfile.notes || "",
@@ -131,7 +131,7 @@ export default function FamilyForm() {
           user_id: session.user.id,
           address: data.address,
           status: data.status,
-          additional_phone: data.additional_phone,
+          emergency_phone: data.emergency_phone,
           notes: data.notes,
         })
         .select()

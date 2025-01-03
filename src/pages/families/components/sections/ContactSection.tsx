@@ -27,7 +27,7 @@ export default function ContactSection({ form }: ContactSectionProps) {
         />
         <FormField
           control={form.control}
-          name="additional_phone"
+          name="emergency_phone"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Дополнительный телефон</FormLabel>

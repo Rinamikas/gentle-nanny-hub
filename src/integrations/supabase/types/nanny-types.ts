@@ -9,5 +9,5 @@ export interface NannyProfile extends NannyProfileRow {
   profiles?: ProfileRow;
   nanny_training?: Database['public']['Tables']['nanny_training']['Row'];
   deleted_at: string | null;
-  relative_phone?: string;
+  emergency_phone?: string;
 }

@@ -15,7 +15,7 @@ export const formSchema = z.object({
   address: z.string().min(5, "Введите полный адрес"),
   education: z.string().min(10, "Опишите ваше образование подробнее"),
   experience_years: z.number().min(0, "Опыт работы не может быть отрицательным"),
-  relative_phone: z.string().min(10, "Введите корректный номер телефона родственника"),
+  emergency_phone: z.string().min(10, "Введите корректный номер телефона родственника"),
   criminal_record: z.string().optional(),
   image_usage_consent: z.string().optional(),
   medical_book: z.string().optional(),

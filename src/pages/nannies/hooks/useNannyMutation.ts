@@ -26,7 +26,7 @@ export const useNannyMutation = (onSuccess: () => void) => {
             p_camera_phone: values.camera_phone,
             p_camera_number: values.camera_number,
             p_address: values.address,
-            p_relative_phone: values.relative_phone,
+            p_emergency_phone: values.emergency_phone,
             p_experience_years: values.experience_years,
             p_education: values.education,
             p_hourly_rate: values.hourly_rate,
