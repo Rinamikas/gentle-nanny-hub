@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import NanniesTable from "./components/NanniesTable";
 import NanniesHeader from "./components/NanniesHeader";
 import LoadingScreen from "@/components/LoadingScreen";
-import type { NannyProfile } from "@/integrations/supabase/types/nanny-types";
 
 const NanniesPage = () => {
   const [showDeleted, setShowDeleted] = useState(false);
@@ -26,18 +25,18 @@ const NanniesPage = () => {
         return [];
       }
 
-      const { data: nanniesData, error } = await supabase
+      const { data, error } = await supabase
         .from("nanny_profiles")
         .select(`
           *,
-          profiles (
-            id,
+          profiles(
             first_name,
             last_name,
-            main_phone
-          ),
-          nanny_training (*)
-        `);
+            email,
+            phone
+          )
+        `)
+        .eq("is_deleted", showDeleted);
 
       if (error) {
         console.error("Error fetching nannies:", error);
@@ -53,8 +52,8 @@ const NanniesPage = () => {
         throw error;
       }
 
-      console.log("Загруженные няни:", nanniesData);
-      return nanniesData as NannyProfile[];
+      console.log("Загруженные няни:", data);
+      return data;
     },
   });
 
@@ -64,7 +63,10 @@ const NanniesPage = () => {
       
       const { error } = await supabase
         .from("nanny_profiles")
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ 
+          is_deleted: true,
+          deleted_at: new Date().toISOString()
+        })
         .eq("id", nannyId);
 
       if (error) {
@@ -97,7 +99,10 @@ const NanniesPage = () => {
       
       const { error } = await supabase
         .from("nanny_profiles")
-        .update({ deleted_at: null })
+        .update({ 
+          is_deleted: false,
+          deleted_at: null
+        })
         .eq("id", nannyId);
 
       if (error) {

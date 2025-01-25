@@ -1,19 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, RotateCcw, Trash2 } from "lucide-react";
+import { Database } from "@/integrations/supabase/types";
+import { PostgrestResponse } from "@supabase/supabase-js";
 
-interface Nanny {
-  id: string;
-  photo_url: string | null;
-  deleted_at: string | null;
+type Nanny = PostgrestResponse<Database['public']['Tables']['nanny_profiles']['Row']>['data'][0] & {
   profiles: {
     first_name: string | null;
     last_name: string | null;
-    main_phone: string | null;
+    email: string | null;
+    phone: string | null;
   } | null;
-  birth_date: string | null;
-  position: string | null;
-}
+};
 
 interface NanniesTableProps {
   nannies: Nanny[] | null;
@@ -50,7 +48,7 @@ const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProp
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {nannies?.map((nanny) => (
-            <tr key={nanny.id} className={nanny.deleted_at ? "bg-gray-50" : ""}>
+            <tr key={nanny.id} className={nanny.is_deleted ? "bg-gray-50" : ""}>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   {nanny.photo_url && (
@@ -75,10 +73,13 @@ const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProp
                 {nanny.position || "-"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div>{nanny.profiles?.main_phone}</div>
+                <div>{nanny.profiles?.phone}</div>
+                <div className="text-sm text-gray-500">
+                  {nanny.profiles?.email}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {nanny.deleted_at ? (
+                {nanny.is_deleted ? (
                   <Badge variant="destructive">Удалена</Badge>
                 ) : (
                   <Badge variant="default">Активна</Badge>
@@ -86,7 +87,7 @@ const NanniesTable = ({ nannies, onEdit, onDelete, onRestore }: NanniesTableProp
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end gap-2">
-                  {!nanny.deleted_at ? (
+                  {!nanny.is_deleted ? (
                     <>
                       <Button
                         variant="ghost"

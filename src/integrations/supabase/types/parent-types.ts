@@ -1,12 +1,11 @@
-import type { Database } from './database';
-import type { ProfileRow } from './profile-types';
+import { Database } from './database';
+import { ProfileRow } from './profile-types';
+import { Tables } from './tables';
 
-export type ParentProfileRow = Database['public']['Tables']['parent_profiles']['Row'];
-export type ParentProfileInsert = Database['public']['Tables']['parent_profiles']['Insert'];
-export type ParentProfileUpdate = Database['public']['Tables']['parent_profiles']['Update'];
+export type ParentProfileBase = Database['public']['Tables']['parent_profiles']['Row'];
+export type ChildRow = Tables['children']['Row'];
 
-export interface ParentProfile extends ParentProfileRow {
+export interface ParentProfile extends ParentProfileBase {
   profiles?: ProfileRow;
-  children?: Database['public']['Tables']['children']['Row'][];
-  emergency_phone?: string;
+  children?: ChildRow[];
 }

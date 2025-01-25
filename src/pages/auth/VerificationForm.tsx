@@ -14,6 +14,7 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // Устанавливаем фокус на первый слот при монтировании
     const firstInput = document.querySelector('input[id^="otp-"]') as HTMLInputElement;
     if (firstInput) {
       firstInput.focus();
@@ -21,44 +22,11 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
   }, []);
 
   useEffect(() => {
+    // Автоматически отправляем форму при заполнении всех слотов
     if (otp.length === 6) {
       handleVerification();
     }
   }, [otp]);
-
-  const ensureProfileExists = async (userId: string) => {
-    console.log("Проверяем существование профиля для пользователя:", userId);
-    
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (profileError) {
-      console.error("Ошибка при проверке профиля:", profileError);
-      return;
-    }
-
-    if (!profile) {
-      console.log("Профиль не найден, создаем новый");
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert([{ 
-          id: userId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }]);
-
-      if (insertError) {
-        console.error("Ошибка при создании профиля:", insertError);
-        return;
-      }
-      console.log("Профиль успешно создан");
-    } else {
-      console.log("Профиль уже существует");
-    }
-  };
 
   const handleVerification = async () => {
     if (isLoading) return;
@@ -113,8 +81,8 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       // 4. Входим с созданными учетными данными
       console.log("4. Attempting sign in with verification code as password");
 
-      // Увеличиваем задержку перед входом до 5 секунд
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Добавляем задержку перед входом
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -126,11 +94,6 @@ const VerificationForm = ({ email, onVerificationSuccess, onBack }: Verification
       if (signInError) {
         console.error("5. Sign in error:", signInError);
         throw signInError;
-      }
-
-      // Проверяем и создаем профиль если нужно
-      if (signInData.user) {
-        await ensureProfileExists(signInData.user.id);
       }
 
       // 5. Обновляем статус кода верификации

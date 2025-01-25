@@ -30,7 +30,7 @@ export default function DocumentsSection({ form }: DocumentsSectionProps) {
 
         <FormField
           control={form.control}
-          name="emergency_phone"
+          name="relative_phone"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Телефон родственника</FormLabel>
